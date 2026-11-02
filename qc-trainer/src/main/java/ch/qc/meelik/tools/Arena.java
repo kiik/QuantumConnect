@@ -1,6 +1,9 @@
 package ch.qc.meelik.tools;
 
 import ch.cern.quantumconnect.core.Algorithm;
+import ch.cern.quantumconnect.core.Experiment;
+import ch.cern.quantumconnect.core.ExperimentStatus;
+import ch.cern.quantumconnect.core.GameConstants;
 import ch.cern.quantumconnect.core.Move;
 import ch.cern.quantumconnect.core.QuantumField;
 import ch.cern.quantumconnect.core.SpaceOwnership;
@@ -11,15 +14,17 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.jar.JarFile;
 
 /**
- * Headless local arena: plays bots against each other under the rules of the engine's Experiment
- * (core-2.0), with our own {@link Board} as the referee. {@code ./qc.sh referee} plays the real
- * Experiment instead, which is the reference.
+ * Headless local arena: plays bots against each other in the engine's own Experiment (the
+ * qc-starter library), the referee the engine ships with, and checks every game against our
+ * {@link Board}.
  *
  * <p>Usage: Arena [botA=quark] [botB=random] [games=20]. A bot spec is one of:
  * <ul>
@@ -34,10 +39,9 @@ import java.util.jar.JarFile;
  * </ul>
  */
 public final class Arena {
-    static final long MOVE_LIMIT_NANOS = 100_000_000L;
-    static final int MOVE_LIMIT_PER_MATCH = 1000;
+    static final long MOVE_LIMIT_NANOS = GameConstants.TIMEOUT_MS * 1_000_000L;
 
-    /** One game's outcome: winner (0 first mover, 1 second, -1 draw), plies, and per-player statistics. */
+    /** One game's outcome: winner (0 first mover, 1 second, -1 draw), turns, and per-player statistics. */
     record Result(int winner, int plies, PlayerStats[] players) { }
 
     static final class PlayerStats {
@@ -81,57 +85,127 @@ public final class Arena {
 
     // ------------------------------------------------------------------ one game
 
-    /** Plays one game; when {@code replay} is non-null, appends one JSON frame per ply (see Replay). */
+    /**
+     * Plays one game in the engine's own {@link Experiment}, the referee it ships with: it asks
+     * each bot on a fresh thread, within the time limit, and applies the engine's rules. Each bot is
+     * wrapped in a {@link Recorder} that notes what it asked for and how long it took.
+     *
+     * <p>Afterwards the game is replayed on our {@link Board}: for the replay frames and as a running
+     * check of our rule model. If our Board ends with a different position or winner than the
+     * engine, the game throws. When {@code replay} is non-null, one JSON frame per turn is appended
+     * (see Replay).
+     */
     static Result play(Algorithm first, Algorithm second, StringBuilder replay) {
-        Algorithm[] bots = {first, second};
+        List<Turn> turns = Collections.synchronizedList(new ArrayList<>());
+        Experiment experiment = new Experiment(new Recorder(first, 0, turns, replay != null), new Recorder(second, 1, turns, replay != null), false, false);
+        try {
+            experiment.runExperiment();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted", e);
+        }
+        int winner = experiment.getExperimentStatus() == ExperimentStatus.COLLAPSED ? seatOf(experiment.getCurrentPlayer()) : -1;
+
+        // Replay the engine's history on our Board, turn by turn. A turn the engine skipped (late
+        // answer, full or invalid column) has no entry in the history.
         PlayerStats[] stats = {new PlayerStats(), new PlayerStats()};
-        Board referee = new Board();
-        List<Move> history = new ArrayList<>();
-        int winner = -1, ply = 0;
-        if (replay != null) replay.append(frame(referee, -1, -1, false, false, 0, null, -1));
-
-        for (; ply < MOVE_LIMIT_PER_MATCH && winner < 0 && !referee.isFull(); ply++) {
-            int player = referee.sideToMove;
-            SpaceOwnership colour = player == 0 ? SpaceOwnership.FIRST_PLAYER : SpaceOwnership.SECOND_PLAYER;
+        Board board = new Board();
+        List<Move> history = experiment.getHistory();
+        int placed = 0;
+        if (replay != null) replay.append(frame(board, -1, -1, false, false, 0, null, -1));
+        for (Turn turn : turns) {
+            int player = board.sideToMove;
             PlayerStats mine = stats[player];
-
-            // As in the real Experiment: both questions are asked before anything is placed, each
-            // within the time limit; a late answer counts as no column or no bomb.
-            QuantumField field = new QuantumField(Tools.field(referee), colour, history);
-            long started = System.nanoTime();
-            int column = bots[player].accelerateQuark(field);
-            long moveNanos = System.nanoTime() - started;
-            started = System.nanoTime();
-            boolean wantsBomb = bots[player].useSpecialMove(field);
-            long bombNanos = System.nanoTime() - started;
-            String search = replay == null ? null : searchInfo(bots[player], player);
             mine.calls++;
-            mine.totalNanos += moveNanos;
-            mine.maxNanos = Math.max(mine.maxNanos, Math.max(moveNanos, bombNanos));
-            if (moveNanos > MOVE_LIMIT_NANOS) column = -1;
-            if (bombNanos > MOVE_LIMIT_NANOS) wantsBomb = false;
-            boolean mayBomb = column >= 0 && column < referee.columns && referee.isLegal(Board.action(column, true));
+            mine.totalNanos += turn.columnNanos;
+            mine.maxNanos = Math.max(mine.maxNanos, Math.max(turn.columnNanos, turn.bombNanos));
+            if (turn.player != player) throw new AssertionError("turn " + turns.indexOf(turn) + ": the engine asked player " + turn.player + ", our Board expects " + player);
 
-            if (column < 0 || column >= referee.columns || referee.columnHeight[column] == referee.rows) {
+            boolean wasPlaced = placed < history.size() && seatOf(history.get(placed).player()) == player;
+            if (!wasPlaced) {
                 mine.skippedTurns++; // nothing is placed, but the turn counts toward the cooldown
-                if (wantsBomb && referee.bombCooldown[player] == 0) referee.bombCooldown[player] = Board.BOMB_COOLDOWN; // the arena resets it even so
-                referee.skipTurn();
-                if (replay != null) replay.append(',').append(frame(referee, player, column, false, true, moveNanos, search, -1));
+                boolean bombAnswered = turn.wantsBomb && turn.bombNanos <= MOVE_LIMIT_NANOS;
+                if (bombAnswered && board.bombCooldown[player] == 0) board.bombCooldown[player] = Board.BOMB_COOLDOWN; // the engine resets it even so
+                board.skipTurn();
+                if (replay != null) replay.append(',').append(frame(board, player, turn.column, false, true, turn.columnNanos, turn.search, -1));
                 continue;
             }
 
-            boolean bombed = wantsBomb && mayBomb;
-            int landingRow = referee.rows - 1 - referee.columnHeight[column];
-            referee.play(Board.action(column, bombed));
-            history.add(new Move(bombed, column, colour));
-            if (bombed) mine.bombs++;
-            winner = referee.winner(); // any line wins for the player who just moved
+            Move move = history.get(placed++);
+            int column = move.column(), action = Board.action(column, move.isSpecialMove());
+            if (!board.isLegal(action)) throw new AssertionError("turn " + turns.indexOf(turn) + ": the engine played " + Tools.describeAction(action) + ", our rules don't allow it");
+            int landingRow = board.rows - 1 - board.columnHeight[column];
+            board.play(action);
+            if (move.isSpecialMove()) mine.bombs++;
             if (replay != null) {
-                String json = frame(referee, player, column, bombed, false, moveNanos, search, winner);
-                replay.append(',').append(bombed ? json.replace("\"blast\":null", "\"blast\":[" + landingRow + "," + column + "]") : json);
+                String json = frame(board, player, column, move.isSpecialMove(), false, turn.columnNanos, turn.search, board.winner());
+                replay.append(',').append(move.isSpecialMove() ? json.replace("\"blast\":null", "\"blast\":[" + landingRow + "," + column + "]") : json);
             }
         }
-        return new Result(winner, ply, stats);
+
+        if (placed != history.size()) throw new AssertionError("the engine placed " + history.size() + " quarks, our replay " + placed);
+        if (board.winner() != winner) throw new AssertionError("the engine's winner is " + winner + ", our Board's " + board.winner());
+        if (!Arrays.deepEquals(Referee.finalField(experiment), Tools.field(board)))
+            throw new AssertionError("the final boards differ; ours:\n" + Tools.render(board));
+        return new Result(winner, turns.size(), stats);
+    }
+
+    static int seatOf(SpaceOwnership colour) {
+        return colour == SpaceOwnership.FIRST_PLAYER ? 0 : 1;
+    }
+
+    /** One turn as a bot saw it: what it answered and how long each answer took. */
+    static final class Turn {
+        final int player;
+        volatile int column = -1;
+        volatile boolean wantsBomb;
+        volatile long columnNanos, bombNanos;
+        volatile String search;
+
+        Turn(int player) {
+            this.player = player;
+        }
+    }
+
+    /**
+     * Wraps a bot for the Experiment and notes each turn. The turn is listed before the bot is
+     * asked, so the list keeps the engine's order even if an answer comes too late.
+     */
+    static final class Recorder implements Algorithm {
+        final Algorithm bot;
+        final int player;
+        final List<Turn> turns;
+        final boolean withSearchInfo;
+        Turn current;
+
+        Recorder(Algorithm bot, int player, List<Turn> turns, boolean withSearchInfo) {
+            this.bot = bot;
+            this.player = player;
+            this.turns = turns;
+            this.withSearchInfo = withSearchInfo;
+        }
+
+        @Override
+        public int accelerateQuark(QuantumField field) {
+            Turn turn = current = new Turn(player);
+            turns.add(turn);
+            long started = System.nanoTime();
+            int column = bot.accelerateQuark(field);
+            turn.columnNanos = System.nanoTime() - started;
+            turn.column = column;
+            return column;
+        }
+
+        @Override
+        public boolean useSpecialMove(QuantumField field) {
+            Turn turn = current;
+            long started = System.nanoTime();
+            boolean wantsBomb = bot.useSpecialMove(field);
+            turn.bombNanos = System.nanoTime() - started;
+            turn.wantsBomb = wantsBomb;
+            if (withSearchInfo) turn.search = searchInfo(bot, player);
+            return wantsBomb;
+        }
     }
 
     /** One replay frame: who moved where, the board after it (rows top to bottom), and search details. */

@@ -27,19 +27,41 @@ application {
 }
 
 
-jar {
-    from sourceSets.main.output
-    dependsOn configurations.runtimeClasspath
-    from {
-        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
-    }
+// ---- Changed for our bots (ch.qc.meelik): one upload JAR per bot, and no other JAR ----
+// The starter's jar holds every class of the project, samples included, so it and the
+// distributions made from it are switched off. Instead each bot gets its own upload JAR, packaged
+// the way the starter's jar is: that bot class, its auxiliary classes (everything else under
+// ch/qc/meelik that is not a bot, such as the engine package) and the bundled runtime classpath.
+// A bot is a class named *Bot in ch/qc/meelik/bots.
+//   ./gradlew build         ->  build/libs/<Bot>.jar for every bot   (../qc.sh build runs botJars)
+//   ./gradlew QuarkBotJar   ->  build/libs/QuarkBot.jar
+jar { enabled = false }
+distZip { enabled = false }
+distTar { enabled = false }
+startScripts { enabled = false }
 
-    // Your changes here, change your bot class
-    manifest {
-        attributes(
-                'Bot-Class': 'ch.qc.starter.RandomBot',
-                'Main-Class': 'EmulatorRunner'
-        )
+def botNames = fileTree('src/main/java/ch/qc/meelik/bots').matching { include '*Bot.java' }.collect { it.name - '.java' }.sort()
+def botJars = botNames.collect { botName ->
+    tasks.register("${botName}Jar", Jar) {
+        archiveFileName = "${botName}.jar"
+        from(sourceSets.main.output) {
+            include 'ch/qc/meelik/**'
+            exclude { element ->
+                def bot = element.path =~ '^ch/qc/meelik/bots/(\\w+Bot)(\\$.*)?\\.class$'
+                bot.matches() && bot.group(1) != botName
+            }
+        }
+        dependsOn configurations.runtimeClasspath
+        from {
+            configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+        }
+        manifest {
+            attributes('Bot-Class': "ch.qc.meelik.bots.${botName}")
+        }
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
+tasks.register('botJars') {
+    dependsOn botJars
+}
+assemble.dependsOn botJars

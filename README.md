@@ -117,26 +117,31 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 - Local testing: in the starter project ([qc-starter/](qc-starter/)), edit `EmulatorRunner` to run
   `new Experiment(new MyBot(), new RandomBot())`, then `./gradlew run`. For fast runs without the
   window use `new Experiment(a, b, false, false)`. The target is > 90% wins against `RandomBot`.
-  `./qc.sh referee` does this headless for our JARs (see below).
+  `./qc.sh watch` does this for our bots, and `./qc.sh arena` plays the same `Experiment` headless.
 - Packaging: set `'Bot-Class'` in the `jar.manifest` block of `build.gradle`, run `./gradlew build`,
-  then upload `build/libs/quantumconnect-starter-1.0-SNAPSHOT.jar`.
+  then upload `build/libs/quantumconnect-starter-1.0-SNAPSHOT.jar`. That JAR bundles the whole
+  runtime classpath (the engine, slf4j, logback) next to the bot. Our bots live in the starter
+  project itself, so this works as described: `Bot-Class` names `ch.qc.meelik.bots.EvolvedBot`, and
+  the same build.gradle also packages every bot on its own, as `build/libs/<Name>.jar`. The upload
+  only reads the JAR, so the package name is ours to choose; `ch.qc.meelik` keeps it apart from
+  other teams' classes.
 
 ## This repo
 
 | Path | What |
 |---|---|
-| [src/bot/ch/qc/meelik/engine/Board.java](src/bot/ch/qc/meelik/engine/Board.java) | **The game model:** rules, the line counts behind wins, scores and threats, and bombs. No search. |
-| [src/bot/ch/qc/meelik/engine/Engine.java](src/bot/ch/qc/meelik/engine/Engine.java) | **The shared brain:** alpha-beta search and the arena adapter. The base class of every bot. |
-| [src/bot/ch/qc/meelik/bots/](src/bot/ch/qc/meelik/bots/) | **The bots, one class per solution method:** `QuarkBot` (simple), `EvolvedBot` (evolved weights). Each ships as its own JAR, `out/<Name>.jar`, holding the engine package plus that class. |
+| [qc-starter/](qc-starter/) | **The starter project, with our bots in it.** The organisers' project (engine library `libs/core-*.jar`, Gradle wrapper, `EmulatorRunner`) plus our sources under `src/main/java/ch/qc/meelik/`. Its `build.gradle` is the starter's with two changes: `Bot-Class` points at our bot, and a labelled block at the end adds one upload JAR per bot. To take a new starter version, copy `src/main/java/ch/qc/meelik/` and those two changes into it, as the starter's README says. |
+| [qc-starter/src/main/java/ch/qc/meelik/engine/Board.java](qc-starter/src/main/java/ch/qc/meelik/engine/Board.java) | **The game model:** rules, the line counts behind wins, scores and threats, and bombs. No search. |
+| [qc-starter/src/main/java/ch/qc/meelik/engine/Engine.java](qc-starter/src/main/java/ch/qc/meelik/engine/Engine.java) | **The shared brain:** alpha-beta search and the arena adapter. The base class of every bot. |
+| [qc-starter/src/main/java/ch/qc/meelik/bots/](qc-starter/src/main/java/ch/qc/meelik/bots/) | **The bots, one class per solution method:** `QuarkBot` (simple), `EvolvedBot` (evolved weights). Each ships as its own upload JAR, `qc-starter/build/libs/<Name>.jar`, packaged like the starter's: that class, the `engine` package and the bundled libraries. |
 | [docs/roadmap.md](docs/roadmap.md) | The solution methods, their status and branches, and how to add one. |
-| [src/stub/](src/stub/) | Stand-ins for the engine API (`Algorithm`, `QuantumField`, `SpaceOwnership`, `Move`), written from the slides. They are replaced by the real engine JAR once it is in `libs/`. |
-| [src/tools/](src/tools/) | Tools for analysis and testing. They never go in the JAR. |
-| [src/tools/replay.html](src/tools/replay.html) | The replay viewer template. `./qc.sh replay` and `./qc.sh league` write the recorded games into it. |
+| [qc-trainer/](qc-trainer/) | **Our own tools** for training, testing and analysis (arena, league, tuner, replay, conformance, the pre-upload check). They never go in an upload JAR. Its Gradle build compiles them against the starter project, for the IDE; `./qc.sh` builds and runs them with plain `javac`. |
+| [qc-trainer/src/main/resources/replay.html](qc-trainer/src/main/resources/replay.html) | The replay viewer template. `./qc.sh replay` and `./qc.sh league` write the recorded games into it. |
 | [training.txt](training.txt) | The model recipes. `./qc.sh train` trains every recipe that isn't in `params/` yet. |
 | [params/](params/) | The trained models: evaluation weights, one file per model, versioned, with the training log beside each. Each file starts with `#` lines saying how it was made. |
 | [league.txt](league.txt) | The entrants of the local league. The line `params/` enters every model. |
 | [results/league.md](results/league.md) | Latest league standings, committed so everyone sees them. |
-| [qc.sh](qc.sh) | Builds the bot and runs the tools. Uses `JAVA_HOME`, then `javac` on PATH, then a Windows JDK when running under WSL. |
+| [qc.sh](qc.sh) | Builds the bots and runs the tools. Needs a JDK 25: `JAVA_HOME`, then `javac` on PATH, then `~/.local/share/jdks/jdk-*`. |
 
 **How the bots work:**
 - **Board.** Columns are stacks of quarks. Every possible line of 6 cells (134 of them) keeps a count of each player's quarks. Dropping or removing a quark updates only the lines through that cell. That gives the win test (a count reaching 6), the evaluation, and optionally the threats (cells that would complete a line).
@@ -144,9 +149,14 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 - **Evaluation.** A line that only one player occupies is worth `16, 64, 256, 1024, 8192` points for 1–5 quarks in it (`Board.lineWeight`, per direction, so it can be tuned).
 - **Search.** Negamax with alpha-beta pruning, deepening one ply at a time within a 40 ms budget per move. It uses a 512k-entry hash table of positions it has already searched and orders moves by which ones caused cut-offs before.
 - **Moves.** Each move is a column plus whether to bomb, so the bomb is planned in `accelerateQuark` and only reported in `useSpecialMove`.
-- **Cooldowns.** The bot counts its own bomb cooldown. It works out the opponent's by comparing the board with what it expected after its own turn: one new quark means a plain move, a bigger change means a bomb.
-- **Rules,** checked against the engine: `./qc.sh referee conformance` has the engine's bombing bot
+- **Cooldowns.** The bot counts its own bomb cooldown, and the opponent's from `getMoveHistory()`, which marks every bomb.
+- **Why our own `Board`:** a search tries thousands of moves per turn and takes them back. The
+  engine's `QuantumField` can't do that for a bot: its constructor and its drop and blast methods
+  aren't public, bots may not use reflection, and it has no undo. So `Board` models the same rules
+  for the search, and everything else (the API types, the referee, the packaging) is the engine's.
+- **Rules,** checked against the engine: `./qc.sh conformance` has the engine's bombing bot
   play itself and replays every game on `Board`. All final boards and winners must be identical.
+  Every arena, league and replay game is checked the same way.
   The engine's rules are in `Board.FIRST_BOMB_WAIT`, `Board.play` (a bomb always blasts),
   `Board.winner()` (any line wins for the last mover) and `Board.skipTurn()` (counts toward the
   cooldown).
@@ -154,9 +164,9 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 **Commands:**
 
 ```sh
-./qc.sh build                        # compile; one JAR per bot: out/QuarkBot.jar, out/EvolvedBot.jar, ...
+./qc.sh build                        # compile; one upload JAR per bot: qc-starter/build/libs/QuarkBot.jar, ...
 ./qc.sh test                         # engine self-test
-./qc.sh arena quark random 20        # headless matches (bot specs below)
+./qc.sh arena quark random 20        # headless matches in the engine's Experiment (bot specs below)
 ./qc.sh replay quark random 2        # record games -> out/replay.html, a viewer with play/pause, speed, scrubbing
 ./qc.sh train                        # train the models in training.txt -> params/<name>.txt
 ./qc.sh league league.txt 2          # every bot plays every other twice, swapping sides
@@ -164,20 +174,21 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 ./qc.sh tune 150 4                   # evolve the scoring weights once -> out/tune-params.txt
 ./qc.sh census 6x7x4-nobomb 10       # distinct positions per ply; checked against the known Connect-4 counts
 ./qc.sh tree 5,6,5 2 6 3             # board, per-column scores, best line, game tree -> out/tree.svg
-./qc.sh jar ch.qc.meelik.bots.QuarkBot  # package one bot for upload -> out/QuarkBot.jar
-./qc.sh check out/QuarkBot.jar       # pre-upload check: manifest, size, forbidden packages
-./qc.sh referee jar:out/EvolvedBot.jar ch.cern.quantumconnect.bots.LinearBot 10
-                                     # play in the engine's own Experiment (Java 25)
-./qc.sh referee conformance 300      # replay engine games on our Board: same boards, same winners
+./qc.sh jar QuarkBot                 # package one bot for upload -> qc-starter/build/libs/QuarkBot.jar
+./qc.sh check qc-starter/build/libs/QuarkBot.jar
+                                     # pre-upload check: manifest, engine bundled, forbidden packages,
+                                     #   and one game with the JAR loaded on its own
+./qc.sh arena jar:qc-starter/build/libs/EvolvedBot.jar ch.cern.quantumconnect.bots.LinearBot 10
+                                     # against the engine's own bots
+./qc.sh conformance 300              # replay engine games on our Board: same boards, same winners
 ./qc.sh watch quark:params/tl-d5-s6.txt quark:params/es-d3-s1.txt
                                      # one game in the engine's window, as qc-starter shows it
                                      #   (on WSL: sudo apt install libxi6 libxtst6 fontconfig)
 ```
 
-**Java versions:** the engine JAR is compiled for Java 25. With a JDK 25 (`JAVA_HOME`, `PATH`, or
-`~/.local/share/jdks/jdk-*`), `./qc.sh build` compiles the bot against the real engine and
-`referee` can run. With an older JDK, the bot compiles against the stand-ins in `src/stub` and
-everything but `referee` still works. The bot itself is compiled for Java 17, so it runs on both.
+**Java and downloads:** the engine library is compiled for Java 25, so everything needs a JDK 25.
+The first `./qc.sh build` downloads the logging API the engine uses (slf4j, into `out/deps`), and
+the starter's Gradle wrapper downloads Gradle and logback (into `~/.gradle`).
 
 **Bot specs** (used by `arena`, `replay` and `league.txt`):
 - `random`: a random legal column, never bombs.
@@ -202,7 +213,7 @@ The league's page, `out/league.html`, holds every game of the round robin, with 
 - **All matches:** a crosstable with one chip per game (W, ½, L for the row bot; first as X, then
   as O). Click a chip to watch that game; click a bot to list only its games.
 
-**Results so far** (laptop; Windows JDK 19 and the stand-in engine unless noted):
+**Results so far** (laptop; Windows JDK 19 and our own referee, before the switch to the engine, unless noted):
 
 - **Self-test:** passes.
   - The incremental board state matches a full rebuild over 26k random actions, including 2.6k blasts.
@@ -241,22 +252,22 @@ The league's page, `out/league.html`, holds every game of the round robin, with 
     finished above the hand-written `quark`, which came 12th.
   - Not a strict ladder: `es-d3-s1` lost 0–2 to the winner but beat `tl-d4-s4` 2–0.
   - `tl-d4-s5` lost no game (9 W, 17 D).
-- **In the engine's own `Experiment`** (`./qc.sh referee`): EvolvedBot against QuarkBot 3 W, 3 D,
+- **In the engine's own `Experiment`:** EvolvedBot against QuarkBot 3 W, 3 D,
   0 L; it won every game against the engine's `LinearBot` and `SpecialMoveBot`. No timeouts.
-  `./qc.sh referee conformance`: 300 engine games replayed on our `Board` (28,098 moves, 2,449
+  `./qc.sh conformance`: 300 engine games replayed on our `Board` (28,098 moves, 2,449
   bombs) with identical boards and winners.
 - **Timing:** the worst move was 42 ms when games ran one at a time, but up to 66–79 ms when
   several ran in parallel. The 100 ms limit has less margin than it looks if the arena machine is
   busy. Consider lowering `budgetNanos` from 40 ms.
 
-The local arena uses the bot's own rule model as the referee, so it can't catch a misread rule. Before uploading, check against the starter project's `Experiment`.
+The local arena plays in the engine's own `Experiment`, so local results follow the real rules and time limit.
 
 ### Working on several solutions (multi-developer)
 
 - **Git.** Each variant gets its own branch, and `main` always holds a bot that is safe to upload.
   `out/` is ignored and rebuilt by `./qc.sh build`.
-- **Each solution method is its own bot class** in `src/bot/ch/qc/meelik/bots/`, extending the
-  shared `Engine`, and its own JAR. `./qc.sh build` packages every bot. See
+- **Each solution method is its own bot class** in `qc-starter/src/main/java/ch/qc/meelik/bots/`,
+  extending the shared `Engine`, and its own JAR. `./qc.sh build` packages every bot. See
   [docs/roadmap.md](docs/roadmap.md) for the methods, their branches, and the hooks a bot can use.
 - **A model** (a set of tuned weights) is a file in `params/`. To add one, add a recipe line to
   `training.txt` and run `./qc.sh train`. It trains only the recipes that have no file yet and
@@ -353,7 +364,7 @@ the stack bitboard and the `position + mask` key all still work. What changes:
 ### Rule questions, answered by the engine
 
 The slides left these open. The engine's `Experiment` (core-2.0) answers them, and
-`./qc.sh referee conformance` checks that our `Board` agrees:
+`./qc.sh conformance` checks that our `Board` agrees:
 
 1. **When is the bomb ready?** After 10 of your own turns, then every 10th turn. Skipped turns
    count. A bomb asked for on cooldown is a plain drop.

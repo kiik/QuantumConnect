@@ -1,7 +1,8 @@
 # Roadmap: solution methods
 
-Each solution method is its own bot class in `src/bot/ch/qc/meelik/bots/`, extending the shared
-`Engine`, and ships as its own JAR (`out/<Name>.jar`: the engine package plus the bot class).
+Each solution method is its own bot class in `qc-starter/src/main/java/ch/qc/meelik/bots/`,
+extending the shared `Engine`, and ships as its own upload JAR (`qc-starter/build/libs/<Name>.jar`), packaged by the
+starter project's own build.gradle: the bot class, the `engine` package and the bundled engine library.
 
 | Bot | Method | Status | Where |
 |---|---|---|---|
@@ -37,8 +38,8 @@ the drop.
 ## Adding a method
 
 1. Branch from `main` and add `bots/<Name>Bot.java` with a public no-arg constructor.
-2. `./qc.sh build` packages it as `out/<Name>Bot.jar` automatically. `./qc.sh check` scans the JAR
-   for forbidden packages.
+2. `./qc.sh build` packages it as `qc-starter/build/libs/<Name>Bot.jar` automatically. `./qc.sh check` scans the JAR
+   for forbidden packages and plays one game with the JAR loaded on its own.
 3. Add it to `league.txt` by short name (`<name>` resolves to `ch.qc.meelik.bots.<Name>Bot`), then
    run `./qc.sh league` and `./qc.sh arena <name> quark 40`.
 4. Merge when `./qc.sh test` passes and the league shows an improvement over QuarkBot.

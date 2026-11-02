@@ -8,13 +8,13 @@ import java.util.List;
 /**
  * Records games for the browser replay viewer. The games are played here, in Java, exactly as in
  * {@link Arena}; the page only plays the recording back. Writes out/replay.html: the viewer
- * (src/tools/replay.html) with the bots and the games embedded. {@link League} writes its whole
- * round robin the same way, to out/league.html.
+ * (qc-trainer/src/main/resources/replay.html) with the bots and the games embedded. {@link League}
+ * writes its whole round robin the same way, to out/league.html.
  *
  * <p>Usage: Replay [botA=quark] [botB=random] [games=2] [out=out/replay.html], bot specs as in Arena.
  */
 public final class Replay {
-    static final Path TEMPLATE = Path.of("src/tools/replay.html");
+    static final Path TEMPLATE = Path.of("qc-trainer/src/main/resources/replay.html");
 
     public static void main(String[] args) throws Exception {
         String botA = args.length > 0 ? args[0] : "quark", botB = args.length > 1 ? args[1] : "random";
