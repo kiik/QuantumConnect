@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuantumConnect Replay</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #667085; --border: #d9dde5;
+    --board: #0b2545; --hole: #e9edf3; --x: #f5a33a; --o: #1497a5; --ring: #ffe74c; --blast: #e5484d;
+    --accent: #1d6fd6; --chart: #1d6fd6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --panel: #1b2029; --text: #e6e9ef; --muted: #98a2b3; --border: #2c3340;
+      --board: #0a1a33; --hole: #26303f; --accent: #5aa2ff; --chart: #5aa2ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--panel); }
+  h1 { font-size: 17px; margin: 0; }
+  select, button, input[type=range] { font: inherit; color: inherit; }
+  select { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; max-width: 100%; }
+  main { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 16px; padding: 16px; max-width: 1280px; margin: 0 auto; }
+  @media (max-width: 820px) { main { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  #board { width: 100%; height: auto; display: block; border-radius: 8px; }
+  .legend { display: flex; gap: 16px; margin-top: 10px; color: var(--muted); flex-wrap: wrap; }
+  .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .controls button { min-width: 40px; height: 36px; border: 1px solid var(--border); background: var(--panel); border-radius: 6px; cursor: pointer; }
+  .controls button:hover { border-color: var(--accent); }
+  #play { min-width: 76px; background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .row { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+  .row label { color: var(--muted); min-width: 52px; }
+  .row input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .row output { min-width: 82px; text-align: right; font-variant-numeric: tabular-nums; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  #banner { font-weight: 600; margin-bottom: 8px; min-height: 1.45em; }
+  #chart { width: 100%; height: 120px; display: block; cursor: pointer; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  #moves { max-height: 220px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 4px; }
+  #moves span { padding: 2px 6px; border-radius: 4px; cursor: pointer; font-variant-numeric: tabular-nums; border: 1px solid transparent; }
+  #moves span.x { color: var(--x); } #moves span.o { color: var(--o); }
+  #moves span.cur { border-color: var(--accent); }
+  #moves span.b { font-weight: 700; text-decoration: underline; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>QuantumConnect replay</h1>
+  <select id="game" aria-label="Game"></select>
+</header>
+<main>
+  <div class="stack">
+    <div class="card">
+      <svg id="board" role="img" aria-label="Board"></svg>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--x)"></span><b id="nameX"></b> (X, first)</span>
+        <span><span class="dot" style="background:var(--o)"></span><b id="nameO"></b> (O, second)</span>
+        <span><span class="dot" style="background:none;border:2px solid var(--ring)"></span>last move</span>
+        <span><span class="dot" style="background:none;border:2px dashed var(--blast);border-radius:2px"></span>blast</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="controls">
+        <button id="first" title="Start (Home)">⏮</button>
+        <button id="back" title="Step back (←)">◀</button>
+        <button id="play" title="Play / pause (space)">▶ Play</button>
+        <button id="fwd" title="Step forward (→)">▶</button>
+        <button id="last" title="End (End)">⏭</button>
+      </div>
+      <div class="row"><label for="speed">Speed</label><input id="speed" type="range" min="0" max="100" value="40"><output id="speedOut"></output></div>
+      <div class="row"><label for="scrub">Ply</label><input id="scrub" type="range" min="0" value="0"><output id="plyOut"></output></div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div id="banner"></div>
+      <dl>
+        <dt>Move</dt><dd id="move">–</dd>
+        <dt>Search</dt><dd id="search">–</dd>
+        <dt>Score</dt><dd id="score">–</dd>
+        <dt>Quarks</dt><dd id="count">–</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Score over the game (X's view)</h2>
+      <svg id="chart" preserveAspectRatio="none"></svg>
+      <div class="hint">Up favours X, down favours O, as judged by the bot that moved. Red dots are bombs. Click to jump.</div>
+    </div>
+    <div class="card">
+      <h2>Moves (column; b = bomb)</h2>
+      <div id="moves"></div>
+    </div>
+  </div>
+</main>
+<script>
+const GAMES = /*GAMES*/[];
+const ROWS = 8, COLS = 12, K = 6, WIN = 1 << 28;
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+let game = null, ply = 0, timer = null;
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function fmtScore(v) {
+  if (v === undefined) return '–';
+  if (v > WIN - 1000) return 'X wins in ' + (WIN - v);
+  if (v < 1000 - WIN) return 'O wins in ' + (WIN + v);
+  return (v > 0 ? '+' : '') + v;
+}
+
+function squash(v) { return v > WIN - 1000 ? 1 : v < 1000 - WIN ? -1 : Math.tanh(v / 4000); }
+
+function winningCells(board, who) {
+  const cells = [];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+    for (const [dr, dc] of [[0, 1], [1, 0], [1, 1], [1, -1]]) {
+      const line = [];
+      for (let i = 0; i < K; i++) {
+        const rr = r + i * dr, cc = c + i * dc;
+        if (rr < 0 || rr >= ROWS || cc < 0 || cc >= COLS || board[rr * COLS + cc] !== who) break;
+        line.push(rr * COLS + cc);
+      }
+      if (line.length === K) cells.push(...line);
+    }
+  return new Set(cells);
+}
+
+function drawBoard() {
+  const svg = $('board');
+  svg.setAttribute('viewBox', `0 0 ${COLS} ${ROWS + 0.6}`);
+  svg.replaceChildren();
+  const f = game.plies[ply];
+  el('rect', { x: 0, y: 0, width: COLS, height: ROWS, rx: 0.25, fill: 'var(--board)' }, svg);
+  let lastRow = -1; // the quark just dropped is the top one in its column (a bomb removes it)
+  if (ply > 0 && !f.skip && !f.bomb) for (let r = 0; r < ROWS && lastRow < 0; r++) if (f.board[r * COLS + f.c] !== '.') lastRow = r;
+  const win = f.w >= 0 ? winningCells(f.board, f.w === 0 ? 'X' : 'O') : new Set();
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const ch = f.board[r * COLS + c];
+    el('circle', { cx: c + 0.5, cy: r + 0.5, r: 0.4, fill: ch === 'X' ? 'var(--x)' : ch === 'O' ? 'var(--o)' : 'var(--hole)' }, svg);
+    if (win.has(r * COLS + c)) el('circle', { cx: c + 0.5, cy: r + 0.5, r: 0.17, fill: '#fff', opacity: 0.85 }, svg);
+  }
+  if (lastRow >= 0) el('circle', { cx: f.c + 0.5, cy: lastRow + 0.5, r: 0.42, fill: 'none', stroke: 'var(--ring)', 'stroke-width': 0.08 }, svg);
+  if (f.blast) {
+    const [br, bc] = f.blast, r0 = Math.max(0, br - 1), c0 = Math.max(0, bc - 1);
+    const r1 = Math.min(ROWS - 1, br + 1), c1 = Math.min(COLS - 1, bc + 1);
+    el('rect', { x: c0 + 0.04, y: r0 + 0.04, width: c1 - c0 + 0.92, height: r1 - r0 + 0.92, rx: 0.15, fill: 'var(--blast)', 'fill-opacity': 0.18,
+      stroke: 'var(--blast)', 'stroke-width': 0.07, 'stroke-dasharray': '0.18 0.12' }, svg);
+  }
+  for (let c = 0; c < COLS; c++) {
+    const t = el('text', { x: c + 0.5, y: ROWS + 0.45, 'text-anchor': 'middle', 'font-size': 0.36, fill: 'var(--muted)' }, svg);
+    t.textContent = c;
+  }
+}
+
+function drawChart() {
+  const svg = $('chart'), n = game.plies.length - 1, W = 1000, H = 120;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.replaceChildren();
+  const x = i => n ? i / n * W : 0, y = v => H / 2 - squash(v) * (H / 2 - 6);
+  el('line', { x1: 0, x2: W, y1: H / 2, y2: H / 2, stroke: 'var(--border)', 'stroke-width': 1 }, svg);
+  const pts = game.plies.map((f, i) => f.v !== undefined ? `${x(i)},${y(f.v)}` : null).filter(Boolean);
+  if (pts.length) el('polyline', { points: pts.join(' '), fill: 'none', stroke: 'var(--chart)', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }, svg);
+  game.plies.forEach((f, i) => { if (f.bomb) el('circle', { cx: x(i), cy: f.v !== undefined ? y(f.v) : H / 2, r: 4, fill: 'var(--blast)' }, svg); });
+  el('line', { x1: x(ply), x2: x(ply), y1: 0, y2: H, stroke: 'var(--text)', 'stroke-width': 1, opacity: 0.6, 'vector-effect': 'non-scaling-stroke' }, svg);
+}
+
+function drawMoves() {
+  const box = $('moves');
+  if (!box.childElementCount) {
+    game.plies.forEach((f, i) => {
+      if (i === 0) return;
+      const s = document.createElement('span');
+      s.className = (f.p === 0 ? 'x' : 'o') + (f.bomb ? ' b' : '');
+      s.textContent = `${f.skip ? '–' : f.c}${f.bomb ? 'b' : ''}`;
+      s.title = `ply ${i}`;
+      if (f.skip || f.bomb) s.title += f.skip ? ': turn skipped' : ': bomb';
+      s.onclick = () => seek(i);
+      box.appendChild(s);
+    });
+  }
+  [...box.children].forEach((s, i) => s.classList.toggle('cur', i + 1 === ply));
+  const cur = box.children[ply - 1];
+  if (cur) cur.scrollIntoView({ block: 'nearest' });
+}
+
+function render() {
+  const f = game.plies[ply], n = game.plies.length - 1, name = p => p === 0 ? game.x : game.o;
+  drawBoard(); drawChart(); drawMoves();
+  $('scrub').value = ply;
+  $('plyOut').textContent = `${ply} / ${n}`;
+  $('move').textContent = ply === 0 ? 'start position'
+    : f.skip ? `${f.p === 0 ? 'X' : 'O'} (${name(f.p)}): turn skipped (too slow or illegal column)`
+    : `${f.p === 0 ? 'X' : 'O'} (${name(f.p)}): column ${f.c}${f.bomb ? ', bomb' : ''}, ${f.ms} ms`;
+  $('search').textContent = f.d !== undefined ? `depth ${f.d}, ${(f.n / 1000).toFixed(0)}k nodes` : '–';
+  $('score').textContent = fmtScore(f.v);
+  const xs = (f.board.match(/X/g) || []).length, os = (f.board.match(/O/g) || []).length;
+  $('count').textContent = `X ${xs}, O ${os}`;
+  $('banner').textContent = ply === n ? `Result: ${game.result}` : '';
+}
+
+function seek(i) {
+  ply = Math.max(0, Math.min(game.plies.length - 1, i));
+  render();
+  history.replaceState(null, '', `#g=${GAMES.indexOf(game)}&ply=${ply}`);
+}
+
+function speed() { return 0.5 * Math.pow(40, $('speed').value / 100); } // 0.5 to 20 moves per second
+
+function setPlaying(on) {
+  clearTimeout(timer); timer = null;
+  $('play').textContent = on ? '❚❚ Pause' : '▶ Play';
+  if (!on) return;
+  if (ply >= game.plies.length - 1) seek(0);
+  const tick = () => {
+    if (ply >= game.plies.length - 1) return setPlaying(false);
+    seek(ply + 1);
+    timer = setTimeout(tick, 1000 / speed());
+  };
+  timer = setTimeout(tick, 1000 / speed());
+}
+
+function load(i) {
+  setPlaying(false);
+  game = GAMES[i];
+  $('nameX').textContent = game.x; $('nameO').textContent = game.o;
+  $('scrub').max = game.plies.length - 1;
+  $('moves').replaceChildren();
+  seek(0);
+}
+
+GAMES.forEach((g, i) => {
+  const o = document.createElement('option');
+  o.value = i; o.textContent = `Game ${i + 1}: ${g.x} (X) vs ${g.o} (O): ${g.result}, ${g.plies.length - 1} plies`;
+  $('game').appendChild(o);
+});
+$('game').onchange = e => load(+e.target.value);
+$('play').onclick = () => setPlaying(timer === null);
+$('first').onclick = () => { setPlaying(false); seek(0); };
+$('last').onclick = () => { setPlaying(false); seek(game.plies.length - 1); };
+$('back').onclick = () => { setPlaying(false); seek(ply - 1); };
+$('fwd').onclick = () => { setPlaying(false); seek(ply + 1); };
+$('scrub').oninput = e => { setPlaying(false); seek(+e.target.value); };
+const showSpeed = () => $('speedOut').textContent = speed().toFixed(1) + ' moves/s';
+$('speed').oninput = showSpeed; showSpeed();
+$('chart').onclick = e => {
+  const r = $('chart').getBoundingClientRect();
+  setPlaying(false); seek(Math.round((e.clientX - r.left) / r.width * (game.plies.length - 1)));
+};
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'SELECT') return;
+  if (e.key === ' ') { e.preventDefault(); setPlaying(timer === null); }
+  else if (e.key === 'ArrowLeft') $('back').onclick();
+  else if (e.key === 'ArrowRight') $('fwd').onclick();
+  else if (e.key === 'Home') $('first').onclick();
+  else if (e.key === 'End') $('last').onclick();
+});
+// Links like replay.html#g=1&ply=40 open that game at that ply.
+const hash = new URLSearchParams(location.hash.slice(1));
+if (GAMES.length) {
+  const g = Math.min(GAMES.length - 1, +hash.get('g') || 0);
+  $('game').value = g;
+  load(g);
+  if (hash.has('ply')) seek(+hash.get('ply'));
+} else $('banner').textContent = 'No games embedded. Run ./qc.sh replay.';
+</script>
+</body>
+</html>
