@@ -16,6 +16,9 @@ for the rules, the tools and the results so far.
   reflection. `./qc.sh check out/<Bot>.jar` scans for this.
 - Code style: textbook-like. Classes open with a short explanation of their concepts, code is grouped
   into labelled sections, and names say what things are (`lineQuarks`, `bombCooldown`, not `cnt`, `wait`).
+- The rules are the engine's (`qc-starter/libs/core-*.jar`, its `Experiment`), not the slides'. After
+  touching rules in `Board`, run `./qc.sh referee conformance` (needs a JDK 25), which replays real
+  engine games on `Board`.
 - `./qc.sh build` then `./qc.sh test` after any change to bot code. Use `./qc.sh league` or
   `./qc.sh arena` to compare against the previous version before claiming an improvement.
 - `out/` is build output and is not committed. Tuned parameter sets go in `params/` with their

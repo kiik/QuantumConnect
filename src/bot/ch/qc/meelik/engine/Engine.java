@@ -1,10 +1,12 @@
 package ch.qc.meelik.engine;
 
 import ch.cern.quantumconnect.core.Algorithm;
+import ch.cern.quantumconnect.core.Move;
 import ch.cern.quantumconnect.core.QuantumField;
 import ch.cern.quantumconnect.core.SpaceOwnership;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * The shared brain of every bot: chooses moves by alpha-beta search and talks to the arena.
@@ -23,10 +25,10 @@ import java.util.Arrays;
  *
  * <h2>Talking to the arena</h2>
  * Each turn the arena calls {@link #accelerateQuark} (pick a column) and then {@link #useSpecialMove}
- * (bomb or not). The engine decides both at once, as one action, and remembers the bomb decision
- * between the two calls. It counts its own bomb cooldown, and infers the opponent's by comparing
- * the board with what it expected after its own turn: one new quark means a plain move, anything
- * else a bomb. On the engine's board, player 0 is always this bot ({@link #ME}).
+ * (bomb or not), both before anything is placed. The engine decides both at once, as one action,
+ * and remembers the bomb decision between the two calls. It counts its own bomb cooldown, and the
+ * opponent's from the move history, which marks every bomb. Every turn counts toward a cooldown,
+ * also one lost to a timeout. On the engine's board, player 0 is always this bot ({@link #ME}).
  *
  * <h2>Writing a bot</h2>
  * A bot is a subclass with a public no-arg constructor, shipped as a JAR of the engine package
@@ -74,8 +76,7 @@ public abstract class Engine implements Algorithm {
     SpaceOwnership myColour;
     int plannedAction = NO_ACTION;
     int myCooldown = Board.FIRST_BOMB_WAIT, opponentCooldown = Board.FIRST_BOMB_WAIT;
-    /** The board as expected right after our last turn, to see what the opponent did since. */
-    int[] ownersAfterMyTurn;
+    int myTurns;
     long timeUsedNanos;
 
     protected Engine(Board board) {
@@ -84,11 +85,16 @@ public abstract class Engine implements Algorithm {
         historyScore = new int[2][board.actionCount()];
     }
 
-    /** Starts a new game on an empty board, forgetting all search memory. Weights are kept. */
+    /** Starts a new game on an empty board, forgetting the match and all search memory. Weights are kept. */
     public void newGame() {
         board.clear();
         Arrays.fill(tableKey, 0);
         for (int[] scores : historyScore) Arrays.fill(scores, 0);
+        myColour = null;
+        plannedAction = NO_ACTION;
+        myCooldown = opponentCooldown = Board.FIRST_BOMB_WAIT;
+        myTurns = 0;
+        timeUsedNanos = 0;
     }
 
     // ------------------------------------------------------------------ the arena interface
@@ -99,7 +105,8 @@ public abstract class Engine implements Algorithm {
         SpaceOwnership[][] grid = field.getField();
         if (myColour == null) myColour = whoAmI(field, grid);
         board.load(grid, myColour);
-        updateOpponentCooldown();
+        updateOpponentCooldown(field.getMoveHistory());
+        myTurns++;
         board.bombCooldown[ME] = myCooldown;
         board.bombCooldown[OPPONENT] = opponentCooldown;
         plannedAction = chooseAction(timeUsedNanos > MATCH_TIME_GUARD_NANOS ? budgetNanos / 8 : budgetNanos);
@@ -110,9 +117,8 @@ public abstract class Engine implements Algorithm {
     @Override
     public boolean useSpecialMove(QuantumField field) {
         if (plannedAction == NO_ACTION) return false;
-        board.play(plannedAction); // the board as we expect the arena to have it after our turn
+        board.play(plannedAction); // counts the turn toward our cooldown, and resets it after a bomb
         myCooldown = board.bombCooldown[ME];
-        ownersAfterMyTurn = board.owner.clone();
         return Board.isBomb(plannedAction);
     }
 
@@ -128,17 +134,17 @@ public abstract class Engine implements Algorithm {
         return SpaceOwnership.FIRST_PLAYER;
     }
 
-    /** Reads the opponent's last action off the board: one new quark is a plain move, more change a bomb. */
-    void updateOpponentCooldown() {
-        if (ownersAfterMyTurn == null) { // our first turn: the opponent made at most one plain move
-            if (board.quarkCount > 0 && opponentCooldown > 0) opponentCooldown--;
-            return;
-        }
-        int changedCells = 0;
-        for (int cell = 0; cell < board.cellCount; cell++) if (board.owner[cell] != ownersAfterMyTurn[cell]) changedCells++;
-        if (changedCells == 1) opponentCooldown = Math.max(0, opponentCooldown - 1);
-        else if (changedCells > 1) opponentCooldown = Board.BOMB_COOLDOWN - 1;
-        // no change: the opponent's turn was skipped
+    /**
+     * Counts the opponent's turn since our last one toward its cooldown. The history lists every
+     * quark placed, marking bombs; a turn the opponent lost (too slow, full column) adds no entry
+     * but counts all the same. (The board can't tell: a bomb on an empty spot leaves it unchanged.)
+     */
+    void updateOpponentCooldown(List<Move> history) {
+        boolean opponentHasMoved = myTurns > 0 || myColour == SpaceOwnership.SECOND_PLAYER;
+        if (!opponentHasMoved) return;
+        Move last = history.isEmpty() ? null : history.get(history.size() - 1);
+        if (last != null && last.player() != myColour && last.isSpecialMove()) opponentCooldown = Board.BOMB_COOLDOWN - 1;
+        else if (opponentCooldown > 0) opponentCooldown--;
     }
 
     // ------------------------------------------------------------------ choosing an action
@@ -202,8 +208,7 @@ public abstract class Engine implements Algorithm {
 
         Board b = board;
         int mover = b.sideToMove;
-        if (b.completedLines[1 - mover] > 0) return ply - WIN; // the opponent's last move won
-        if (b.completedLines[mover] > 0) return WIN - ply; // a blast's collapse handed us a line
+        if (b.hasLine()) return ply - WIN; // any line wins for the last mover: the opponent
         if (b.isFull()) return 0;
         if (depth == 0 || ply == MAX_PLY - 1) return evaluate();
 

@@ -13,17 +13,23 @@ import java.util.concurrent.Future;
 
 /**
  * Round robin between the entrants of a league file, ranked like the real tournament: wins, then
- * draws. Writes the standings and a head-to-head table to results/league.md, so they can be
- * committed alongside the change that moved them.
+ * draws. Every pair plays the given number of games, alternating who starts, so with 2 games each
+ * bot has the first move once. Writes the standings and a head-to-head table to results/league.md,
+ * so they can be committed alongside the change that moved them, and every game to
+ * out/league.html, the replay viewer with highscores and a table of all matches.
  *
  * <p>Usage: League [file=league.txt] [games per pair=8] [threads=cores/2]. Each non-comment line of
- * the file is "label spec", with spec as in {@link Arena}. Games run in parallel, which slows each
- * bot down a little; keep threads at or below half the cores so time budgets stay realistic.
+ * the file is "label spec", with spec as in {@link Arena}, or a directory ending in "/": every
+ * parameter file in it is an entrant, labelled by its file name and played by QuarkBot's search.
+ * Games run in parallel, which slows each bot down a little; keep threads at or below half the
+ * cores so time budgets stay realistic.
  */
 public final class League {
     record Entrant(String label, String spec) { }
 
-    record Pairing(int first, int second, Future<Arena.Result> result) { }
+    record Pairing(int first, int second, StringBuilder frames, Future<Arena.Result> result) { }
+
+    static final Path REPORT = Path.of("results/league.md"), REPLAY = Path.of("out/league.html");
 
     public static void main(String[] args) throws Exception {
         Path file = Path.of(args.length > 0 ? args[0] : "league.txt");
@@ -41,16 +47,19 @@ public final class League {
                     int first = game % 2 == 0 ? a : b, second = first == a ? b : a;
                     String firstSpec = entrants.get(first).spec(), secondSpec = entrants.get(second).spec();
                     long seed = 1000L * a + 31L * b + game;
-                    pairings.add(new Pairing(first, second, pool.submit(
-                            () -> Arena.play(Arena.make(firstSpec, seed), Arena.make(secondSpec, seed + 1), null))));
+                    StringBuilder frames = new StringBuilder();
+                    pairings.add(new Pairing(first, second, frames, pool.submit(
+                            () -> Arena.play(Arena.make(firstSpec, seed), Arena.make(secondSpec, seed + 1), frames))));
                 }
 
         int[][] winsDrawsLosses = new int[n][3];
         double[][] points = new double[n][n]; // points[row][column]: row bot's points against column bot
         Arena.PlayerStats[] stats = new Arena.PlayerStats[n];
         for (int i = 0; i < n; i++) stats[i] = new Arena.PlayerStats();
+        List<String> games = new ArrayList<>();
         for (Pairing pairing : pairings) {
             Arena.Result result = pairing.result().get();
+            games.add(Replay.gameJson(entrants.get(pairing.first()).label(), entrants.get(pairing.second()).label(), result, pairing.frames()));
             int[] seats = {pairing.first(), pairing.second()};
             for (int seat = 0; seat < 2; seat++) {
                 int bot = seats[seat], opponent = seats[1 - seat];
@@ -85,9 +94,13 @@ public final class League {
         }
 
         System.out.print(report);
-        Files.createDirectories(Path.of("results"));
-        Files.writeString(Path.of("results/league.md"), report);
-        System.out.println("\nwritten to results/league.md");
+        Files.createDirectories(REPORT.toAbsolutePath().getParent());
+        Files.writeString(REPORT, report);
+        System.out.println("\nwritten to " + REPORT);
+
+        List<String> bots = new ArrayList<>();
+        for (Entrant entrant : entrants) bots.add(Replay.botJson(entrant.label(), entrant.spec()));
+        Replay.write(REPLAY, bots, games);
     }
 
     static List<Entrant> readEntrants(Path file) throws Exception {
@@ -95,9 +108,22 @@ public final class League {
         for (String line : Files.readAllLines(file)) {
             if (line.isBlank() || line.startsWith("#")) continue;
             String[] parts = line.trim().split("\\s+", 2);
-            entrants.add(new Entrant(parts[0], parts[1]));
+            if (parts.length == 1 && parts[0].endsWith("/")) entrants.addAll(modelsIn(Path.of(parts[0])));
+            else entrants.add(new Entrant(parts[0], parts[1]));
         }
         return entrants;
+    }
+
+    /** Every parameter file in a directory, as an entrant "name quark:dir/name.txt", sorted by name. */
+    static List<Entrant> modelsIn(Path directory) throws Exception {
+        List<Entrant> models = new ArrayList<>();
+        try (var files = Files.list(directory)) {
+            for (Path file : files.sorted().toList()) {
+                String name = file.getFileName().toString();
+                if (name.endsWith(".txt")) models.add(new Entrant(name.substring(0, name.length() - 4), "quark:" + directory.resolve(name).toString().replace('\\', '/')));
+            }
+        }
+        return models;
     }
 
     static String formatPoints(double points) {

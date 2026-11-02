@@ -7,6 +7,7 @@ Each solution method is its own bot class in `src/bot/ch/qc/meelik/bots/`, exten
 |---|---|---|---|
 | `QuarkBot` | Alpha-beta search, hand-written line weights | Done; the safe upload | `main` |
 | `EvolvedBot` | Same search, line weights evolved by self-play | Done; 65% against QuarkBot | `main` |
+| models in `params/` | QuarkBot's search with weights from `training.txt` recipes: evolved from the defaults (`es-*`) or refined from a model (`tl-*`) | `./qc.sh train`; compared in the league | `main`, [params/](../params/) |
 | `ThreatBot` | Threat-sequence search for forced wins beyond alpha-beta's depth | Skeleton and design | branch `threat-search`, [docs/threat-search.md](threat-search.md) |
 | `ParityBot` | Odd/even row rules (who wins the zugzwang endgame) in the evaluation | Skeleton and design | branch `parity-rules`, [docs/parity.md](parity.md) |
 | `NetBot` | A small neural network as the evaluation | Planned | README, "Two approaches: simple and complex", step 2b |

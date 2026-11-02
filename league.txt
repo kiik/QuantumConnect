@@ -1,6 +1,8 @@
 # League entrants: "label spec" per line (spec as in Arena: random, quark[@ms][/depth][:params file],
-# tuned, or a fully qualified bot class). ./qc.sh league [file] [games per pair] [threads]
+# tuned, or a bot name), or a directory ending in "/", whose parameter files all join as models.
+# ./qc.sh league [file] [games per pair] [threads]
 random   random
 depth2   quark/2
 quark    quark
 evolved  evolved
+params/

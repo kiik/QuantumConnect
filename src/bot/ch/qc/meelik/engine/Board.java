@@ -15,10 +15,13 @@ import java.util.Random;
  *   <li>Quarks drop into columns and stack from the bottom (gravity).
  *   <li>A player wins with {@link #lineLength} of their quarks in a row: horizontally, vertically or
  *       diagonally.
- *   <li>The bomb: after dropping a quark, a player may blast the 3x3 cells around it, that quark
- *       included. Quarks above the blast fall down. A player may bomb once every
- *       {@link #BOMB_COOLDOWN} of their own moves.
+ *   <li>The bomb: instead of a plain drop, a player may drop and blast the 3x3 cells around the
+ *       quark, that quark included. Quarks above the blast fall down. A player may bomb once every
+ *       {@link #BOMB_COOLDOWN} of their own turns, and not before {@link #FIRST_BOMB_WAIT} turns.
+ *   <li>After every turn the arena looks for a line anywhere on the board. If there is one, the
+ *       player who just moved wins, whoever's line it is (a blast can make the opponent's).
  * </ul>
+ * These are the rules of the engine's {@code Experiment} (core-2.0), read from its bytecode.
  *
  * <h2>Representation</h2>
  * Cells are numbered column by column: {@code cell = column * rows + height}, where height 0 is the
@@ -43,10 +46,10 @@ public final class Board {
     // ------------------------------------------------------------------ rules
 
     public static final int EMPTY = -1;
-    /** Own moves from one bomb to the next. */
+    /** Own turns from one bomb to the next. */
     public static final int BOMB_COOLDOWN = 10;
-    /** Own moves before the first bomb. Assumption: ready from the first move (an open question). */
-    public static final int FIRST_BOMB_WAIT = 0;
+    /** Own turns before the first bomb: the arena's counter starts at 0 and allows a bomb at 10. */
+    public static final int FIRST_BOMB_WAIT = 10;
 
     /** Line directions as (column step, height step); both diagonals share a weight by symmetry. */
     static final int[][] DIRECTIONS = {{1, 0}, {0, 1}, {1, 1}, {1, -1}};
@@ -223,9 +226,12 @@ public final class Board {
      * quarks falling after a blast also wins (an open question).
      */
     public int winner() {
-        int justMoved = 1 - sideToMove;
-        if (completedLines[justMoved] > 0) return justMoved;
-        return completedLines[sideToMove] > 0 ? sideToMove : -1;
+        return hasLine() ? 1 - sideToMove : -1;
+    }
+
+    /** True when either player has a complete line: the game is over, won by the last mover. */
+    public boolean hasLine() {
+        return completedLines[0] + completedLines[1] > 0;
     }
 
     /** True when the player would complete a line by dropping in this column now. Needs tracksThreats. */
@@ -250,11 +256,9 @@ public final class Board {
             return;
         }
         int player = sideToMove, column = columnOf(action), height = columnHeight[column];
-        addQuark(column, player);
-        if (completedLines[player] == 0) { // a winning drop ends the match before the bomb
-            for (int c = Math.max(0, column - 1); c <= Math.min(columns - 1, column + 1); c++) blast(c, height - 1, height + 1);
-            bombCooldown[player] = BOMB_COOLDOWN;
-        }
+        addQuark(column, player); // the bomb is decided before the drop, so it blasts even a winning quark
+        for (int c = Math.max(0, column - 1); c <= Math.min(columns - 1, column + 1); c++) blast(c, height - 1, height + 1);
+        bombCooldown[player] = BOMB_COOLDOWN;
         endTurn(player);
     }
 
@@ -272,9 +276,9 @@ public final class Board {
         removeTopQuark(column);
     }
 
-    /** Passes the turn without a move, as the arena does when a bot is too slow. */
+    /** Passes the turn without a move, as the arena does when a bot is too slow; it still counts toward the cooldown. */
     public void skipTurn() {
-        sideToMove = 1 - sideToMove;
+        endTurn(sideToMove);
     }
 
     private void endTurn(int player) {

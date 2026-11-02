@@ -27,9 +27,15 @@ import java.util.concurrent.Future;
  *
  * <p>Every {@link #VALIDATE_EVERY} generations the current parameters play the untouched defaults
  * on a fixed set of openings. The best validated parameters are saved, with how they were made, to
- * out/tune-params.txt, which Arena can use as "tuned" or "quark:out/tune-params.txt".
+ * the output file (out/tune-params.txt unless given), which Arena can use as
+ * "quark:&lt;file&gt;" ("tuned" for the default file). If no generation beats the defaults, the final
+ * parameters are saved anyway, with their score, so that every run leaves a model behind.
+ *
+ * <p>Starting from another model's file instead of the defaults is transfer learning: the run
+ * refines that model, which may be tuned at a different search depth.
  *
  * <p>Usage: Tune [generations=40] [depth=4] [pairs=16] [openings=8] [threads=cores] [seed=1]
+ * [out=out/tune-params.txt] [start=defaults]. {@code ./qc.sh train} runs the recipes in training.txt.
  */
 public final class Tune {
     static final Path OUTPUT = Path.of("out/tune-params.txt");
@@ -43,15 +49,22 @@ public final class Tune {
         int generations = intArg(args, 0, 40), pairs = intArg(args, 2, 16), openingsPerPair = intArg(args, 3, 8);
         int threads = intArg(args, 4, Runtime.getRuntime().availableProcessors()), seed = intArg(args, 5, 1);
         searchDepth = intArg(args, 1, 4);
+        Path output = args.length > 6 ? Path.of(args[6]) : OUTPUT;
+        String start = args.length > 7 ? args[7] : "defaults";
         Random random = new Random(seed);
         ExecutorService pool = Executors.newFixedThreadPool(threads);
 
         double[] defaults = Tools.parameters(new QuarkBot());
-        double[] current = defaults.clone();
-        current[current.length - 1] = Math.log(16); // start the bomb bonus where it can move
-        double bestScore = 0.5;
-        System.out.printf("tuning %d parameters: depth %d, %d pairs x %d openings x 2 colours per generation, %d threads%n",
-                current.length, searchDepth, pairs, openingsPerPair, threads);
+        double[] current;
+        if (start.equals("defaults")) {
+            current = defaults.clone();
+            current[current.length - 1] = Math.log(16); // start the bomb bonus where it can move
+        } else {
+            current = load(Path.of(start));
+        }
+        double bestScore = 0.5, lastScore = 0.5;
+        String recipe = String.format("depth %d, %d pairs x %d openings, seed %d, start %s", searchDepth, pairs, openingsPerPair, seed, start);
+        System.out.printf("tuning %d parameters: %s; %d threads -> %s%n", current.length, recipe, threads, output);
 
         for (int generation = 1; generation <= generations; generation++) {
             long started = System.nanoTime();
@@ -75,20 +88,30 @@ public final class Tune {
             System.out.printf("gen %3d  mean |score difference| %.2f  %.1f s%n", generation, meanAbsDifference, (System.nanoTime() - started) / 1e9);
 
             if (generation % VALIDATE_EVERY == 0 || generation == generations) {
-                double score = validate(pool, current, defaults);
-                Engine shown = new QuarkBot();
-                Tools.applyParameters(shown, current);
-                System.out.printf("  vs defaults: %.1f%%  %s%n", 100 * score, Tools.describeWeights(shown));
-                if (score > bestScore) {
-                    bestScore = score;
-                    save(current, String.format("Tune gen %d/%d, depth %d, %d pairs x %d openings, seed %d: %.1f%% vs defaults (%d games)%n# %s",
-                            generation, generations, searchDepth, pairs, openingsPerPair, seed, 100 * score, 2 * VALIDATION_OPENINGS, Tools.describeWeights(shown)));
-                    System.out.println("  new best -> " + OUTPUT);
+                lastScore = validate(pool, current, defaults);
+                System.out.printf("  vs defaults: %.1f%%  %s%n", 100 * lastScore, describe(current));
+                if (lastScore > bestScore) {
+                    bestScore = lastScore;
+                    save(output, current, String.format("Tune gen %d/%d, %s: %.1f%% vs defaults (%d games)%n# %s",
+                            generation, generations, recipe, 100 * lastScore, 2 * VALIDATION_OPENINGS, describe(current)));
+                    System.out.println("  new best -> " + output);
                 }
             }
         }
         pool.shutdown();
-        System.out.printf("best: %.1f%% vs defaults at depth %d%s%n", 100 * bestScore, searchDepth, bestScore == 0.5 ? " (no improvement found)" : "");
+        if (bestScore == 0.5) {
+            save(output, current, String.format("Tune final gen %d, %s: %.1f%% vs defaults (%d games), no improvement found%n# %s",
+                    generations, recipe, 100 * lastScore, 2 * VALIDATION_OPENINGS, describe(current)));
+            System.out.printf("no improvement found; final parameters (%.1f%% vs defaults) -> %s%n", 100 * lastScore, output);
+        } else {
+            System.out.printf("best: %.1f%% vs defaults at depth %d -> %s%n", 100 * bestScore, searchDepth, output);
+        }
+    }
+
+    static String describe(double[] parameters) {
+        Engine shown = new QuarkBot();
+        Tools.applyParameters(shown, parameters);
+        return Tools.describeWeights(shown);
     }
 
     /** Score of the parameters against the defaults on a fixed set of openings. */
@@ -161,9 +184,9 @@ public final class Tune {
     }
 
     /** A parameter file: '#' lines saying how it was made, then the log-space parameters on one line. */
-    static void save(double[] parameters, String provenance) throws Exception {
-        Files.createDirectories(OUTPUT.toAbsolutePath().getParent());
-        Files.writeString(OUTPUT, "# " + provenance + "\n# written " + LocalDateTime.now().withNano(0) + "\n"
+    static void save(Path output, double[] parameters, String provenance) throws Exception {
+        Files.createDirectories(output.toAbsolutePath().getParent());
+        Files.writeString(output, "# " + provenance + "\n# written " + LocalDateTime.now().withNano(0) + "\n"
                 + Arrays.toString(parameters).replaceAll("[\\[\\],]", "") + "\n");
     }
 

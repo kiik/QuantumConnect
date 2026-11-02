@@ -153,6 +153,9 @@ public final class SelfTest {
             engine.board.lineWeight[Board.VERTICAL][2] = 3;
             playRandomly(engine.board, random, random.nextInt(engine.board.cellCount / 2));
             if (isOver(engine.board)) continue;
+            // The first bomb comes after 10 turns, later than these short games reach: shorten the
+            // wait to 0-2 turns, so that bombs are tried inside the tree.
+            for (int player = 0; player < 2; player++) engine.board.bombCooldown[player] = random.nextInt(3);
             if (engine.board.bombCooldown[0] == 0 || engine.board.bombCooldown[1] == 0) withBombReady++;
             long key = engine.board.positionKey();
             int expected = minimax(engine, depth, 0), actual = engine.searchValue(depth);

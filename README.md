@@ -1,6 +1,8 @@
 # QuantumConnect
 
-Meelik's try. Rules source: [info-session slides](<Data/QuantumConnect - Particle Collision Challenge v2.pdf>).
+Meelik's try. Rules sources: the [info-session slides](<Data/QuantumConnect - Particle Collision Challenge v2.pdf>)
+and the engine itself (`qc-starter/libs/core-2.0-SNAPSHOT.jar`), whose `Experiment` decides every
+detail the slides leave open. Where they differ, this README follows the engine.
 
 ## The challenge
 
@@ -32,25 +34,37 @@ If you can write a loop and compare numbers, you can compete.
 
 ### A turn
 
-1. The arena calls `accelerateQuark(field)`. You have **100 ms**.
-2. You return a column `0..11`. The column must not be full.
-3. The quark falls to the lowest free row in that column.
-4. **Win check.** If there are six in a row, the match ends here.
-5. The arena calls `useSpecialMove(field)` (also 100 ms). Both methods are called every turn.
-6. The other player moves. This repeats until the field is full.
+1. The arena calls `accelerateQuark(field)`. You have **100 ms**. You return a column `0..11`
+   that is not full.
+2. The arena calls `useSpecialMove(field)` (also 100 ms), on the same field: **nothing has been
+   placed yet**. Both methods are called every turn.
+3. If you asked for the bomb and may use it, the quark drops and blasts (below). Otherwise it
+   falls to the lowest free row in that column.
+4. **Win check.** If there are six in a row anywhere on the board, the player who just moved wins
+   and the match ends.
+5. The other player moves. This repeats until the field is full or 1000 turns have been played.
 
 ### The special move (bomb)
 
-- Return `true` from `useSpecialMove` to detonate at the quark you just dropped.
-- Everything in the 3×3 area around it is destroyed, including that quark and your own quarks.
+- Return `true` from `useSpecialMove` to detonate at the quark you are dropping this turn.
+- Everything in the 3×3 area around it is destroyed (clipped at the edges), including that quark
+  and your own quarks. The bomb is decided before the drop, so it blasts even a quark that would
+  have won.
 - **Gravity applies:** quarks above the blast fall down to fill the gaps.
-- Cooldown: once every **10 of your own moves**. The slides say "count before you detonate", so plan on tracking it yourself.
+- **Cooldown:** the engine counts your turns since your last bomb, starting from 0 at the start of
+  the match, and allows a bomb at 10. So your first bomb can come on your 11th turn, and after that
+  on every 10th turn. Every turn counts, also one that was skipped. Asking for a bomb on cooldown
+  just gives a plain drop. The engine doesn't tell you the counter, so track it yourself.
 - A bomb can erase an opponent's 5-in-a-row. It can also erase your own.
+- If quarks falling after a blast form six in a row, even the **opponent's**, the bomber wins: the
+  win goes to the player who just moved.
 
 ### How a match ends
 
-- **Win:** six connected quarks horizontally, vertically or diagonally ("the experiment collapses").
-- **Draw:** the field is full and nobody has six.
+- **Win:** six connected quarks horizontally, vertically or diagonally appear after your turn ("the
+  experiment collapses").
+- **Draw** ("uncertain"): the field is full and nobody has six, or 1000 turns (both players
+  together) have been played.
 - **Loss:** the bot uses a forbidden package, uses reflection, or breaks the sandbox.
 
 ### Limits
@@ -64,8 +78,10 @@ If you can write a loop and compare numbers, you can compete.
 | JAR size | 5 MB |
 | Bot name | 5–20 characters, unique this season |
 
-- If you exceed 100 ms or return a full column, **your turn is skipped**. This doesn't crash the
-  match, but an uncaught exception can end it.
+- If you exceed 100 ms or return a full or invalid column, the engine logs an error and **your
+  turn is skipped**: nothing is placed and the turn still counts toward your bomb cooldown. (The
+  starter README says you *lose* the game for a full column. The local engine only skips the turn,
+  but don't rely on it.)
 - Every move is logged. stdout is captured, so don't print inside the search.
 
 ## Building the bot
@@ -87,7 +103,7 @@ public class MyBot implements Algorithm {           // ch.cern.quantumconnect.co
 | `isSpaceEmpty(row, col)` | `boolean` |
 | `getField()` | `SpaceOwnership[][]`, a **copy** (`EMPTY`, `FIRST_PLAYER`, `SECOND_PLAYER`) |
 | `belongsToMe(row, col)` | `boolean`, relative to you; use it instead of assuming you are first or second |
-| `getMoveHistory()` | `List<Move>` |
+| `getMoveHistory()` | `List<Move>`, one `Move(isSpecialMove, column, player)` per quark placed (a skipped turn adds none) |
 
 Coordinates: **row 0 is the top**, column 0 is the left.
 
@@ -96,10 +112,12 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 - **Forbidden:** `java.net`, `java.io`, `java.lang.reflect`, `sun.*`, `com.sun.*`, `java.security`,
   `javax.crypto`, `java.lang.Thread*`, `java.util.concurrent.*`, and process or system access.
   That means **search single-threaded, with no background thinking**.
-- Every match creates a new instance, so don't cache state across games.
-- Local testing: in the starter project (`qc-starter`), edit `EmulatorRunner` to run
+- Every match should create a new instance, but the local `Experiment.restart()` reuses the old
+  ones, so reset per-match state when a new game starts.
+- Local testing: in the starter project ([qc-starter/](qc-starter/)), edit `EmulatorRunner` to run
   `new Experiment(new MyBot(), new RandomBot())`, then `./gradlew run`. For fast runs without the
   window use `new Experiment(a, b, false, false)`. The target is > 90% wins against `RandomBot`.
+  `./qc.sh referee` does this headless for our JARs (see below).
 - Packaging: set `'Bot-Class'` in the `jar.manifest` block of `build.gradle`, run `./gradlew build`,
   then upload `build/libs/quantumconnect-starter-1.0-SNAPSHOT.jar`.
 
@@ -113,9 +131,10 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 | [docs/roadmap.md](docs/roadmap.md) | The solution methods, their status and branches, and how to add one. |
 | [src/stub/](src/stub/) | Stand-ins for the engine API (`Algorithm`, `QuantumField`, `SpaceOwnership`, `Move`), written from the slides. They are replaced by the real engine JAR once it is in `libs/`. |
 | [src/tools/](src/tools/) | Tools for analysis and testing. They never go in the JAR. |
-| [src/tools/replay.html](src/tools/replay.html) | The replay viewer template. `./qc.sh replay` writes the recorded games into it. |
-| [params/](params/) | Evaluation parameter sets from `./qc.sh tune`, versioned. Each starts with `#` lines saying how it was made. |
-| [league.txt](league.txt) | The entrants of the local league. |
+| [src/tools/replay.html](src/tools/replay.html) | The replay viewer template. `./qc.sh replay` and `./qc.sh league` write the recorded games into it. |
+| [training.txt](training.txt) | The model recipes. `./qc.sh train` trains every recipe that isn't in `params/` yet. |
+| [params/](params/) | The trained models: evaluation weights, one file per model, versioned, with the training log beside each. Each file starts with `#` lines saying how it was made. |
+| [league.txt](league.txt) | The entrants of the local league. The line `params/` enters every model. |
 | [results/league.md](results/league.md) | Latest league standings, committed so everyone sees them. |
 | [qc.sh](qc.sh) | Builds the bot and runs the tools. Uses `JAVA_HOME`, then `javac` on PATH, then a Windows JDK when running under WSL. |
 
@@ -126,10 +145,11 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 - **Search.** Negamax with alpha-beta pruning, deepening one ply at a time within a 40 ms budget per move. It uses a 512k-entry hash table of positions it has already searched and orders moves by which ones caused cut-offs before.
 - **Moves.** Each move is a column plus whether to bomb, so the bomb is planned in `accelerateQuark` and only reported in `useSpecialMove`.
 - **Cooldowns.** The bot counts its own bomb cooldown. It works out the opponent's by comparing the board with what it expected after its own turn: one new quark means a plain move, a bigger change means a bomb.
-- **Assumptions,** each a single constant or method:
-  - the bomb is ready from the first move (`Board.FIRST_BOMB_WAIT`);
-  - a line formed by quarks falling after a blast wins (`Board.winner()`);
-  - if both players have a line, the last mover wins.
+- **Rules,** checked against the engine: `./qc.sh referee conformance` has the engine's bombing bot
+  play itself and replays every game on `Board`. All final boards and winners must be identical.
+  The engine's rules are in `Board.FIRST_BOMB_WAIT`, `Board.play` (a bomb always blasts),
+  `Board.winner()` (any line wins for the last mover) and `Board.skipTurn()` (counts toward the
+  cooldown).
 
 **Commands:**
 
@@ -138,13 +158,26 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 ./qc.sh test                         # engine self-test
 ./qc.sh arena quark random 20        # headless matches (bot specs below)
 ./qc.sh replay quark random 2        # record games -> out/replay.html, a viewer with play/pause, speed, scrubbing
-./qc.sh league                       # round robin of league.txt -> results/league.md
-./qc.sh tune 150 4                   # evolve the scoring weights -> out/tune-params.txt
+./qc.sh train                        # train the models in training.txt -> params/<name>.txt
+./qc.sh league league.txt 2          # every bot plays every other twice, swapping sides
+                                     #   -> results/league.md and out/league.html (all games, highscores)
+./qc.sh tune 150 4                   # evolve the scoring weights once -> out/tune-params.txt
 ./qc.sh census 6x7x4-nobomb 10       # distinct positions per ply; checked against the known Connect-4 counts
 ./qc.sh tree 5,6,5 2 6 3             # board, per-column scores, best line, game tree -> out/tree.svg
 ./qc.sh jar ch.qc.meelik.bots.QuarkBot  # package one bot for upload -> out/QuarkBot.jar
 ./qc.sh check out/QuarkBot.jar       # pre-upload check: manifest, size, forbidden packages
+./qc.sh referee jar:out/EvolvedBot.jar ch.cern.quantumconnect.bots.LinearBot 10
+                                     # play in the engine's own Experiment (Java 25)
+./qc.sh referee conformance 300      # replay engine games on our Board: same boards, same winners
+./qc.sh watch quark:params/tl-d5-s6.txt quark:params/es-d3-s1.txt
+                                     # one game in the engine's window, as qc-starter shows it
+                                     #   (on WSL: sudo apt install libxi6 libxtst6 fontconfig)
 ```
+
+**Java versions:** the engine JAR is compiled for Java 25. With a JDK 25 (`JAVA_HOME`, `PATH`, or
+`~/.local/share/jdks/jdk-*`), `./qc.sh build` compiles the bot against the real engine and
+`referee` can run. With an older JDK, the bot compiles against the stand-ins in `src/stub` and
+everything but `referee` still works. The bot itself is compiled for Java 17, so it runs on both.
 
 **Bot specs** (used by `arena`, `replay` and `league.txt`):
 - `random`: a random legal column, never bombs.
@@ -162,7 +195,14 @@ back. For every engine bot, including JAR versions, each move also shows the sea
 and time. A link like `replay.html#g=1&ply=40` opens that game at that ply. Keys: space plays or
 pauses, ← and → step, Home and End jump to the start and end.
 
-**Results so far** (laptop, Windows JDK 19, stand-in engine):
+The league's page, `out/league.html`, holds every game of the round robin, with three more cards:
+- **Highscores:** the bots ranked like the tournament (wins, then draws), with points and score %.
+- **By approach:** each solution method's score in its games against *other* methods, and its best
+  bot, so you can see which method wins and not only which model.
+- **All matches:** a crosstable with one chip per game (W, ½, L for the row bot; first as X, then
+  as O). Click a chip to watch that game; click a bot to list only its games.
+
+**Results so far** (laptop; Windows JDK 19 and the stand-in engine unless noted):
 
 - **Self-test:** passes.
   - The incremental board state matches a full rebuild over 26k random actions, including 2.6k blasts.
@@ -171,7 +211,10 @@ pauses, ← and → step, Home and End jump to the start and end.
   - Speed: about 5M nodes/s, reaching depth 7–8 in 40 ms.
 - **Census:**
   - Connect-4 (`6x7x4-nobomb`) reproduces the published counts (OEIS A212693) exactly through ply 10.
-  - On the real board after 6 plies: 238,492 distinct positions without bombs and 638,594 with them. The branching factor is about 7 per ply with bombs and 5.6 without, against 3.9 for Connect-4.
+  - On the real board after 6 plies: 238,492 distinct positions, a branching factor of about 5.6
+    per ply against 3.9 for Connect-4. Bombs make no difference this early, because the first
+    one can come only at ply 21. (Under the earlier guess that bombs are ready from the first
+    move, it was 638,594.)
 - **Arena,** 20 games each:
 
   | Opponent | Wins | Draws | Losses |
@@ -190,6 +233,18 @@ pauses, ← and → step, Home and End jump to the start and end.
   - **League,** 16 games per pair: evolved finished first and beat the defaults 11–5. Ranking by
     wins alone hides the difference, because both beat the weaker bots equally. That's why
     `results/league.md` also has a head-to-head table.
+  - Tuned before the rules were checked against the engine (bombs ready from the first move).
+- **Models from `training.txt`** (engine rules, JDK 25), 30–60 generations each: 55–60% against
+  the defaults when tuned from the defaults (`es-*`), 59–65% when started from `evolved-d4` (`tl-*`).
+- **League** of 14 bots, 2 games per pair (182 games, 91 s), see `results/league.md`:
+  - `tl-d5-s6` first (14 W, 7 D, 5 L), `tl-d4-s4` second, `evolved-d4` third. All ten models
+    finished above the hand-written `quark`, which came 12th.
+  - Not a strict ladder: `es-d3-s1` lost 0–2 to the winner but beat `tl-d4-s4` 2–0.
+  - `tl-d4-s5` lost no game (9 W, 17 D).
+- **In the engine's own `Experiment`** (`./qc.sh referee`): EvolvedBot against QuarkBot 3 W, 3 D,
+  0 L; it won every game against the engine's `LinearBot` and `SpecialMoveBot`. No timeouts.
+  `./qc.sh referee conformance`: 300 engine games replayed on our `Board` (28,098 moves, 2,449
+  bombs) with identical boards and winners.
 - **Timing:** the worst move was 42 ms when games ran one at a time, but up to 66–79 ms when
   several ran in parallel. The 100 ms limit has less margin than it looks if the arena machine is
   busy. Consider lowering `budgetNanos` from 40 ms.
@@ -203,12 +258,16 @@ The local arena uses the bot's own rule model as the referee, so it can't catch 
 - **Each solution method is its own bot class** in `src/bot/ch/qc/meelik/bots/`, extending the
   shared `Engine`, and its own JAR. `./qc.sh build` packages every bot. See
   [docs/roadmap.md](docs/roadmap.md) for the methods, their branches, and the hooks a bot can use.
-- **A set of tuned weights** is a file in `params/`, made by `./qc.sh tune` and copied out of `out/`
-  with its `#` provenance lines. Try it with `quark:params/<file>`. To ship it, write the numbers
-  into a bot class as `EvolvedBot` does, because a bot can't read files at runtime.
-- **Compare in the league.** Add a line to `league.txt`, then run `./qc.sh league`, which plays a
-  round robin ranked by wins and then draws, as the real tournament is. Commit
-  `results/league.md` along with the change that moved the standings.
+- **A model** (a set of tuned weights) is a file in `params/`. To add one, add a recipe line to
+  `training.txt` and run `./qc.sh train`. It trains only the recipes that have no file yet and
+  writes `params/<name>.txt`, with its `#` provenance lines, and `params/<name>.log`. Commit both.
+  Recipes can start from another model, which is transfer learning. Try a model with
+  `quark:params/<file>`. To ship it, write the numbers into a bot class as `EvolvedBot` does,
+  because a bot can't read files at runtime.
+- **Compare in the league.** `./qc.sh league league.txt 2` plays every pair twice with sides
+  swapped, ranked by wins and then draws as the real tournament is. It enters every model in
+  `params/` automatically. Commit `results/league.md` along with the change that moved the
+  standings, and open `out/league.html` to watch the games.
 - **Before merging:** `./qc.sh test` passes, the league shows no regression, and the bot has been
   checked once in the starter project's `Experiment`.
 
@@ -272,7 +331,7 @@ The same construction, scaled up:
 Gravity applies after a blast, so **the board is still a set of column stacks**. The `511^12` bound,
 the stack bitboard and the `position + mask` key all still work. What changes:
 
-- **More state.** You need each player's cooldown (0–9 own moves, so ×100) and the side to move
+- **More state.** You need each player's cooldown (0–10 own turns, so ×121) and the side to move
   stored explicitly. Bombs remove quarks and skipped turns break parity, so piece counts no longer
   tell you whose turn it is.
 - **The transition is still cheap.** Say your quark lands at height `h` in column `c`. Column `c`
@@ -286,14 +345,25 @@ the stack bitboard and the `position + mask` key all still work. What changes:
 - **Length.** Bombs free up cells, so the game isn't capped at 96 plies and positions can repeat.
   The arena caps a match at 1000 moves and 30 s.
 - **Collapse effects.** Quarks falling after a blast can form new lines, or break them, in all 3
-  columns. The search has to re-check lines after each collapse.
+  columns. The search has to re-check lines after each collapse. Any line formed wins for the
+  bomber, so a blast that drops the opponent's quarks into a line is a winning move too.
+- **Not in the opening.** No bomb comes before ply 20 (10 turns each), so the first 20 plies are
+  plain Connect-6 on 8×12.
 
-### Open questions (not answered by the slides)
+### Rule questions, answered by the engine
 
-1. Is the bomb available from your first move, or only after 10 own moves? Do skipped turns count
-   toward the cooldown? What happens if you return `true` while it's on cooldown? (Probably ignored.)
-2. Is the win checked again after a blast collapses the board? If the collapse forms six in a row for
-   one or both players, who wins?
-3. What is the result when the 30 s or 1000-move limit is hit?
-4. Does `Move` in `getMoveHistory()` record bombs? If it does, you can work out the opponent's cooldown.
-5. Is the blast clipped at the board edges? (Assumed yes.)
+The slides left these open. The engine's `Experiment` (core-2.0) answers them, and
+`./qc.sh referee conformance` checks that our `Board` agrees:
+
+1. **When is the bomb ready?** After 10 of your own turns, then every 10th turn. Skipped turns
+   count. A bomb asked for on cooldown is a plain drop.
+2. **Is the win checked after a blast?** Yes: after every turn, anywhere on the board. Any line
+   wins for the player who just moved, even if the line is the opponent's.
+3. **What happens at 1000 turns?** A draw. The engine has no 30 s match limit; the tournament
+   server may have one.
+4. **Does `getMoveHistory()` record bombs?** Yes: `Move(isSpecialMove, column, player)`, one per
+   quark placed. That is how the engine tracks the opponent's cooldown.
+5. **Is the blast clipped at the edges?** Yes.
+
+Still open: whether the server treats a full column as a skipped turn, as the engine does, or as
+a loss, as the starter README says, and whether it enforces a 30 s match limit.

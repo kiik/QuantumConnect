@@ -1,0 +1,45 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "ch.qos.logback:logback-classic:1.5.18"
+    implementation fileTree(dir: 'libs')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+// ./gradlew run plays the bots configured in EmulatorRunner on your machine
+application {
+    mainClass = 'EmulatorRunner'
+}
+
+
+jar {
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+
+    // Your changes here, change your bot class
+    manifest {
+        attributes(
+                'Bot-Class': 'ch.qc.starter.RandomBot',
+                'Main-Class': 'EmulatorRunner'
+        )
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

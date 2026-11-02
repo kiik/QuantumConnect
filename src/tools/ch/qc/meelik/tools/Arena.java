@@ -17,9 +17,9 @@ import java.util.Random;
 import java.util.jar.JarFile;
 
 /**
- * Headless local arena: plays bots against each other under the rules as we understand them. The
- * referee is our own {@link Board}, so this can't catch a misread rule; the starter project's
- * Experiment is the reference for that.
+ * Headless local arena: plays bots against each other under the rules of the engine's Experiment
+ * (core-2.0), with our own {@link Board} as the referee. {@code ./qc.sh referee} plays the real
+ * Experiment instead, which is the reference.
  *
  * <p>Usage: Arena [botA=quark] [botB=random] [games=20]. A bot spec is one of:
  * <ul>
@@ -95,41 +95,37 @@ public final class Arena {
             SpaceOwnership colour = player == 0 ? SpaceOwnership.FIRST_PLAYER : SpaceOwnership.SECOND_PLAYER;
             PlayerStats mine = stats[player];
 
+            // As in the real Experiment: both questions are asked before anything is placed, each
+            // within the time limit; a late answer counts as no column or no bomb.
+            QuantumField field = new QuantumField(Tools.field(referee), colour, history);
             long started = System.nanoTime();
-            int column = bots[player].accelerateQuark(new QuantumField(Tools.field(referee), colour, history));
+            int column = bots[player].accelerateQuark(field);
             long moveNanos = System.nanoTime() - started;
+            started = System.nanoTime();
+            boolean wantsBomb = bots[player].useSpecialMove(field);
+            long bombNanos = System.nanoTime() - started;
+            String search = replay == null ? null : searchInfo(bots[player], player);
             mine.calls++;
             mine.totalNanos += moveNanos;
-            mine.maxNanos = Math.max(mine.maxNanos, moveNanos);
-            if (moveNanos > MOVE_LIMIT_NANOS || column < 0 || column >= referee.columns || referee.columnHeight[column] == referee.rows) {
-                mine.skippedTurns++;
+            mine.maxNanos = Math.max(mine.maxNanos, Math.max(moveNanos, bombNanos));
+            if (moveNanos > MOVE_LIMIT_NANOS) column = -1;
+            if (bombNanos > MOVE_LIMIT_NANOS) wantsBomb = false;
+            boolean mayBomb = column >= 0 && column < referee.columns && referee.isLegal(Board.action(column, true));
+
+            if (column < 0 || column >= referee.columns || referee.columnHeight[column] == referee.rows) {
+                mine.skippedTurns++; // nothing is placed, but the turn counts toward the cooldown
+                if (wantsBomb && referee.bombCooldown[player] == 0) referee.bombCooldown[player] = Board.BOMB_COOLDOWN; // the arena resets it even so
                 referee.skipTurn();
-                if (replay != null) replay.append(',').append(frame(referee, player, column, false, true, moveNanos, null, -1));
+                if (replay != null) replay.append(',').append(frame(referee, player, column, false, true, moveNanos, search, -1));
                 continue;
             }
 
-            int[] beforeDrop = referee.saveState();
-            boolean mayBomb = referee.isLegal(Board.action(column, true));
+            boolean bombed = wantsBomb && mayBomb;
             int landingRow = referee.rows - 1 - referee.columnHeight[column];
-            referee.play(Board.action(column, false));
-            winner = referee.winner(); // the win check comes before the arena asks about the bomb
-            String search = replay == null ? null : searchInfo(bots[player], player);
-
-            boolean bombed = false;
-            if (winner < 0) {
-                started = System.nanoTime();
-                boolean wantsBomb = bots[player].useSpecialMove(new QuantumField(Tools.field(referee), colour, history));
-                long bombNanos = System.nanoTime() - started;
-                mine.maxNanos = Math.max(mine.maxNanos, bombNanos);
-                if (wantsBomb && mayBomb && bombNanos <= MOVE_LIMIT_NANOS) {
-                    referee.restoreState(beforeDrop);
-                    referee.play(Board.action(column, true));
-                    mine.bombs++;
-                    bombed = true;
-                    winner = referee.winner();
-                }
-                history.add(new Move(column, bombed));
-            }
+            referee.play(Board.action(column, bombed));
+            history.add(new Move(bombed, column, colour));
+            if (bombed) mine.bombs++;
+            winner = referee.winner(); // any line wins for the player who just moved
             if (replay != null) {
                 String json = frame(referee, player, column, bombed, false, moveNanos, search, winner);
                 replay.append(',').append(bombed ? json.replace("\"blast\":null", "\"blast\":[" + landingRow + "," + column + "]") : json);
