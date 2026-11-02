@@ -149,6 +149,7 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 - **Evaluation.** A line that only one player occupies is worth `16, 64, 256, 1024, 8192` points for 1–5 quarks in it (`Board.lineWeight`, per direction, so it can be tuned).
 - **Search.** Negamax with alpha-beta pruning, deepening one ply at a time within a 40 ms budget per move. It uses a 512k-entry hash table of positions it has already searched and orders moves by which ones caused cut-offs before.
 - **Moves.** Each move is a column plus whether to bomb, so the bomb is planned in `accelerateQuark` and only reported in `useSpecialMove`.
+- **Board size.** The engine's `Experiment` takes the size as a parameter (8×12 by default; its own `Main` uses 25×25), so the bot reads it from the field: on a field of another size it rebuilds its `Board` at that size, with the same weights (`Engine.fitBoardTo`). Six in a row wins on every size. The weights were tuned on 8×12: on 25×25, QuarkBot beat EvolvedBot 3–1 in four games.
 - **Cooldowns.** The bot counts its own bomb cooldown, and the opponent's from `getMoveHistory()`, which marks every bomb.
 - **Why our own `Board`:** a search tries thousands of moves per turn and takes them back. The
   engine's `QuantumField` can't do that for a bot: its constructor and its drop and blast methods
@@ -167,6 +168,7 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 ./qc.sh build                        # compile; one upload JAR per bot: qc-starter/build/libs/QuarkBot.jar, ...
 ./qc.sh test                         # engine self-test
 ./qc.sh arena quark random 20        # headless matches in the engine's Experiment (bot specs below)
+./qc.sh arena evolved random 4 25x25 # the same on another board size (rows x columns)
 ./qc.sh replay quark random 2        # record games -> out/replay.html, a viewer with play/pause, speed, scrubbing
 ./qc.sh train                        # train the models in training.txt -> params/<name>.txt
 ./qc.sh league league.txt 2          # every bot plays every other twice, swapping sides
@@ -181,6 +183,7 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 ./qc.sh arena jar:qc-starter/build/libs/EvolvedBot.jar ch.cern.quantumconnect.bots.LinearBot 10
                                      # against the engine's own bots
 ./qc.sh conformance 300              # replay engine games on our Board: same boards, same winners
+./qc.sh conformance 40 25x25         #   on another board size
 ./qc.sh watch quark:params/tl-d5-s6.txt quark:params/es-d3-s1.txt
                                      # one game in the engine's window, as qc-starter shows it
                                      #   (on WSL: sudo apt install libxi6 libxtst6 fontconfig)

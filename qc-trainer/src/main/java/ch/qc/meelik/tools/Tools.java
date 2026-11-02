@@ -20,6 +20,13 @@ final class Tools {
         return new Board(size[0], size[1], size[2], bombs, tracksThreats);
     }
 
+    /** A board size from "rows x columns", e.g. "25x25". */
+    static int[] size(String rowsByColumns) {
+        int[] size = Arrays.stream(rowsByColumns.split("x")).mapToInt(Integer::parseInt).toArray();
+        if (size.length != 2) throw new IllegalArgumentException("board size is rows x columns, e.g. 8x12: " + rowsByColumns);
+        return size;
+    }
+
     /** A plain search engine (QuarkBot's) on a board of the given geometry. */
     static Engine engine(String geometry) {
         return new QuarkBot(board(geometry, false));

@@ -26,7 +26,8 @@ import java.util.jar.JarFile;
  * qc-starter library), the referee the engine ships with, and checks every game against our
  * {@link Board}.
  *
- * <p>Usage: Arena [botA=quark] [botB=random] [games=20]. A bot spec is one of:
+ * <p>Usage: Arena [botA=quark] [botB=random] [games=20] [size=8x12], the size as rows x columns.
+ * A bot spec is one of:
  * <ul>
  *   <li>{@code random}: a random legal column, never bombs;
  *   <li>a bot name, the class {@code ch.qc.meelik.bots.<Name>Bot} ({@code quark}, {@code evolved},
@@ -64,12 +65,14 @@ public final class Arena {
     public static void main(String[] args) {
         String botA = args.length > 0 ? args[0] : "quark", botB = args.length > 1 ? args[1] : "random";
         int games = args.length > 2 ? Integer.parseInt(args[2]) : 20;
+        int[] size = Tools.size(args.length > 3 ? args[3] : GameConstants.DEFAULT_ROWS + "x" + GameConstants.DEFAULT_COLUMNS);
         int winsA = 0, draws = 0, winsB = 0;
         long plies = 0;
         PlayerStats statsA = new PlayerStats(), statsB = new PlayerStats();
         for (int game = 0; game < games; game++) {
             boolean aStarts = game % 2 == 0;
-            Result result = aStarts ? play(make(botA, game), make(botB, game), null) : play(make(botB, game), make(botA, game), null);
+            Algorithm first = make(aStarts ? botA : botB, game), second = make(aStarts ? botB : botA, game);
+            Result result = play(first, second, null, size[0], size[1]);
             int seatOfA = aStarts ? 0 : 1;
             statsA.add(result.players[seatOfA]);
             statsB.add(result.players[1 - seatOfA]);
@@ -78,7 +81,7 @@ public final class Arena {
             else if (result.winner == seatOfA) winsA++;
             else winsB++;
         }
-        System.out.printf("%s vs %s, %d games (alternating who starts)%n", botA, botB, games);
+        System.out.printf("%s vs %s, %d games on %dx%d (alternating who starts)%n", botA, botB, games, size[0], size[1]);
         System.out.printf("  %s wins %d, draws %d, %s wins %d, avg %.1f plies%n", botA, winsA, draws, botB, winsB, (double) plies / games);
         System.out.printf("  %-12s %s%n  %-12s %s%n", botA, statsA.summary(), botB, statsB.summary());
     }
@@ -96,8 +99,13 @@ public final class Arena {
      * (see Replay).
      */
     static Result play(Algorithm first, Algorithm second, StringBuilder replay) {
+        return play(first, second, replay, GameConstants.DEFAULT_ROWS, GameConstants.DEFAULT_COLUMNS);
+    }
+
+    /** One game as above, on a board of rows x columns. */
+    static Result play(Algorithm first, Algorithm second, StringBuilder replay, int rows, int columns) {
         List<Turn> turns = Collections.synchronizedList(new ArrayList<>());
-        Experiment experiment = new Experiment(new Recorder(first, 0, turns, replay != null), new Recorder(second, 1, turns, replay != null), false, false);
+        Experiment experiment = new Experiment(new Recorder(first, 0, turns, replay != null), new Recorder(second, 1, turns, replay != null), false, false, rows, columns);
         try {
             experiment.runExperiment();
         } catch (InterruptedException e) {
@@ -109,7 +117,7 @@ public final class Arena {
         // Replay the engine's history on our Board, turn by turn. A turn the engine skipped (late
         // answer, full or invalid column) has no entry in the history.
         PlayerStats[] stats = {new PlayerStats(), new PlayerStats()};
-        Board board = new Board();
+        Board board = new Board(rows, columns);
         List<Move> history = experiment.getHistory();
         int placed = 0;
         if (replay != null) replay.append(frame(board, -1, -1, false, false, 0, null, -1));

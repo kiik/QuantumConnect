@@ -50,6 +50,8 @@ public final class Board {
     public static final int BOMB_COOLDOWN = 10;
     /** Own turns before the first bomb: the arena's counter starts at 0 and allows a bomb at 10. */
     public static final int FIRST_BOMB_WAIT = 10;
+    /** Quarks in a row that win, on every board size. */
+    public static final int LINE_LENGTH = 6;
 
     /** Line directions as (column step, height step); both diagonals share a weight by symmetry. */
     static final int[][] DIRECTIONS = {{1, 0}, {0, 1}, {1, 1}, {1, -1}};
@@ -94,7 +96,12 @@ public final class Board {
 
     /** The standard QuantumConnect board: 8 rows, 12 columns, six in a row, bombs on. */
     public Board() {
-        this(8, 12, 6, true, false);
+        this(8, 12);
+    }
+
+    /** The standard rules (six in a row, bombs on) on a board of another size. */
+    public Board(int rows, int columns) {
+        this(rows, columns, LINE_LENGTH, true, false);
     }
 
     public Board(int rows, int columns, int lineLength, boolean bombsEnabled, boolean tracksThreats) {

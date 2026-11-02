@@ -29,6 +29,9 @@ import java.util.List;
  * and remembers the bomb decision between the two calls. It counts its own bomb cooldown, and the
  * opponent's from the move history, which marks every bomb. Every turn counts toward a cooldown,
  * also one lost to a timeout. On the engine's board, player 0 is always this bot ({@link #ME}).
+ * The arena may use another board size than the standard 8x12: on the first look at a field of
+ * another size, the engine replaces its board with one of that size, with the same rules and line
+ * weights ({@link #fitBoardTo}). Bots therefore always reach the board through {@link #board}.
  *
  * <h2>Writing a bot</h2>
  * A bot is a subclass with a public no-arg constructor, shipped as a JAR of the engine package
@@ -45,7 +48,8 @@ public abstract class Engine implements Algorithm {
     /** After this much thinking in one match, search with an eighth of the budget (the match limit is 30 s). */
     static final long MATCH_TIME_GUARD_NANOS = 20_000_000_000L;
 
-    public final Board board;
+    /** The board searched on; replaced when the arena's field has another size. */
+    public Board board;
 
     // ------------------------------------------------------------------ settings
 
@@ -67,7 +71,7 @@ public abstract class Engine implements Algorithm {
     final long[] tableKey = new long[TABLE_SIZE], tableEntry = new long[TABLE_SIZE];
     final int[][] actionLists = new int[MAX_PLY][], undoStates = new int[MAX_PLY][];
     /** How often each action of each player caused a cut-off, weighted by depth. */
-    final int[][] historyScore;
+    int[][] historyScore;
     long deadlineNanos;
     boolean outOfTime;
 
@@ -80,9 +84,27 @@ public abstract class Engine implements Algorithm {
     long timeUsedNanos;
 
     protected Engine(Board board) {
-        this.board = board;
-        for (int ply = 0; ply < MAX_PLY; ply++) actionLists[ply] = new int[board.actionCount()];
+        useBoard(board);
+    }
+
+    /** Searches on this board from now on: sizes the search memory to it and forgets what it held. */
+    private void useBoard(Board newBoard) {
+        board = newBoard;
+        for (int ply = 0; ply < MAX_PLY; ply++) {
+            actionLists[ply] = new int[board.actionCount()];
+            undoStates[ply] = null;
+        }
         historyScore = new int[2][board.actionCount()];
+        Arrays.fill(tableKey, 0);
+    }
+
+    /** Replaces the board if the arena's field has another size: same line length, bomb rule and weights. */
+    void fitBoardTo(SpaceOwnership[][] grid) {
+        int rows = grid.length, columns = grid[0].length;
+        if (rows == board.rows && columns == board.columns) return;
+        Board resized = new Board(rows, columns, board.lineLength, board.bombsEnabled, board.tracksThreats);
+        resized.setLineWeights(board.lineWeight);
+        useBoard(resized);
     }
 
     /** Starts a new game on an empty board, forgetting the match and all search memory. Weights are kept. */
@@ -104,6 +126,7 @@ public abstract class Engine implements Algorithm {
         long started = System.nanoTime();
         SpaceOwnership[][] grid = field.getField();
         if (myColour == null) myColour = whoAmI(field, grid);
+        fitBoardTo(grid);
         board.load(grid, myColour);
         updateOpponentCooldown(field.getMoveHistory());
         myTurns++;

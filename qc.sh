@@ -4,14 +4,14 @@
 #   ./qc.sh jar <bot>             package one bot for upload, e.g. ./qc.sh jar QuarkBot
 #   ./qc.sh check <jar>...        pre-upload check: manifest, size, forbidden packages
 #   ./qc.sh test                  engine self-test (SelfTest)
-#   ./qc.sh arena A B [games]     headless matches, e.g. ./qc.sh arena quark random 20
+#   ./qc.sh arena A B [games] [size]  headless matches, e.g. ./qc.sh arena quark random 20 25x25
 #   ./qc.sh census [geom] [ply]   state-space census, e.g. ./qc.sh census 6x7x4-nobomb 9
 #   ./qc.sh tree [moves] [plies] [evalDepth] [width] [geom]   tree + heatmap, renders out/tree.svg
 #   ./qc.sh tune [gens] [depth] [pairs] [openings] [threads]  evolve eval weights -> out/tune-params.txt
 #   ./qc.sh train [recipes]                  train every model in training.txt not yet in params/
 #   ./qc.sh league [file] [games] [threads]  round robin of league.txt -> results/league.md, out/league.html
 #   ./qc.sh replay [A] [B] [games]           record games -> out/replay.html (browser viewer)
-#   ./qc.sh conformance [games]              replay engine games on our Board: same boards, same winners
+#   ./qc.sh conformance [games] [size]       replay engine games on our Board: same boards, same winners
 #   ./qc.sh watch [A] [B]                    one game in the engine's window, as qc-starter runs it
 # The bots live in the starter project (qc-starter/src/main/java/ch/qc/meelik), whose build.gradle packages
 # them; the tools live in qc-trainer. Both build on the engine library in qc-starter/libs, and every
