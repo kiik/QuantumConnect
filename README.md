@@ -107,31 +107,34 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 
 | Path | What |
 |---|---|
-| [src/bot/ch/qc/meelik/QuarkBot.java](src/bot/ch/qc/meelik/QuarkBot.java) | **The bot.** One class, one `.class` file. Contains the board model, the search and the arena adapter. This is the only file that ships. |
+| [src/bot/ch/qc/meelik/engine/Board.java](src/bot/ch/qc/meelik/engine/Board.java) | **The game model:** rules, the line counts behind wins, scores and threats, and bombs. No search. |
+| [src/bot/ch/qc/meelik/engine/Engine.java](src/bot/ch/qc/meelik/engine/Engine.java) | **The shared brain:** alpha-beta search and the arena adapter. The base class of every bot. |
+| [src/bot/ch/qc/meelik/bots/](src/bot/ch/qc/meelik/bots/) | **The bots, one class per solution method:** `QuarkBot` (simple), `EvolvedBot` (evolved weights). Each ships as its own JAR, `out/<Name>.jar`, holding the engine package plus that class. |
+| [docs/roadmap.md](docs/roadmap.md) | The solution methods, their status and branches, and how to add one. |
 | [src/stub/](src/stub/) | Stand-ins for the engine API (`Algorithm`, `QuantumField`, `SpaceOwnership`, `Move`), written from the slides. They are replaced by the real engine JAR once it is in `libs/`. |
 | [src/tools/](src/tools/) | Tools for analysis and testing. They never go in the JAR. |
 | [src/tools/replay.html](src/tools/replay.html) | The replay viewer template. `./qc.sh replay` writes the recorded games into it. |
-| [params/](params/) | Evaluation parameter sets for `QuarkBot`, versioned. Each starts with `#` lines saying how it was made. |
+| [params/](params/) | Evaluation parameter sets from `./qc.sh tune`, versioned. Each starts with `#` lines saying how it was made. |
 | [league.txt](league.txt) | The entrants of the local league. |
 | [results/league.md](results/league.md) | Latest league standings, committed so everyone sees them. |
 | [qc.sh](qc.sh) | Builds the bot and runs the tools. Uses `JAVA_HOME`, then `javac` on PATH, then a Windows JDK when running under WSL. |
 
-**How the bot works:**
-- **Board.** Columns are stacks of quarks. Every possible line of 6 cells (134 of them) keeps a count of each player's quarks. Dropping or removing a quark updates only the lines through that cell, which gives both the win test (a count reaching 6) and the evaluation.
+**How the bots work:**
+- **Board.** Columns are stacks of quarks. Every possible line of 6 cells (134 of them) keeps a count of each player's quarks. Dropping or removing a quark updates only the lines through that cell. That gives the win test (a count reaching 6), the evaluation, and optionally the threats (cells that would complete a line).
 - **Memory.** About 8 MB in total, almost all of it the search's position hash table. The limit is roughly 100 MB.
-- **Evaluation.** A line that only one player occupies is worth `1, 4, 16, 64, 512` points for 1–5 quarks in it. The weights are in `weight[]`, so they can be tuned.
+- **Evaluation.** A line that only one player occupies is worth `16, 64, 256, 1024, 8192` points for 1–5 quarks in it (`Board.lineWeight`, per direction, so it can be tuned).
 - **Search.** Negamax with alpha-beta pruning, deepening one ply at a time within a 40 ms budget per move. It uses a 512k-entry hash table of positions it has already searched and orders moves by which ones caused cut-offs before.
 - **Moves.** Each move is a column plus whether to bomb, so the bomb is planned in `accelerateQuark` and only reported in `useSpecialMove`.
 - **Cooldowns.** The bot counts its own bomb cooldown. It works out the opponent's by comparing the board with what it expected after its own turn: one new quark means a plain move, a bigger change means a bomb.
 - **Assumptions,** each a single constant or method:
-  - the bomb is ready from the first move (`START_WAIT`);
-  - a line formed by quarks falling after a blast wins (`winner()`);
+  - the bomb is ready from the first move (`Board.FIRST_BOMB_WAIT`);
+  - a line formed by quarks falling after a blast wins (`Board.winner()`);
   - if both players have a line, the last mover wins.
 
 **Commands:**
 
 ```sh
-./qc.sh build                        # compile; writes out/QuarkBot.jar (Bot-Class: ch.qc.meelik.QuarkBot)
+./qc.sh build                        # compile; one JAR per bot: out/QuarkBot.jar, out/EvolvedBot.jar, ...
 ./qc.sh test                         # engine self-test
 ./qc.sh arena quark random 20        # headless matches (bot specs below)
 ./qc.sh replay quark random 2        # record games -> out/replay.html, a viewer with play/pause, speed, scrubbing
@@ -139,22 +142,23 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 ./qc.sh tune 150 4                   # evolve the scoring weights -> out/tune-params.txt
 ./qc.sh census 6x7x4-nobomb 10       # distinct positions per ply; checked against the known Connect-4 counts
 ./qc.sh tree 5,6,5 2 6 3             # board, per-column scores, best line, game tree -> out/tree.svg
-./qc.sh jar ch.qc.meelik.QuarkBot    # package one bot for upload -> out/QuarkBot.jar
+./qc.sh jar ch.qc.meelik.bots.QuarkBot  # package one bot for upload -> out/QuarkBot.jar
 ./qc.sh check out/QuarkBot.jar       # pre-upload check: manifest, size, forbidden packages
 ```
 
 **Bot specs** (used by `arena`, `replay` and `league.txt`):
 - `random`: a random legal column, never bombs.
-- `quark`, optionally with `@<ms>` (time budget per move), `/<depth>` (fixed search depth), or
-  `:<params file>` (evaluation weights), e.g. `quark:params/evolved-d4.txt`.
+- A bot name: `quark`, `evolved`, ... (the class `ch.qc.meelik.bots.<Name>Bot`), optionally with
+  `@<ms>` (time budget per move), `/<depth>` (fixed search depth), or `:<params file>`
+  (evaluation weights), e.g. `quark@10`, `quark/2`, `quark:params/evolved-d4.txt`.
 - `tuned`: the latest `out/tune-params.txt`.
-- A fully qualified class name: any bot compiled in this repo.
+- A fully qualified class name: any other bot compiled in this repo.
 - `jar:<path>`: a packaged bot JAR, loaded in its own class loader, so two versions of `QuarkBot`
   can play each other.
 
 **The replay viewer:** the bots don't run in the browser. Java plays the games (the same code as
 `arena`), records every move, and writes them into a self-contained HTML page that only plays them
-back. For `QuarkBot`, including JAR versions, each move also shows the search depth, score, nodes
+back. For every engine bot, including JAR versions, each move also shows the search depth, score, nodes
 and time. A link like `replay.html#g=1&ply=40` opens that game at that ply. Keys: space plays or
 pauses, ← and → step, Home and End jump to the start and end.
 
@@ -196,13 +200,12 @@ The local arena uses the bot's own rule model as the referee, so it can't catch 
 
 - **Git.** Each variant gets its own branch, and `main` always holds a bot that is safe to upload.
   `out/` is ignored and rebuilt by `./qc.sh build`.
-- **A new kind of bot** (different search, a neural net, ...) is a new single class in its own
-  package under `src/bot/`, e.g. `src/bot/ch/qc/<you>/<Name>.java`. It may copy code from `QuarkBot`:
-  the one-class rule makes some duplication unavoidable. `./qc.sh jar ch.qc.<you>.<Name>`
-  packages just that bot.
-- **A new version of `QuarkBot`'s scoring** is not a new class. It's a file in `params/`, made by
-  `./qc.sh tune` and copied out of `out/`, with the `#` provenance lines kept. To ship one, copy
-  its numbers into the defaults in `QuarkBot` (the bot can't read files at runtime).
+- **Each solution method is its own bot class** in `src/bot/ch/qc/meelik/bots/`, extending the
+  shared `Engine`, and its own JAR. `./qc.sh build` packages every bot. See
+  [docs/roadmap.md](docs/roadmap.md) for the methods, their branches, and the hooks a bot can use.
+- **A set of tuned weights** is a file in `params/`, made by `./qc.sh tune` and copied out of `out/`
+  with its `#` provenance lines. Try it with `quark:params/<file>`. To ship it, write the numbers
+  into a bot class as `EvolvedBot` does, because a bot can't read files at runtime.
 - **Compare in the league.** Add a line to `league.txt`, then run `./qc.sh league`, which plays a
   round robin ranked by wins and then draws, as the real tournament is. Commit
   `results/league.md` along with the change that moved the standings.
@@ -213,10 +216,10 @@ The local arena uses the bot's own rule model as the referee, so it can't catch 
 
 Both use the same search. They differ only in how a position is scored.
 
-1. **Simple (shipping):** hand-written line weights, the same in every direction (`16, 64, 256, 1024, 8192`).
-   Always keep this version uploaded.
+1. **Simple (`QuarkBot`, shipping):** hand-written line weights, the same in every direction
+   (`16, 64, 256, 1024, 8192`). Always keep this version uploaded.
 2. **Complex: a learned score, in two steps.**
-   - **a. Evolved weights (`./qc.sh tune`, built; 65% against the defaults, see the results above).** There are 16 parameters: line weights for each
+   - **a. Evolved weights (`EvolvedBot`, made with `./qc.sh tune`; 65% against QuarkBot, see the results above).** There are 16 parameters: line weights for each
      direction (horizontal, vertical, diagonal) and quark count, plus a bonus for having the bomb ready
      while the opponent doesn't. They are evolved by self-play: each generation tries small random
      changes in opposite directions against each other, from random openings and with both colours,

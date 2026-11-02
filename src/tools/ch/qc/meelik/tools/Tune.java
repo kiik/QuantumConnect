@@ -1,9 +1,12 @@
 package ch.qc.meelik.tools;
 
-import ch.qc.meelik.QuarkBot;
+import ch.qc.meelik.bots.QuarkBot;
+import ch.qc.meelik.engine.Board;
+import ch.qc.meelik.engine.Engine;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,144 +16,166 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * Evolves QuarkBot's evaluation parameters by self-play (an evolution strategy with antithetic
- * pairs, SPSA-style).
+ * Evolves the evaluation parameters (line weights per direction and the bomb bonus) by self-play.
  *
- * <p>Each generation draws {@code pairs} random directions e. For each one, theta + sigma*e plays
- * theta - sigma*e from {@code openings} random openings, both colours, at a fixed search depth. The
- * score difference r says which way is better, and theta moves along the mean of r*e. Every
- * {@code validateEvery} generations theta plays the untouched defaults; the best validated theta
- * goes to out/tune-params.txt (used by "./qc.sh arena tuned ...").
+ * <h2>Method: an evolution strategy with mirrored pairs</h2>
+ * Each generation draws {@code pairs} random directions e in parameter space. For each one, the
+ * parameters moved forward along e play the parameters moved backward along e, from the same
+ * random openings and with both colours, at a fixed search depth. The score difference says which
+ * way along e is better, and the parameters take a step along the average of those directions,
+ * each weighted by its score difference. Parameters are kept in log space, so steps are relative.
+ *
+ * <p>Every {@link #VALIDATE_EVERY} generations the current parameters play the untouched defaults
+ * on a fixed set of openings. The best validated parameters are saved, with how they were made, to
+ * out/tune-params.txt, which Arena can use as "tuned" or "quark:out/tune-params.txt".
  *
  * <p>Usage: Tune [generations=40] [depth=4] [pairs=16] [openings=8] [threads=cores] [seed=1]
  */
 public final class Tune {
-    static final Path OUT = Path.of("out/tune-params.txt");
-    static final double SIGMA = 0.2, STEP = 3;
-    static final int MAX_PLIES = 400, OPENING_PLIES = 4, VALIDATION_OPENINGS = 100, validateEvery = 10;
-    static final ThreadLocal<QuarkBot[]> ENGINES = ThreadLocal.withInitial(() -> new QuarkBot[]{new QuarkBot(), new QuarkBot()});
+    static final Path OUTPUT = Path.of("out/tune-params.txt");
+    static final double STEP_SIZE = 0.2, LEARNING_RATE = 3;
+    static final int MAX_PLIES = 400, OPENING_PLIES = 4, VALIDATION_OPENINGS = 100, VALIDATE_EVERY = 10;
+    static final ThreadLocal<Engine[]> PLAYERS = ThreadLocal.withInitial(() -> new Engine[]{new QuarkBot(), new QuarkBot()});
 
-    static int depth;
+    static int searchDepth;
 
     public static void main(String[] args) throws Exception {
-        int gens = arg(args, 0, 40), pairs = arg(args, 2, 16), openings = arg(args, 3, 8);
-        depth = arg(args, 1, 4);
-        int threads = arg(args, 4, Runtime.getRuntime().availableProcessors());
-        Random rnd = new Random(arg(args, 5, 1));
+        int generations = intArg(args, 0, 40), pairs = intArg(args, 2, 16), openingsPerPair = intArg(args, 3, 8);
+        int threads = intArg(args, 4, Runtime.getRuntime().availableProcessors()), seed = intArg(args, 5, 1);
+        searchDepth = intArg(args, 1, 4);
+        Random random = new Random(seed);
         ExecutorService pool = Executors.newFixedThreadPool(threads);
 
-        double[] base = Tools.params(new QuarkBot()), theta = base.clone();
-        theta[theta.length - 1] = Math.log(16); // start the bomb bonus where it can move
-        double[] best = base.clone();
+        double[] defaults = Tools.parameters(new QuarkBot());
+        double[] current = defaults.clone();
+        current[current.length - 1] = Math.log(16); // start the bomb bonus where it can move
         double bestScore = 0.5;
         System.out.printf("tuning %d parameters: depth %d, %d pairs x %d openings x 2 colours per generation, %d threads%n",
-                theta.length, depth, pairs, openings, threads);
-        for (int g = 1; g <= gens; g++) {
-            long t0 = System.nanoTime();
-            List<int[]> ops = openings(rnd, openings);
-            double[][] eps = new double[pairs][theta.length];
-            List<Future<Double>> rs = new ArrayList<>();
-            for (double[] e : eps) {
-                for (int i = 0; i < e.length; i++) e[i] = rnd.nextGaussian();
-                double[] plus = add(theta, e, SIGMA), minus = add(theta, e, -SIGMA);
-                rs.add(pool.submit(() -> match(plus, minus, ops) * 2 - 1)); // in [-1, 1]
-            }
-            double[] step = new double[theta.length];
-            double moved = 0;
+                current.length, searchDepth, pairs, openingsPerPair, threads);
+
+        for (int generation = 1; generation <= generations; generation++) {
+            long started = System.nanoTime();
+            List<int[]> openings = randomOpenings(random, openingsPerPair);
+            double[][] directions = new double[pairs][];
+            List<Future<Double>> differences = new ArrayList<>();
             for (int p = 0; p < pairs; p++) {
-                double r = rs.get(p).get();
-                moved += Math.abs(r);
-                for (int i = 0; i < step.length; i++) step[i] += STEP * SIGMA * r * eps[p][i] / pairs;
+                double[] direction = gaussian(random, current.length);
+                directions[p] = direction;
+                double[] forward = step(current, direction, STEP_SIZE), backward = step(current, direction, -STEP_SIZE);
+                differences.add(pool.submit(() -> 2 * match(forward, backward, openings) - 1)); // in [-1, 1]
             }
-            theta = add(theta, step, 1);
-            System.out.printf("gen %3d  mean |r| %.2f  %.1f s%n", g, moved / pairs, (System.nanoTime() - t0) / 1e9);
-            if (g % validateEvery == 0 || g == gens) {
-                double[] cur = theta.clone();
-                List<int[]> vops = openings(new Random(12345), VALIDATION_OPENINGS); // fixed set
-                List<Future<Double>> vs = new ArrayList<>();
-                for (int[] op : vops) vs.add(pool.submit(() -> match(cur, base, List.of(op))));
-                double score = 0;
-                for (Future<Double> v : vs) score += v.get() / vops.size();
-                QuarkBot show = new QuarkBot();
-                Tools.apply(show, cur);
-                System.out.printf("  vs defaults: %.1f%%  %s%n", 100 * score, Tools.describe(show));
+            double[] update = new double[current.length];
+            double meanAbsDifference = 0;
+            for (int p = 0; p < pairs; p++) {
+                double difference = differences.get(p).get();
+                meanAbsDifference += Math.abs(difference) / pairs;
+                for (int i = 0; i < update.length; i++) update[i] += LEARNING_RATE * STEP_SIZE * difference * directions[p][i] / pairs;
+            }
+            current = step(current, update, 1);
+            System.out.printf("gen %3d  mean |score difference| %.2f  %.1f s%n", generation, meanAbsDifference, (System.nanoTime() - started) / 1e9);
+
+            if (generation % VALIDATE_EVERY == 0 || generation == generations) {
+                double score = validate(pool, current, defaults);
+                Engine shown = new QuarkBot();
+                Tools.applyParameters(shown, current);
+                System.out.printf("  vs defaults: %.1f%%  %s%n", 100 * score, Tools.describeWeights(shown));
                 if (score > bestScore) {
                     bestScore = score;
-                    best = cur;
-                    save(best, String.format("Tune gen %d/%d, depth %d, %d pairs x %d openings, seed %d: %.1f%% vs defaults (%d games)%n# %s",
-                            g, gens, depth, pairs, openings, arg(args, 5, 1), 100 * score, 2 * VALIDATION_OPENINGS, Tools.describe(show)));
-                    System.out.println("  new best -> " + OUT);
+                    save(current, String.format("Tune gen %d/%d, depth %d, %d pairs x %d openings, seed %d: %.1f%% vs defaults (%d games)%n# %s",
+                            generation, generations, searchDepth, pairs, openingsPerPair, seed, 100 * score, 2 * VALIDATION_OPENINGS, Tools.describeWeights(shown)));
+                    System.out.println("  new best -> " + OUTPUT);
                 }
             }
         }
         pool.shutdown();
-        QuarkBot show = new QuarkBot();
-        Tools.apply(show, best);
-        System.out.printf("best: %.1f%% vs defaults at depth %d: %s%n", 100 * bestScore, depth, Tools.describe(show));
-        if (bestScore == 0.5) System.out.println("no improvement over the defaults found");
+        System.out.printf("best: %.1f%% vs defaults at depth %d%s%n", 100 * bestScore, searchDepth, bestScore == 0.5 ? " (no improvement found)" : "");
     }
 
-    /** Score of a against b (1 win, 0.5 draw) averaged over the openings, each played with both colours. */
+    /** Score of the parameters against the defaults on a fixed set of openings. */
+    static double validate(ExecutorService pool, double[] parameters, double[] defaults) throws Exception {
+        List<int[]> openings = randomOpenings(new Random(12345), VALIDATION_OPENINGS);
+        List<Future<Double>> scores = new ArrayList<>();
+        for (int[] opening : openings) scores.add(pool.submit(() -> match(parameters, defaults, List.of(opening))));
+        double total = 0;
+        for (Future<Double> score : scores) total += score.get();
+        return total / openings.size();
+    }
+
+    // ------------------------------------------------------------------ playing
+
+    /** Score of a against b (win 1, draw 0.5), averaged over the openings, each played with both colours. */
     static double match(double[] a, double[] b, List<int[]> openings) {
-        double s = 0;
-        for (int[] op : openings) s += game(a, b, op) + 1 - game(b, a, op);
-        return s / (2 * openings.size());
+        double total = 0;
+        for (int[] opening : openings) total += game(a, b, opening) + 1 - game(b, a, opening);
+        return total / (2 * openings.size());
     }
 
-    /** One game; first moves first. Returns first's score. */
+    /** One game at fixed depth; first moves first. Returns first's score. */
     static double game(double[] first, double[] second, int[] opening) {
-        QuarkBot[] e = ENGINES.get();
-        Tools.apply(e[0], first);
-        Tools.apply(e[1], second);
-        for (QuarkBot q : e) {
-            q.newGame();
-            q.maxDepth = depth;
+        Engine[] players = PLAYERS.get();
+        Tools.applyParameters(players[0], first);
+        Tools.applyParameters(players[1], second);
+        for (Engine player : players) {
+            player.newGame();
+            player.maxDepth = searchDepth;
         }
-        for (int a : opening) for (QuarkBot q : e) q.play(a);
+        Board board = players[0].board; // each player keeps its own board; both see the same moves
+        for (int action : opening) for (Engine player : players) player.board.play(action);
         for (int ply = 0; ply < MAX_PLIES; ply++) {
-            int w = e[0].winner();
-            if (w >= 0) return w == 0 ? 1 : 0;
-            if (e[0].pieces == e[0].size) break;
-            int a = e[e[0].turn].think(Long.MAX_VALUE / 4);
-            for (QuarkBot q : e) q.play(a);
+            int winner = board.winner();
+            if (winner >= 0) return winner == 0 ? 1 : 0;
+            if (board.isFull()) break;
+            int action = players[board.sideToMove].chooseAction(Long.MAX_VALUE / 4);
+            for (Engine player : players) player.board.play(action);
         }
         return 0.5;
     }
 
-    /** Random plain drops, so games differ even though the engines are deterministic. */
-    static List<int[]> openings(Random rnd, int n) {
-        List<int[]> ops = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
-            int[] op = new int[OPENING_PLIES];
-            for (int j = 0; j < op.length; j++) op[j] = 2 * rnd.nextInt(12);
-            ops.add(op);
+    /** Random plain drops, so that games differ even though the engines are deterministic. */
+    static List<int[]> randomOpenings(Random random, int count) {
+        List<int[]> openings = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            int[] opening = new int[OPENING_PLIES];
+            for (int ply = 0; ply < OPENING_PLIES; ply++) opening[ply] = Board.action(random.nextInt(12), false);
+            openings.add(opening);
         }
-        return ops;
+        return openings;
     }
 
-    static double[] add(double[] x, double[] e, double s) {
-        double[] y = x.clone();
-        for (int i = 0; i < y.length; i++) y[i] += s * e[i];
-        return y;
+    // ------------------------------------------------------------------ vectors and files
+
+    static double[] gaussian(Random random, int length) {
+        double[] vector = new double[length];
+        for (int i = 0; i < length; i++) vector[i] = random.nextGaussian();
+        return vector;
     }
 
-    static int arg(String[] a, int i, int def) {
-        return a.length > i ? Integer.parseInt(a[i]) : def;
+    static double[] step(double[] from, double[] direction, double size) {
+        double[] to = from.clone();
+        for (int i = 0; i < to.length; i++) to[i] += size * direction[i];
+        return to;
     }
 
-    /** Parameter file: '#' comment lines (provenance), then the log-space parameters on one line. */
-    static void save(double[] t, String about) throws Exception {
-        Files.createDirectories(OUT.toAbsolutePath().getParent());
-        Files.writeString(OUT, "# " + about + "\n# written " + java.time.LocalDateTime.now().withNano(0) + "\n"
-                + Arrays.toString(t).replaceAll("[\\[\\],]", "") + "\n");
+    static int intArg(String[] args, int index, int fallback) {
+        return args.length > index ? Integer.parseInt(args[index]) : fallback;
+    }
+
+    /** A parameter file: '#' lines saying how it was made, then the log-space parameters on one line. */
+    static void save(double[] parameters, String provenance) throws Exception {
+        Files.createDirectories(OUTPUT.toAbsolutePath().getParent());
+        Files.writeString(OUTPUT, "# " + provenance + "\n# written " + LocalDateTime.now().withNano(0) + "\n"
+                + Arrays.toString(parameters).replaceAll("[\\[\\],]", "") + "\n");
     }
 
     static double[] load(Path file) {
         try {
-            return Files.readAllLines(file).stream().filter(l -> !l.isBlank() && !l.startsWith("#"))
-                    .flatMap(l -> Arrays.stream(l.trim().split("\\s+"))).mapToDouble(Double::parseDouble).toArray();
-        } catch (Exception ex) {
-            throw new IllegalStateException("can't read parameters from " + file, ex);
+            return Files.readAllLines(file).stream()
+                    .filter(line -> !line.isBlank() && !line.startsWith("#"))
+                    .flatMap(line -> Arrays.stream(line.trim().split("\\s+")))
+                    .mapToDouble(Double::parseDouble)
+                    .toArray();
+        } catch (Exception e) {
+            throw new IllegalStateException("can't read parameters from " + file, e);
         }
     }
 }

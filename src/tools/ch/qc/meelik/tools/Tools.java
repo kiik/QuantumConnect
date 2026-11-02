@@ -1,81 +1,101 @@
 package ch.qc.meelik.tools;
 
 import ch.cern.quantumconnect.core.SpaceOwnership;
-import ch.qc.meelik.QuarkBot;
+import ch.qc.meelik.bots.QuarkBot;
+import ch.qc.meelik.engine.Board;
+import ch.qc.meelik.engine.Engine;
 
-/** Helpers shared by the tools. Engine player 0 is the first mover here. */
+import java.util.Arrays;
+
+/** Helpers shared by the tools. On tool boards, player 0 is the first mover (X), player 1 is O. */
 final class Tools {
     private Tools() { }
 
-    /** "8x12x6" (rows x cols x k), optional "-nobomb" suffix. */
-    static QuarkBot engine(String geom) {
-        String[] p = geom.replace("-nobomb", "").split("x");
-        return new QuarkBot(Integer.parseInt(p[0]), Integer.parseInt(p[1]), Integer.parseInt(p[2]), !geom.endsWith("-nobomb"));
+    // ------------------------------------------------------------------ boards and engines
+
+    /** A board from "rows x columns x lineLength", e.g. "8x12x6", with optional "-nobomb" suffix. */
+    static Board board(String geometry, boolean tracksThreats) {
+        boolean bombs = !geometry.endsWith("-nobomb");
+        int[] size = Arrays.stream(geometry.replace("-nobomb", "").split("x")).mapToInt(Integer::parseInt).toArray();
+        return new Board(size[0], size[1], size[2], bombs, tracksThreats);
     }
 
-    static SpaceOwnership[][] grid(QuarkBot e) {
-        SpaceOwnership[][] g = new SpaceOwnership[e.rows][e.cols];
-        for (int c = 0; c < e.cols; c++)
-            for (int h = 0; h < e.rows; h++) {
-                int p = e.cell[c * e.rows + h];
-                g[e.rows - 1 - h][c] = p < 0 ? SpaceOwnership.EMPTY : p == 0 ? SpaceOwnership.FIRST_PLAYER : SpaceOwnership.SECOND_PLAYER;
+    /** A plain search engine (QuarkBot's) on a board of the given geometry. */
+    static Engine engine(String geometry) {
+        return new QuarkBot(board(geometry, false));
+    }
+
+    /** The board as an arena field: row 0 at the top. */
+    static SpaceOwnership[][] field(Board board) {
+        SpaceOwnership[][] field = new SpaceOwnership[board.rows][board.columns];
+        for (int column = 0; column < board.columns; column++)
+            for (int height = 0; height < board.rows; height++) {
+                int owner = board.owner[column * board.rows + height];
+                field[board.rows - 1 - height][column] = owner == Board.EMPTY ? SpaceOwnership.EMPTY
+                        : owner == 0 ? SpaceOwnership.FIRST_PLAYER : SpaceOwnership.SECOND_PLAYER;
             }
-        return g;
+        return field;
     }
 
-    /** Actions like "5,6,5b" (b = bomb); "-" or "" is the empty board. */
-    static int[] parseMoves(String s) {
-        if (s.isBlank() || s.equals("-")) return new int[0];
-        String[] t = s.split("[,\\s]+");
-        int[] a = new int[t.length];
-        for (int i = 0; i < t.length; i++)
-            a[i] = t[i].endsWith("b") ? 2 * Integer.parseInt(t[i].substring(0, t[i].length() - 1)) + 1 : 2 * Integer.parseInt(t[i]);
-        return a;
+    // ------------------------------------------------------------------ actions and scores as text
+
+    /** Actions written like "5,6,5b" (column, b for bomb); "-" or "" is no actions. */
+    static int[] parseActions(String text) {
+        if (text.isBlank() || text.equals("-")) return new int[0];
+        return Arrays.stream(text.split("[,\\s]+"))
+                .mapToInt(t -> Board.action(Integer.parseInt(t.replace("b", "")), t.endsWith("b")))
+                .toArray();
     }
 
-    static String action(int a) {
-        return (a >> 1) + ((a & 1) != 0 ? "b" : "");
+    static String describeAction(int action) {
+        return Board.columnOf(action) + (Board.isBomb(action) ? "b" : "");
     }
 
-    /** X = first mover, O = second mover. */
-    static String board(QuarkBot e) {
-        StringBuilder sb = new StringBuilder();
-        for (int h = e.rows - 1; h >= 0; h--) {
-            for (int c = 0; c < e.cols; c++) {
-                int p = e.cell[c * e.rows + h];
-                sb.append(p < 0 ? " ." : p == 0 ? " X" : " O");
+    static String describeScore(int score) {
+        if (score > Engine.WIN - Engine.MAX_PLY) return "WIN in " + (Engine.WIN - score);
+        if (score < Engine.MAX_PLY - Engine.WIN) return "LOSS in " + (Engine.WIN + score);
+        return Integer.toString(score);
+    }
+
+    /** X = first mover, O = second mover, with column numbers underneath. */
+    static String render(Board board) {
+        StringBuilder text = new StringBuilder();
+        for (int height = board.rows - 1; height >= 0; height--) {
+            for (int column = 0; column < board.columns; column++) {
+                int owner = board.owner[column * board.rows + height];
+                text.append(owner == Board.EMPTY ? " ." : owner == 0 ? " X" : " O");
             }
-            sb.append('\n');
+            text.append('\n');
         }
-        for (int c = 0; c < e.cols; c++) sb.append(String.format("%2d", c % 10));
-        return sb.append('\n').toString();
+        for (int column = 0; column < board.columns; column++) text.append(String.format("%2d", column % 10));
+        return text.append('\n').toString();
     }
 
-    /** Evaluation parameters in log space: weight[dir][1..k-1] for the 3 directions, then bombBonus. */
-    static double[] params(QuarkBot e) {
-        double[] t = new double[3 * (e.k - 1) + 1];
+    // ------------------------------------------------------------------ evaluation parameters (for Tune)
+
+    /** The tunable parameters in log space: line weights for 1..lineLength-1 quarks per direction, then the bomb bonus. */
+    static double[] parameters(Engine engine) {
+        int perDirection = engine.board.lineLength - 1;
+        double[] parameters = new double[3 * perDirection + 1];
         for (int d = 0; d < 3; d++)
-            for (int n = 1; n < e.k; n++) t[d * (e.k - 1) + n - 1] = Math.log(Math.max(1, e.weight[d][n]));
-        t[t.length - 1] = Math.log(Math.max(1, e.bombBonus));
-        return t;
+            for (int n = 1; n <= perDirection; n++) parameters[d * perDirection + n - 1] = Math.log(Math.max(1, engine.board.lineWeight[d][n]));
+        parameters[parameters.length - 1] = Math.log(Math.max(1, engine.bombReadyBonus));
+        return parameters;
     }
 
-    static void apply(QuarkBot e, double[] t) {
+    static void applyParameters(Engine engine, double[] parameters) {
+        int perDirection = engine.board.lineLength - 1;
+        int[][] weights = new int[3][engine.board.lineLength + 1];
         for (int d = 0; d < 3; d++)
-            for (int n = 1; n < e.k; n++) e.weight[d][n] = (int) Math.min(1 << 20, Math.round(Math.exp(t[d * (e.k - 1) + n - 1])));
-        e.bombBonus = (int) Math.min(1 << 20, Math.round(Math.exp(t[t.length - 1])));
+            for (int n = 1; n <= perDirection; n++) weights[d][n] = (int) Math.min(1 << 20, Math.round(Math.exp(parameters[d * perDirection + n - 1])));
+        engine.board.setLineWeights(weights);
+        engine.bombReadyBonus = (int) Math.min(1 << 20, Math.round(Math.exp(parameters[parameters.length - 1])));
     }
 
-    static String describe(QuarkBot e) {
-        StringBuilder sb = new StringBuilder();
-        String[] names = {"horizontal", "vertical", "diagonal"};
-        for (int d = 0; d < 3; d++) sb.append(names[d]).append(' ').append(java.util.Arrays.toString(e.weight[d])).append("  ");
-        return sb.append("bombBonus ").append(e.bombBonus).toString();
-    }
-
-    static String value(int v) {
-        if (v > QuarkBot.WIN - 1000) return "WIN in " + (QuarkBot.WIN - v);
-        if (v < 1000 - QuarkBot.WIN) return "LOSS in " + (QuarkBot.WIN + v);
-        return Integer.toString(v);
+    static String describeWeights(Engine engine) {
+        String[] directions = {"horizontal", "vertical", "diagonal"};
+        StringBuilder text = new StringBuilder();
+        for (int d = 0; d < 3; d++) text.append(directions[d]).append(' ').append(Arrays.toString(engine.board.lineWeight[d])).append("  ");
+        return text.append("bombReadyBonus ").append(engine.bombReadyBonus).toString();
     }
 }

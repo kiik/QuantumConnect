@@ -1,137 +1,207 @@
 package ch.qc.meelik.tools;
 
 import ch.cern.quantumconnect.core.SpaceOwnership;
-import ch.qc.meelik.QuarkBot;
+import ch.qc.meelik.bots.QuarkBot;
+import ch.qc.meelik.engine.Board;
+import ch.qc.meelik.engine.Engine;
 
+import java.util.Arrays;
 import java.util.Random;
 
 /**
- * Correctness checks for the engine:
- * 1. incremental state (score, wins, hash) equals a rebuild from scratch, through random games with bombs;
- * 2. alpha-beta without the transposition table equals plain minimax at fixed depth (bombs included);
- * 3. with the transposition table, exact solves of small boards equal solves without it;
- * 4. search speed on the real board.
+ * Correctness checks for the engine, each against an independent, simpler computation:
+ * <ol>
+ *   <li>the incrementally updated board (score, wins, threats, hash) equals one rebuilt from
+ *       scratch, through random games with bombs;
+ *   <li>a threat count says a drop completes a line exactly when it does;
+ *   <li>alpha-beta without the transposition table equals plain minimax at fixed depth, bombs
+ *       included;
+ *   <li>with the transposition table, exact solves of small boards equal solves without it;
+ *   <li>search speed on the real board (a measurement, not a check).
+ * </ol>
+ *
+ * <p>Usage: SelfTest, or SelfTest speed to measure only the speed, in a fresh JVM.
  */
 public final class SelfTest {
     static int failures;
 
     public static void main(String[] args) {
-        Random rnd = new Random(1);
-        incremental(rnd);
-        minimax(rnd, "6x7x4", 4, 150);
-        minimax(rnd, "5x6x4", 5, 100);
-        solves(rnd, "4x5x4-nobomb", 200);
-        solves(rnd, "5x5x4-nobomb", 60);
-        speed(rnd);
+        Random random = new Random(1);
+        if (args.length > 0 && args[0].equals("speed")) { // speed alone, in a fresh JVM
+            measureSpeed(random);
+            return;
+        }
+        incrementalMatchesRebuild(random);
+        threatsMatchDrops(random);
+        alphaBetaMatchesMinimax(random, "6x7x4", 4, 150);
+        alphaBetaMatchesMinimax(random, "5x6x4", 5, 100);
+        tableSolvesMatchPlainSolves(random, "4x5x4-nobomb", 200);
+        tableSolvesMatchPlainSolves(random, "5x5x4-nobomb", 60);
+        measureSpeed(random);
         System.out.println(failures == 0 ? "ALL PASSED" : failures + " FAILURE(S)");
     }
 
     static void check(boolean ok, String what) {
-        if (!ok) { failures++; System.out.println("  FAIL: " + what); }
+        if (ok) return;
+        failures++;
+        System.out.println("  FAIL: " + what);
     }
 
-    /** Plays random actions (bombing whenever allowed half the time) until the game ends. */
-    static void randomPlay(QuarkBot e, Random rnd, int maxPlies) {
-        for (int i = 0; i < maxPlies && e.winner() < 0 && e.pieces < e.size; i++) e.play(randomAction(e, rnd));
+    // ------------------------------------------------------------------ random positions
+
+    /** A random legal action; bombs, when allowed, half the time. */
+    static int randomAction(Board board, Random random) {
+        int action;
+        do action = Board.action(random.nextInt(board.columns), random.nextBoolean()); while (!board.isLegal(action));
+        return action;
     }
 
-    static int randomAction(QuarkBot e, Random rnd) {
-        int a;
-        do a = 2 * rnd.nextInt(e.cols) + (rnd.nextBoolean() ? 1 : 0); while (!e.legal(a));
-        return a;
+    static void playRandomly(Board board, Random random, int maxPlies) {
+        for (int i = 0; i < maxPlies && board.winner() < 0 && !board.isFull(); i++) board.play(randomAction(board, random));
     }
 
-    static void incremental(Random rnd) {
-        int steps = 0, blasts = 0;
-        for (int g = 0; g < 300; g++) {
-            QuarkBot e = new QuarkBot(), r = new QuarkBot();
-            while (e.winner() < 0 && e.pieces < e.size && steps < 1_000_000) {
-                int a = randomAction(e, rnd);
-                int[] s = e.snapshot();
-                long key = e.key();
-                e.play(a);
-                blasts += a & 1;
-                steps++;
-                r.load(Tools.grid(e), SpaceOwnership.FIRST_PLAYER);
-                r.turn = e.turn; r.wait[0] = e.wait[0]; r.wait[1] = e.wait[1];
-                check(r.score == e.score && r.key() == e.key() && r.full[0] == e.full[0] && r.full[1] == e.full[1],
-                        "incremental state after " + Tools.action(a));
-                for (int c = 0; c < e.cols; c++)
-                    for (int h = e.height[c]; h < e.rows; h++) check(e.cell[c * e.rows + h] < 0, "floating quark");
-                e.restore(s);
-                check(e.key() == key, "snapshot restore");
-                e.play(a);
+    static boolean isOver(Board board) {
+        return board.winner() >= 0 || board.isFull();
+    }
+
+    // ------------------------------------------------------------------ 1. incremental state
+
+    static void incrementalMatchesRebuild(Random random) {
+        int actions = 0, bombs = 0;
+        for (int game = 0; game < 300; game++) {
+            Board board = new Board(8, 12, 6, true, true), rebuilt = new Board(8, 12, 6, true, true);
+            while (!isOver(board)) {
+                int action = randomAction(board, random);
+                int[] before = board.saveState();
+                long keyBefore = board.positionKey();
+                board.play(action);
+                actions++;
+                if (Board.isBomb(action)) bombs++;
+
+                rebuilt.load(Tools.field(board), SpaceOwnership.FIRST_PLAYER);
+                rebuilt.sideToMove = board.sideToMove;
+                rebuilt.bombCooldown[0] = board.bombCooldown[0];
+                rebuilt.bombCooldown[1] = board.bombCooldown[1];
+                check(rebuilt.staticScore == board.staticScore && rebuilt.positionKey() == board.positionKey()
+                                && Arrays.equals(rebuilt.completedLines, board.completedLines) && Arrays.equals(rebuilt.threatCount, board.threatCount),
+                        "incremental state after " + Tools.describeAction(action));
+                for (int column = 0; column < board.columns; column++)
+                    for (int height = board.columnHeight[column]; height < board.rows; height++)
+                        check(board.owner[column * board.rows + height] == Board.EMPTY, "a quark floats above its column");
+
+                board.restoreState(before);
+                check(board.positionKey() == keyBefore, "restoring a saved state");
+                board.play(action);
             }
         }
-        System.out.printf("1. incremental vs rebuild: %d actions, %d blasts checked%n", steps, blasts);
+        System.out.printf("1. incremental == rebuilt: %d actions, %d of them bombs%n", actions, bombs);
     }
 
-    static int minimax(QuarkBot e, int depth, int ply) {
-        int w = e.winner();
-        if (w >= 0) return w == e.turn ? QuarkBot.WIN - ply : ply - QuarkBot.WIN;
-        if (e.pieces == e.size) return 0;
-        if (depth == 0) return e.eval();
-        int best = -QuarkBot.WIN - 1;
-        for (int a = 0; a < 2 * e.cols; a++)
-            if (e.legal(a)) {
-                int[] s = e.snapshot();
-                e.play(a);
-                best = Math.max(best, -minimax(e, depth - 1, ply + 1));
-                e.restore(s);
+    // ------------------------------------------------------------------ 2. threats
+
+    static void threatsMatchDrops(Random random) {
+        int checked = 0, threats = 0;
+        for (int game = 0; game < 300; game++) {
+            Board board = new Board(8, 12, 6, true, true);
+            while (!isOver(board)) {
+                for (int column = 0; column < board.columns; column++) {
+                    if (board.columnHeight[column] == board.rows) continue;
+                    for (int player = 0; player < 2; player++) {
+                        int[] before = board.saveState();
+                        int mover = board.sideToMove;
+                        board.sideToMove = player; // try the drop for either player
+                        board.drop(column);
+                        boolean completes = board.completedLines[player] > 0;
+                        board.restoreState(before);
+                        board.sideToMove = mover;
+                        check(board.completesLine(player, column) == completes, "threat count for a drop in column " + column);
+                        checked++;
+                        if (completes) threats++;
+                    }
+                }
+                board.play(randomAction(board, random));
             }
+        }
+        System.out.printf("2. threats == drops: %d drops checked, %d of them complete a line%n", checked, threats);
+    }
+
+    // ------------------------------------------------------------------ 3. alpha-beta against minimax
+
+    static int minimax(Engine engine, int depth, int ply) {
+        Board board = engine.board;
+        int winner = board.winner();
+        if (winner >= 0) return winner == board.sideToMove ? Engine.WIN - ply : ply - Engine.WIN;
+        if (board.isFull()) return 0;
+        if (depth == 0) return engine.evaluate();
+        int best = -Engine.WIN - 1;
+        for (int action = 0; action < board.actionCount(); action++) {
+            if (!board.isLegal(action)) continue;
+            int[] before = board.saveState();
+            board.play(action);
+            best = Math.max(best, -minimax(engine, depth - 1, ply + 1));
+            board.restoreState(before);
+        }
         return best;
     }
 
-    static void minimax(Random rnd, String geom, int depth, int positions) {
-        int bombPositions = 0;
+    static void alphaBetaMatchesMinimax(Random random, String geometry, int depth, int positions) {
+        int withBombReady = 0;
         for (int i = 0; i < positions; i++) {
-            QuarkBot e = Tools.engine(geom);
-            e.useTT = false;
-            e.bombBonus = 7;
-            e.weight[1][2] = 3;
-            randomPlay(e, rnd, rnd.nextInt(e.size / 2));
-            if (e.winner() >= 0 || e.pieces == e.size) continue;
-            if (e.legal(1) || e.legal(3) || e.wait[0] == 0 || e.wait[1] == 0) bombPositions++;
-            long key = e.key();
-            int expect = minimax(e, depth, 0), got = e.evaluate(depth);
-            check(expect == got && e.key() == key, geom + " depth " + depth + ": minimax " + expect + " vs alpha-beta " + got);
+            Engine engine = Tools.engine(geometry);
+            engine.useTranspositionTable = false;
+            engine.bombReadyBonus = 7; // exercise every evaluation term
+            engine.board.lineWeight[Board.VERTICAL][2] = 3;
+            playRandomly(engine.board, random, random.nextInt(engine.board.cellCount / 2));
+            if (isOver(engine.board)) continue;
+            if (engine.board.bombCooldown[0] == 0 || engine.board.bombCooldown[1] == 0) withBombReady++;
+            long key = engine.board.positionKey();
+            int expected = minimax(engine, depth, 0), actual = engine.searchValue(depth);
+            check(expected == actual && engine.board.positionKey() == key, geometry + " depth " + depth + ": minimax " + expected + " vs alpha-beta " + actual);
         }
-        System.out.printf("2. alpha-beta == minimax on %s depth %d: %d positions (%d with a bomb in reach)%n", geom, depth, positions, bombPositions);
+        System.out.printf("3. alpha-beta == minimax on %s at depth %d: %d positions (%d with a bomb ready)%n", geometry, depth, positions, withBombReady);
     }
 
-    static void solves(Random rnd, String geom, int positions) {
-        int[] wdl = new int[3];
+    // ------------------------------------------------------------------ 4. transposition table
+
+    static void tableSolvesMatchPlainSolves(Random random, String geometry, int positions) {
+        int wins = 0, draws = 0, losses = 0;
         for (int i = 0; i < positions; i++) {
-            QuarkBot e = Tools.engine(geom);
-            randomPlay(e, rnd, e.size / 3 + rnd.nextInt(e.size / 3));
-            if (e.winner() >= 0 || e.pieces == e.size) continue;
-            int depth = e.size - e.pieces;
-            int withTT = e.evaluate(depth);
-            QuarkBot plain = Tools.engine(geom);
-            plain.restore(e.snapshot());
-            plain.useTT = false;
-            int without = plain.evaluate(depth);
-            check(withTT == without, geom + " exact solve: TT " + withTT + " vs plain " + without);
-            wdl[withTT > 0 ? 0 : withTT == 0 ? 1 : 2]++;
+            Engine withTable = Tools.engine(geometry);
+            Board board = withTable.board;
+            playRandomly(board, random, board.cellCount / 3 + random.nextInt(board.cellCount / 3));
+            if (isOver(board)) continue;
+            int remaining = board.cellCount - board.quarkCount;
+            int solved = withTable.searchValue(remaining);
+
+            Engine plain = Tools.engine(geometry);
+            plain.useTranspositionTable = false;
+            plain.board.restoreState(board.saveState());
+            int plainSolved = plain.searchValue(remaining);
+            check(solved == plainSolved, geometry + " exact solve: with table " + solved + " vs without " + plainSolved);
+            if (solved > 0) wins++;
+            else if (solved == 0) draws++;
+            else losses++;
         }
-        System.out.printf("3. TT solve == plain solve on %s: %d wins / %d draws / %d losses for the side to move%n", geom, wdl[0], wdl[1], wdl[2]);
+        System.out.printf("4. table solves == plain solves on %s: %d wins, %d draws, %d losses for the side to move%n", geometry, wins, draws, losses);
     }
 
-    static void speed(Random rnd) {
-        long nodes = 0, ns = 0;
-        int depthSum = 0, n = 0;
+    // ------------------------------------------------------------------ 5. speed
+
+    static void measureSpeed(Random random) {
+        long nodes = 0, nanos = 0;
+        int depths = 0, positions = 0;
         for (int i = 0; i < 30; i++) {
-            QuarkBot e = new QuarkBot();
-            randomPlay(e, rnd, 4 + rnd.nextInt(30));
-            if (e.winner() >= 0) continue;
-            long t0 = System.nanoTime();
-            e.think(e.budgetNanos);
-            ns += System.nanoTime() - t0;
-            nodes += e.nodes;
-            depthSum += e.lastDepth;
-            n++;
+            Engine engine = new QuarkBot();
+            playRandomly(engine.board, random, 4 + random.nextInt(30));
+            if (isOver(engine.board)) continue;
+            long started = System.nanoTime();
+            engine.chooseAction(engine.budgetNanos);
+            nanos += System.nanoTime() - started;
+            nodes += engine.nodesSearched;
+            depths += engine.lastDepth;
+            positions++;
         }
-        System.out.printf("4. speed on 8x12x6: %.0f k nodes/s, avg depth %.1f in %.0f ms (%d positions)%n",
-                nodes / (ns / 1e6), (double) depthSum / n, ns / 1e6 / n, n);
+        System.out.printf("5. speed on 8x12x6: %.0fk nodes/s, average depth %.1f in %.0f ms (%d positions)%n",
+                nodes / (nanos / 1e6), (double) depths / positions, nanos / 1e6 / positions, positions);
     }
 }

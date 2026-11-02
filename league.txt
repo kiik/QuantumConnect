@@ -3,4 +3,4 @@
 random   random
 depth2   quark/2
 quark    quark
-evolved  quark:params/evolved-d4.txt
+evolved  evolved

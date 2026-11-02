@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build and run the bot and its tools.
-#   ./qc.sh build                 compile everything; package out/QuarkBot.jar (bot class only)
-#   ./qc.sh jar <bot class>       package one bot for upload, e.g. ./qc.sh jar ch.qc.meelik.QuarkBot
+#   ./qc.sh build                 compile everything; package every bot as out/<Name>.jar
+#   ./qc.sh jar <bot class>       package one bot, e.g. ./qc.sh jar ch.qc.meelik.bots.QuarkBot
 #   ./qc.sh check <jar>...        pre-upload check: manifest, size, forbidden packages
 #   ./qc.sh test                  engine self-test (SelfTest)
 #   ./qc.sh arena A B [games]     headless matches, e.g. ./qc.sh arena quark random 20
@@ -45,17 +45,22 @@ build() {
     fi
     "$JAVAC" --release 17 -Xlint:all -cp "$cp" -d out/bot $(find src/bot -name '*.java')
     "$JAVAC" --release 17 -cp "out/bot$SEP$cp" -d out/tools $(find src/tools -name '*.java')
-    package ch.qc.meelik.QuarkBot
+    for bot in $(bot_classes); do package "$bot"; done
 }
 
-# One JAR per bot: the class and its nested classes only, with Bot-Class set.
+# Every class that extends Engine is a bot, e.g. ch.qc.meelik.bots.QuarkBot.
+bot_classes() {
+    grep -rl --include='*.java' 'extends Engine' src/bot | sed 's|^src/bot/||; s|\.java$||; s|/|.|g' | sort
+}
+
+# One JAR per bot: the engine package plus the bot's own class files, with Bot-Class set.
 package() {
     local cls=$1 path=${1//.//} name=${1##*.}
     [ -f "out/bot/$path.class" ] || { echo "no compiled bot $cls (run ./qc.sh build)" >&2; exit 1; }
     printf 'Bot-Class: %s\n' "$cls" > "out/$name.manifest"
-    local files; files=$(cd out/bot && ls "$path.class" "$path"\$*.class 2>/dev/null || true)
+    local files; files=$(cd out/bot && ls ch/qc/meelik/engine/*.class "$path.class" "$path"\$*.class 2>/dev/null || true)
     "$JAR" --create --file "out/$name.jar" --manifest "out/$name.manifest" $(for f in $files; do printf -- '-C out/bot %s ' "$f"; done)
-    echo "built out/$name.jar: $(echo $files)"
+    echo "built out/$name.jar: $(echo $files | sed 's|ch/qc/meelik/||g')"
 }
 
 run() { "$JAVA" -cp "out/bot${SEP}out/tools${SEP}$(engine_cp)" "ch.qc.meelik.tools.$@"; }
