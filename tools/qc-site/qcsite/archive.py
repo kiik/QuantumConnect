@@ -106,16 +106,32 @@ def archive(site: client.Site, selectors: list[str]) -> dict:
 # Reading lost games back
 # ---------------------------------------------------------------------------------------------
 
+# Our uploads over time: QuarkBot-*, SerenaBot-*, and now SerenaBot revisions codenamed Tank-DD-HHMM.
+OUR_LOSER_PATTERNS = ["Tank-*", "SerenaBot-*"]
+
+
+def top_names(count: int) -> list[str]:
+    """The names of the top bots on the latest saved leaderboard, offline."""
+    snapshots = sorted((client.archive_root() / "leaderboard").glob("*.json"))
+    if not snapshots:
+        return []
+    entries = json.loads(snapshots[-1].read_text(encoding="utf-8"))["entries"]
+    return [e["bot"] for e in sorted((e for e in entries if e["rank"]), key=lambda e: e["rank"])[:count]]
+
+
 def archived_losses(loser_patterns: list[str]) -> list[dict]:
     """Archived matches whose loser's bot name matches one of the patterns (shell-style, e.g.
-    "SerenaBot-*"), each with the loser's side."""
+    "Tank-*", or "top:N" for the exact names of the latest saved leaderboard's top N), each with
+    the loser's side."""
+    names = {name for p in loser_patterns if p.startswith("top:") for name in top_names(int(p[4:]))}
+    loser_patterns = [p for p in loser_patterns if not p.startswith("top:")]
     games = []
     for match in stored_matches():
         if match["winner"] not in ("first", "second"):
             continue
         loser_side = "second" if match["winner"] == "first" else "first"
         loser = match[loser_side]["bot"]
-        if any(fnmatch.fnmatchcase(loser, pattern) for pattern in loser_patterns):
+        if loser in names or any(fnmatch.fnmatchcase(loser, pattern) for pattern in loser_patterns):
             games.append({**match, "loser": loser, "loser_side": loser_side})
     return games
 

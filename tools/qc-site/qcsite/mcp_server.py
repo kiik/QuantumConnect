@@ -80,7 +80,7 @@ def lost_games(bot: str = "ours") -> dict:
 def archived_matches(bot_pattern: str = "*", lost_only: bool = False, include_moves: bool = False) -> list[dict]:
     """Matches saved in the local archive (arena/archive), which keeps games the site has deleted
     (a re-upload deletes a bot's matches). bot_pattern is a shell pattern on either player's bot
-    name, e.g. "SerenaBot-*"; with lost_only, only matches that bot lost. Refresh with `qcsite archive`."""
+    name, e.g. "Tank-*"; with lost_only, only matches that bot lost. Refresh with `qcsite archive`."""
     if lost_only:
         matches = archive.archived_losses([bot_pattern])
     else:

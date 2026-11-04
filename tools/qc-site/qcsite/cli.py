@@ -144,7 +144,7 @@ def command_archive(site: client.Site, arguments) -> None:
 
 
 def command_archive_losses(site: client.Site, arguments) -> None:
-    patterns = arguments.loser or ["SerenaBot-*"]
+    patterns = arguments.loser or archive.OUR_LOSER_PATTERNS
     games = archive.archived_losses(patterns)
     if arguments.json:
         text = json.dumps(games, indent=1, ensure_ascii=False) + "\n"
@@ -278,7 +278,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     archive_losses = commands.add_parser("archive-losses", help="archived lost games, for qc.sh learn")
     archive_losses.add_argument("--loser", action="append",
-                                help='loser bot name pattern, e.g. "SerenaBot-*" (default) or "King beater"; repeatable')
+                                help='loser bot name pattern, e.g. "Tank-*", "King beater" or "top:3" (the latest '
+                                     'saved top 3); repeatable; default "Tank-*" and "SerenaBot-*"')
     archive_losses.add_argument("-o", "--output", help="write to this file instead of stdout")
 
     upload = commands.add_parser("upload", help="upload a bot JAR: replaces our bot, deletes its matches")

@@ -1,0 +1,3 @@
+time	candidate	opponent	games	wins	draws	losses	score	size
+# ./qc.sh tank: the candidate SerenaBot upload JAR vs the newest Bots/Tank-*.jar, starts alternating, engine Experiment, 15x30
+2026-11-04T18:55:08+02:00	Tank-04-1852	Tank-04-1851	10	3	0	7	0.300	15x30
