@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="520">
+<style>
+  .box { fill: #eff6ff; stroke: #2563eb; stroke-width: 1.5; }
+  .t { fill: #1f2937; font: 13px sans-serif; text-anchor: middle; }
+  .s { fill: #4b5563; font: 11px sans-serif; text-anchor: middle; }
+  .a { stroke: #6b7280; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+  .h { fill: #6b7280; }
+  @media (prefers-color-scheme: dark) {
+    .box { fill: #172554; stroke: #60a5fa; }
+    .t { fill: #f3f4f6; } .s { fill: #d1d5db; }
+    .a { stroke: #9ca3af; } .h { fill: #9ca3af; }
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="h" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="box" x="190" y="10" width="140" height="54" rx="8"/>
+<text class="t" x="260" y="32">Island 0</text><text class="s" x="260" y="50">own seed</text>
+<rect class="box" x="370" y="120" width="140" height="54" rx="8"/>
+<text class="t" x="440" y="142">Island 1</text><text class="s" x="440" y="160">own seed</text>
+<rect class="box" x="190" y="230" width="140" height="54" rx="8"/>
+<text class="t" x="260" y="252">Island 2</text><text class="s" x="260" y="270">own seed</text>
+<rect class="box" x="10" y="120" width="140" height="54" rx="8"/>
+<text class="t" x="80" y="142">Island 3</text><text class="s" x="80" y="160">own seed</text>
+<path class="a" d="M330,37 Q440,37 440,118"/><path class="a" d="M440,174 Q440,257 332,257"/>
+<path class="a" d="M190,257 Q80,257 80,176"/><path class="a" d="M80,120 Q80,37 188,37"/>
+<text class="s" x="260" y="126">every K generations each</text>
+<text class="s" x="260" y="141">island's best replaces the</text>
+<text class="s" x="260" y="156">next island's worst</text>
+<text class="s" x="260" y="186">genome: 16 evaluation genes</text>
+<text class="s" x="260" y="201">+ table size, 2^14..2^21</text>
+</svg>
