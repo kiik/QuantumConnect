@@ -11,182 +11,121 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * SerenaBot: QuarkBot's alpha-beta search, plus a loss book learned from the tournament: the bot
- * that learns from its own lost games.
+ * SerenaBot, the QuantumConnect bot of team WilyQuarks: an alpha-beta search over a fast model of
+ * the game, plus a book of lessons learned from its own lost games.
+ *
+ * <h2>The game</h2>
+ * Quarks drop into columns and stack from the bottom. Six in a row, horizontally, vertically or
+ * diagonally, wins. Instead of a plain drop a player may bomb: the quark drops and the 3x3 cells
+ * around it, itself included, are cleared, and the quarks above fall down. A player may bomb once
+ * every {@link #BOMB_COOLDOWN} of their own turns, the first time after {@link #FIRST_BOMB_WAIT}.
+ * After every turn, a line anywhere on the board wins for the player who just moved, whoever's line
+ * it is.
+ *
+ * <h2>The model</h2>
+ * Cells are numbered column by column, {@code cell = column * rows + height}, with height 0 at the
+ * bottom. Player 0 is always this bot. A move, called an <i>action</i>, packs the column and the bomb
+ * decision: {@code action = 2 * column + (bomb ? 1 : 0)}.
+ *
+ * <p>A <i>line</i> is any run of six cells. For every line the board keeps how many quarks each
+ * player has in it, and updates the counts quark by quark. Everything else follows from the counts:
+ * <ul>
+ *   <li>the win test: a count reaching six;
+ *   <li>the evaluation: a line open to one player only is worth a weight to that player;
+ *   <li>the threats: empty cells that would complete a line.
+ * </ul>
+ * A bomb is carried out as single-quark removals and additions, so it needs no bookkeeping of its own.
+ *
+ * <h2>The search</h2>
+ * Negamax with alpha-beta pruning, deepened one ply at a time until the time budget runs out. A
+ * transposition table reuses positions reached by other move orders, and moves are tried best guess
+ * first: the table's move, then moves that caused cut-offs before, then centre columns. The threats
+ * force moves: a side that can complete a line wins; one facing two threats without its bomb has
+ * lost; one facing a single threat must block it or bomb.
  *
  * <h2>The loss book</h2>
- * Every revision of SerenaBot is uploaded to the tournament as {@code SerenaBot-DD-HHMM}. Its lost
- * games are fetched from the site ({@code qcsite losses}) and replayed offline ({@code qc.sh learn}).
- * At each of our moves in the run-up to the loss, a search with far more time than the arena allows
- * looks for a better move; where it finds one that clearly beats the move we played (above all one
- * that escapes a forced loss), the position and that move go into the book. The book is built into
- * the class ({@link #LOSS_BOOK}), so the next revision plays the better move at once, without
- * searching, whenever a game reaches a booked position again. Tournament opponents are bots, mostly
- * deterministic, so the same lines recur. The book only grows: each revision keeps every lesson of the
- * ones before it (params/serena/book.txt holds them, with where each came from).
+ * After each tournament round we replay every game we lost and search our moves before the loss
+ * with far more time than a turn allows. Where that search finds a clearly better move, the position
+ * (its hash, {@link #positionKey}) and the better move go into {@link #LOSS_BOOK}. In a game, a
+ * position found in the book is answered from it without searching.
  *
- * <p>Positions are keyed by {@link #positionKey}, from our side (we are player 0) with both bomb
- * cooldowns, and the board size is part of each entry, so a book learned on the tournament's board
- * never fires on another size.
+ * <p>The bot is this one class and uses only the engine API, java.lang and java.util.
  *
- * <h2>The rest is QuarkBot's</h2>
- * Alpha-beta search on a model of QuantumConnect (Connect-4 with extra steps), with line
- * weights evolved by self-play. It is one self-contained class, the game model, the search and the
- * arena interface together, so the upload JAR holds nothing of ours but this class. It uses only
- * the engine API and java.lang/java.util: the arena forbids java.io, java.net, reflection and the
- * like, and the bot loses on any forbidden access (java.lang.System is allowed since 2026-11-04,
- * so this bot keeps time with System.nanoTime). No nested, anonymous or lambda classes either:
- * lambdas compile to java.lang.invoke calls, which the sandbox may count as reflection.
- *
- * <h2>Rules modelled</h2>
- * <ul>
- *   <li>Quarks drop into columns and stack from the bottom (gravity).
- *   <li>A player wins with {@link #lineLength} of their quarks in a row: horizontally, vertically or
- *       diagonally.
- *   <li>The bomb: instead of a plain drop, a player may drop and blast the 3x3 cells around the
- *       quark, that quark included. Quarks above the blast fall down. A player may bomb once every
- *       {@link #BOMB_COOLDOWN} of their own turns, and not before {@link #FIRST_BOMB_WAIT} turns.
- *   <li>After every turn the arena looks for a line anywhere on the board. If there is one, the
- *       player who just moved wins, whoever's line it is (a blast can make the opponent's).
- * </ul>
- * These are the rules of the engine's {@code Experiment} (core-2.0), read from its bytecode.
- *
- * <h2>Representation</h2>
- * Cells are numbered column by column: {@code cell = column * rows + height}, where height 0 is the
- * bottom row. (The arena numbers rows from the top.) Players are 0 and 1; an empty cell is
- * {@link #EMPTY}. On the bot's own board, player 0 is always this bot ({@link #ME}). A move, called
- * an action, packs a column and the bomb decision: {@code action = column * 2 + (bomb ? 1 : 0)}.
- *
- * <h2>Lines: the heart of the model</h2>
- * A line is any run of {@link #lineLength} cells in one of the four directions; the 8x12 board has
- * 134. For every line the board keeps how many quarks each player has in it, and updates the counts
- * whenever a single quark is added or removed. Everything else follows from those counts, cheaply:
- * <ul>
- *   <li>the win test: a count reaching lineLength ({@link #completedLines});
- *   <li>the static score: a line open to only one player is worth {@link #lineWeight} to them;
- *   <li>threats, when enabled: cells that would complete a line ({@link #threatCount}).
- * </ul>
- * A bomb is carried out as single-quark removals and re-additions, so it needs no bookkeeping of
- * its own.
- *
- * <h2>Choosing a move</h2>
- * {@link #chooseAction} deepens iteratively: a full search to depth 1, then 2, 3, ... until the
- * time budget runs out, keeping the best action of the deepest completed search. Each search is
- * negamax with alpha-beta pruning ({@link #negamax}):
- * <ul>
- *   <li>a transposition table remembers positions already searched, which the same position
- *       reached by a different move order can reuse;
- *   <li>actions are tried best-guess first: the table's best action, then actions that caused
- *       cut-offs before (the history heuristic), then centre columns first;
- *   <li>a win scores {@code WIN - ply}, so faster wins are preferred and slower losses resisted;
- *   <li>forced moves, when threats are tracked (the arena's bot does): a side that can complete a
- *       line wins; one facing two playable threats without its bomb has lost; one facing a single
- *       threat may only block it or bomb, and at the search's horizon that block is searched
- *       rather than the position evaluated, so a forcing sequence isn't cut off halfway.
- * </ul>
- *
- * <h2>Talking to the arena</h2>
- * Each turn the arena calls {@link #accelerateQuark} (pick a column) and then {@link #useSpecialMove}
- * (bomb or not), both before anything is placed. The bot decides both at once, as one action, and
- * remembers the bomb decision between the two calls. It counts its own bomb cooldown, and the
- * opponent's from the move history, which marks every bomb. Every turn counts toward a cooldown,
- * also one lost to a timeout. The arena may use another board size than the standard 8x12: on the
- * first look at a field of another size, the bot rebuilds its board to that size, with the same
- * rules and line weights ({@link #fitBoardTo}).
- *
- * <h2>Also a plain board</h2>
- * The tools use SerenaBot as their game model too: {@code new SerenaBot(rows, columns, ...)} is an
- * empty board to play actions on, which can also search.
+ * @author WilyQuarks
  */
 public final class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ rules
 
     public static final int EMPTY = -1;
+    /** Quarks in a row that win. */
+    public static final int LINE_LENGTH = 6;
     /** Own turns from one bomb to the next. */
     public static final int BOMB_COOLDOWN = 10;
-    /** Own turns before the first bomb: the arena's counter starts at 0 and allows a bomb at 10. */
+    /** Own turns before the first bomb. */
     public static final int FIRST_BOMB_WAIT = 10;
-    /** Quarks in a row that win, on every board size. */
-    public static final int LINE_LENGTH = 6;
-
-    /** Line directions as (column step, height step); both diagonals share a weight by symmetry. */
+    /** Line directions as (column step, height step). */
     static final int[][] DIRECTIONS = {{1, 0}, {0, 1}, {1, 1}, {1, -1}};
-    public static final int HORIZONTAL = 0, VERTICAL = 1, DIAGONAL = 2;
+    /** Direction classes for the weights; both diagonals share one. */
+    static final int HORIZONTAL = 0, VERTICAL = 1, DIAGONAL = 2;
 
-    // ------------------------------------------------------------------ evaluation settings
+    // ------------------------------------------------------------------ evaluation
 
-    /**
-     * Value of a line holding 0..6 quarks of one player and none of the other, per direction class,
-     * evolved by self-play ({@code ./qc.sh tune}; the run is recorded in params/evolved-d4.txt).
-     * Against the hand-written weights (16, 64, 256, 1024, 8192) it scored 65% at the real time limit.
-     */
-    static final int[][] EVOLVED_LINE_WEIGHTS = {
+    /** Value of a line holding 0..6 quarks of one player and none of the other, per direction class, evolved by self-play. */
+    static final int[][] LINE_WEIGHT = {
             {0, 41, 131, 241, 540, 6367, 0},
             {0, 17, 75, 204, 658, 8300, 0},
             {0, 15, 105, 261, 615, 7863, 0}};
-    /** Static-evaluation bonus for having the bomb ready while the opponent doesn't. */
-    static final int EVOLVED_BOMB_READY_BONUS = 20;
+    /** Bonus for having the bomb ready while the opponent hasn't. */
+    static final int BOMB_READY_BONUS = 20;
 
     // ------------------------------------------------------------------ search constants
 
+    /** Score of a won position; a win in n plies scores WIN - n, so faster wins are preferred. */
     public static final int WIN = 1 << 28;
     public static final int ME = 0, OPPONENT = 1;
     public static final int MAX_PLY = 64;
     public static final int NO_ACTION = -1;
-    /** After this much thinking in one match, search with an eighth of the budget (the match limit is 30 s). */
+    /** After this much thinking in one match, think an eighth as long per move (a match allows 30 s). */
     static final long MATCH_TIME_GUARD_NANOS = 20_000_000_000L;
 
-    // ------------------------------------------------------------------ board geometry (set per board size)
+    // ------------------------------------------------------------------ board geometry
 
-    public int rows, columns, lineLength, cellCount, lineCount;
-    public boolean bombsEnabled, tracksThreats;
-    /** Columns ordered from the centre outwards: the usual best-first guess for move ordering. */
-    public int[] columnsCentreOut;
+    public int rows, columns;
+    int cellCount, lineCount;
+    /** The cells of each line, the lines through each cell, and each line's direction class. */
     int[][] cellsOfLine, linesThroughCell;
     int[] lineDirection;
-
-    /** Value of a line holding n quarks of one player and none of the other, per direction class. */
-    public int[][] lineWeight;
+    /** Columns ordered from the centre outwards. */
+    int[] columnsCentreOut;
 
     // ------------------------------------------------------------------ position
 
     /** Owner of each cell: player 0, player 1 or EMPTY. */
     public int[] owner;
-    public int[] columnHeight;
-    /** Own moves each player must still make before they may bomb. */
+    int[] columnHeight;
+    /** Own turns each player must still wait before they may bomb. */
     public final int[] bombCooldown = new int[2];
-    /** Number of complete lines each player has; above zero means that player has won. */
-    public final int[] completedLines = new int[2];
+    /** Complete lines of each player; above zero means the game is over. */
+    final int[] completedLines = new int[2];
     /** Quarks of each player in each line, at {@code 2 * line + player}. */
     int[] lineQuarks;
-    /** Lines in which a cell is the only one a player still needs, at {@code player * cellCount + cell}. */
-    public int[] threatCount;
-    public int sideToMove, quarkCount;
+    /** Lines a cell would complete for a player, at {@code player * cellCount + cell}. */
+    int[] threatCount;
+    public int sideToMove;
+    int quarkCount;
     /** Sum of the line values, from player 0's point of view. */
-    public int staticScore;
+    int staticScore;
 
-    // ------------------------------------------------------------------ hashing and saving
+    // ------------------------------------------------------------------ hashing and undo
 
     long[] zobristQuark, zobristCooldown;
-    long zobristSideToMove;
-    long boardHash;
+    long zobristSideToMove, boardHash;
+    /** Scratch space for the quarks above a blast. */
     int[] fallingQuarks;
     int stateSize;
 
-    // ------------------------------------------------------------------ search settings
-
-    public int bombReadyBonus = EVOLVED_BOMB_READY_BONUS;
-    public long budgetNanos = 40_000_000L;
-    public int maxDepth = MAX_PLY - 2;
-    public boolean useTranspositionTable = true;
-
-    // ------------------------------------------------------------------ results of the last search
-
-    public long nodesSearched;
-    public int lastScore, lastDepth;
-
-    // ------------------------------------------------------------------ search memory (about 8 MB; the arena allows ~100 MB)
+    // ------------------------------------------------------------------ search memory (about 8 MB)
 
     static final int TABLE_SIZE = 1 << 19;
     static final int EXACT = 0, LOWER_BOUND = 1, UPPER_BOUND = 2;
@@ -194,8 +133,11 @@ public final class SerenaBot implements Algorithm {
     final int[][] actionLists = new int[MAX_PLY][], undoStates = new int[MAX_PLY][];
     /** How often each action of each player caused a cut-off, weighted by depth. */
     int[][] historyScore;
-    long deadlineNanos;
+    public long budgetNanos = 40_000_000L;
+    long deadlineNanos, nodesSearched;
     boolean outOfTime;
+    /** Score of the last completed search, for the side that was to move. */
+    public int lastScore;
 
     // ------------------------------------------------------------------ match memory
 
@@ -207,31 +149,20 @@ public final class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ construction
 
-    /** The standard QuantumConnect board: 8 rows, 12 columns, six in a row, bombs on, threats tracked. The arena calls this one. */
+    /** The standard 8x12 board. The arena calls this one; the bot resizes to the arena's field. */
     public SerenaBot() {
-        this(8, 12, LINE_LENGTH, true, true);
+        this(8, 12);
     }
 
-    /** The standard rules (six in a row, bombs on) on a board of another size. */
+    /** An empty board of the given size. */
     public SerenaBot(int rows, int columns) {
-        this(rows, columns, LINE_LENGTH, true, false);
+        setUp(rows, columns);
     }
 
-    public SerenaBot(int rows, int columns, int lineLength, boolean bombsEnabled, boolean tracksThreats) {
-        setUp(rows, columns, lineLength, bombsEnabled, tracksThreats);
-    }
-
-    /**
-     * Builds an empty board of this geometry and sizes the search memory to it, forgetting what it
-     * held. The line weights are the evolved ones for six in a row, the hand-written formula for
-     * other line lengths.
-     */
-    private void setUp(int rows, int columns, int lineLength, boolean bombsEnabled, boolean tracksThreats) {
+    /** Builds an empty board of this size and sizes the search memory to it. */
+    private void setUp(int rows, int columns) {
         this.rows = rows;
         this.columns = columns;
-        this.lineLength = lineLength;
-        this.bombsEnabled = bombsEnabled;
-        this.tracksThreats = tracksThreats;
         cellCount = rows * columns;
 
         List<int[]> lines = new ArrayList<>();
@@ -251,9 +182,7 @@ public final class SerenaBot implements Algorithm {
         linesThroughCell = invert(cellsOfLine, cellCount);
         columnsCentreOut = centreOut(columns);
 
-        lineWeight = new int[3][];
-        for (int d = 0; d < 3; d++) lineWeight[d] = lineLength == LINE_LENGTH ? EVOLVED_LINE_WEIGHTS[d].clone() : defaultLineWeights(lineLength);
-
+        // A fixed seed: the loss book stores position hashes, so they must not change between runs.
         Random random = new Random(20261102L);
         zobristQuark = randomLongs(random, 2 * cellCount);
         zobristCooldown = randomLongs(random, 2 * (BOMB_COOLDOWN + 1));
@@ -268,22 +197,23 @@ public final class SerenaBot implements Algorithm {
         clear();
 
         for (int ply = 0; ply < MAX_PLY; ply++) {
-            actionLists[ply] = new int[actionCount()];
+            actionLists[ply] = new int[2 * columns];
             undoStates[ply] = null;
         }
-        historyScore = new int[2][actionCount()];
+        historyScore = new int[2][2 * columns];
         Arrays.fill(tableKey, 0);
     }
 
     /** The cells of the line starting at (column, height) in a direction, or null if it leaves the board. */
     private int[] lineFrom(int column, int height, int[] direction) {
-        int lastColumn = column + (lineLength - 1) * direction[0], lastHeight = height + (lineLength - 1) * direction[1];
+        int lastColumn = column + (LINE_LENGTH - 1) * direction[0], lastHeight = height + (LINE_LENGTH - 1) * direction[1];
         if (lastColumn < 0 || lastColumn >= columns || lastHeight < 0 || lastHeight >= rows) return null;
-        int[] line = new int[lineLength];
-        for (int i = 0; i < lineLength; i++) line[i] = (column + i * direction[0]) * rows + height + i * direction[1];
+        int[] line = new int[LINE_LENGTH];
+        for (int i = 0; i < LINE_LENGTH; i++) line[i] = (column + i * direction[0]) * rows + height + i * direction[1];
         return line;
     }
 
+    /** From the cells of each line to the lines through each cell. */
     private static int[][] invert(int[][] cellsOfLine, int cellCount) {
         int[] linesPerCell = new int[cellCount];
         for (int[] line : cellsOfLine) for (int cell : line) linesPerCell[cell]++;
@@ -295,10 +225,11 @@ public final class SerenaBot implements Algorithm {
         return linesThroughCell;
     }
 
+    /** The columns sorted by distance from the centre (insertion sort, so ties keep left before right). */
     private static int[] centreOut(int columns) {
         int[] order = new int[columns];
         for (int column = 0; column < columns; column++) order[column] = column;
-        for (int i = 1; i < columns; i++) // insertion sort by distance from the centre
+        for (int i = 1; i < columns; i++)
             for (int j = i; j > 0 && distanceFromCentre(order[j], columns) < distanceFromCentre(order[j - 1], columns); j--) {
                 int swap = order[j];
                 order[j] = order[j - 1];
@@ -311,14 +242,6 @@ public final class SerenaBot implements Algorithm {
         return Math.abs(2 * column - columns + 1);
     }
 
-    /** The hand-written weights: 16, 64, 256, ... for 1, 2, 3, ... quarks, doubled for a line one quark short. */
-    static int[] defaultLineWeights(int lineLength) {
-        int[] weights = new int[lineLength + 1];
-        for (int n = 1; n < lineLength; n++) weights[n] = 16 << 2 * (n - 1);
-        weights[lineLength - 1] *= 2;
-        return weights;
-    }
-
     private static long[] randomLongs(Random random, int count) {
         long[] values = new long[count];
         for (int i = 0; i < count; i++) values[i] = random.nextLong();
@@ -327,25 +250,31 @@ public final class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ the arena interface
 
+    /**
+     * Picks the column for this turn. The arena asks for the column, then whether to bomb, both
+     * before anything is placed; the bot decides both here and remembers the bomb decision.
+     */
     @Override
     public int accelerateQuark(QuantumField field) {
-        long started = nanoTime();
+        long started = System.nanoTime();
         SpaceOwnership[][] grid = field.getField();
         if (myColour == null) myColour = whoAmI(field, grid);
-        fitBoardTo(grid);
+        if (grid.length != rows || grid[0].length != columns) setUp(grid.length, grid[0].length);
         load(grid, myColour);
         updateOpponentCooldown(field.getMoveHistory());
         myTurns++;
         bombCooldown[ME] = myCooldown;
         bombCooldown[OPPONENT] = opponentCooldown;
+
         int booked = bookAction(positionKey());
-        plannedAction = booked != NO_ACTION && isLegal(booked) && (bombCooldown[ME] == 0 || !isBomb(booked))
-                ? booked
+        boolean bookPlayable = booked != NO_ACTION && isLegal(booked);
+        plannedAction = bookPlayable ? booked
                 : chooseAction(timeUsedNanos > MATCH_TIME_GUARD_NANOS ? budgetNanos / 8 : budgetNanos);
-        timeUsedNanos += nanoTime() - started;
+        timeUsedNanos += System.nanoTime() - started;
         return columnOf(plannedAction);
     }
 
+    /** Whether this turn's quark is a bomb, as decided in {@link #accelerateQuark}. */
     @Override
     public boolean useSpecialMove(QuantumField field) {
         if (plannedAction == NO_ACTION) return false;
@@ -354,16 +283,7 @@ public final class SerenaBot implements Algorithm {
         return isBomb(plannedAction);
     }
 
-    /** Rebuilds the board if the arena's field has another size: same line length, bomb rule and weights. */
-    void fitBoardTo(SpaceOwnership[][] grid) {
-        int fieldRows = grid.length, fieldColumns = grid[0].length;
-        if (fieldRows == rows && fieldColumns == columns) return;
-        int[][] weights = lineWeight;
-        setUp(fieldRows, fieldColumns, lineLength, bombsEnabled, tracksThreats);
-        setLineWeights(weights);
-    }
-
-    /** Our colour, from any quark on the field; first player if the field is empty. */
+    /** Our colour, from any quark on the field; the first player's if the field is empty. */
     static SpaceOwnership whoAmI(QuantumField field, SpaceOwnership[][] grid) {
         for (int row = 0; row < grid.length; row++)
             for (int column = 0; column < grid[row].length; column++) {
@@ -376,9 +296,8 @@ public final class SerenaBot implements Algorithm {
     }
 
     /**
-     * Counts the opponent's turn since our last one toward its cooldown. The history lists every
-     * quark placed, marking bombs; a turn the opponent lost (too slow, full column) adds no entry
-     * but counts all the same. (The board can't tell: a bomb on an empty spot leaves it unchanged.)
+     * Counts the opponent's last turn toward its cooldown. The move history marks every bomb; a turn
+     * the opponent lost to a timeout adds no entry but counts all the same.
      */
     void updateOpponentCooldown(List<Move> history) {
         boolean opponentHasMoved = myTurns > 0 || myColour == SpaceOwnership.SECOND_PLAYER;
@@ -386,18 +305,6 @@ public final class SerenaBot implements Algorithm {
         Move last = history.isEmpty() ? null : history.get(history.size() - 1);
         if (last != null && last.player() != myColour && last.isSpecialMove()) opponentCooldown = BOMB_COOLDOWN - 1;
         else if (opponentCooldown > 0) opponentCooldown--;
-    }
-
-    /** Starts a new game on an empty board, forgetting the match and all search memory. Weights are kept. */
-    public void newGame() {
-        clear();
-        Arrays.fill(tableKey, 0);
-        for (int[] scores : historyScore) Arrays.fill(scores, 0);
-        myColour = null;
-        plannedAction = NO_ACTION;
-        myCooldown = opponentCooldown = FIRST_BOMB_WAIT;
-        myTurns = 0;
-        timeUsedNanos = 0;
     }
 
     // ------------------------------------------------------------------ actions
@@ -414,27 +321,11 @@ public final class SerenaBot implements Algorithm {
         return (action & 1) != 0;
     }
 
-    public int actionCount() {
-        return 2 * columns;
-    }
-
     // ------------------------------------------------------------------ board queries
 
     public boolean isLegal(int action) {
-        if (action < 0 || action >= actionCount() || columnHeight[columnOf(action)] == rows) return false;
-        return !isBomb(action) || bombsEnabled && bombCooldown[sideToMove] == 0;
-    }
-
-    public boolean isFull() {
-        return quarkCount == cellCount;
-    }
-
-    /**
-     * The winner, or -1. The player who just moved is checked first. Assumption: a line formed by
-     * quarks falling after a blast also wins (an open question).
-     */
-    public int winner() {
-        return hasLine() ? 1 - sideToMove : -1;
+        if (action < 0 || action >= 2 * columns || columnHeight[columnOf(action)] == rows) return false;
+        return !isBomb(action) || bombCooldown[sideToMove] == 0;
     }
 
     /** True when either player has a complete line: the game is over, won by the last mover. */
@@ -442,22 +333,21 @@ public final class SerenaBot implements Algorithm {
         return completedLines[0] + completedLines[1] > 0;
     }
 
-    /** True when the player would complete a line by dropping in this column now. Needs tracksThreats. */
-    public boolean completesLine(int player, int column) {
+    /** True when the player would complete a line by dropping in this column now. */
+    boolean completesLine(int player, int column) {
         int height = columnHeight[column];
         return height < rows && threatCount[player * cellCount + column * rows + height] > 0;
     }
 
-    /** Hash of everything that affects the game's future: quarks, side to move and bomb cooldowns. */
+    /** Zobrist hash of everything that decides the game's future: quarks, side to move, bomb cooldowns. */
     public long positionKey() {
         long key = sideToMove == 0 ? boardHash : boardHash ^ zobristSideToMove;
-        if (!bombsEnabled) return key;
         return key ^ zobristCooldown[bombCooldown[0]] ^ zobristCooldown[BOMB_COOLDOWN + 1 + bombCooldown[1]];
     }
 
     // ------------------------------------------------------------------ playing
 
-    /** Plays an action for the side to move: drop, and with the bomb bit set, blast the 3x3 around the quark. */
+    /** Plays an action for the side to move: a drop, or with the bomb bit, a drop that blasts the 3x3 around it. */
     public void play(int action) {
         if (!isBomb(action)) {
             drop(columnOf(action));
@@ -470,21 +360,21 @@ public final class SerenaBot implements Algorithm {
         endTurn(player);
     }
 
-    /** A plain drop for the side to move. Returns the mover's previous cooldown, which {@link #undoDrop} needs. */
-    public int drop(int column) {
+    /** A plain drop for the side to move. Returns the mover's previous cooldown, for {@link #undoDrop}. */
+    int drop(int column) {
         int player = sideToMove, previousCooldown = bombCooldown[player];
         addQuark(column, player);
         endTurn(player);
         return previousCooldown;
     }
 
-    public void undoDrop(int column, int previousCooldown) {
+    void undoDrop(int column, int previousCooldown) {
         sideToMove = 1 - sideToMove;
         bombCooldown[sideToMove] = previousCooldown;
         removeTopQuark(column);
     }
 
-    /** Passes the turn without a move, as the arena does when a bot is too slow; it still counts toward the cooldown. */
+    /** Passes the turn, as the arena does when a bot is too slow; it still counts toward the cooldown. */
     public void skipTurn() {
         endTurn(sideToMove);
     }
@@ -507,39 +397,41 @@ public final class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ the two incremental updates
 
+    /** Puts a quark on top of a column and updates every line through its cell. */
     void addQuark(int column, int player) {
         int cell = column * rows + columnHeight[column]++;
         owner[cell] = player;
         quarkCount++;
         boardHash ^= zobristQuark[2 * cell + player];
         for (int line : linesThroughCell[cell]) {
-            if (tracksThreats) adjustThreat(line, cell, -1); // this cell was the line's gap
+            adjustThreat(line, cell, -1); // this cell was the line's gap
             staticScore -= lineValue(line);
-            if (++lineQuarks[2 * line + player] == lineLength) completedLines[player]++;
+            if (++lineQuarks[2 * line + player] == LINE_LENGTH) completedLines[player]++;
             staticScore += lineValue(line);
-            if (tracksThreats) adjustThreat(line, FIND_GAP, +1);
+            adjustThreat(line, FIND_GAP, +1);
         }
     }
 
+    /** Takes the top quark off a column, updates every line through its cell, and returns its owner. */
     int removeTopQuark(int column) {
         int cell = column * rows + --columnHeight[column], player = owner[cell];
         quarkCount--;
         boardHash ^= zobristQuark[2 * cell + player];
         for (int line : linesThroughCell[cell]) {
-            if (tracksThreats) adjustThreat(line, FIND_GAP, -1);
+            adjustThreat(line, FIND_GAP, -1);
             staticScore -= lineValue(line);
-            if (lineQuarks[2 * line + player]-- == lineLength) completedLines[player]--;
+            if (lineQuarks[2 * line + player]-- == LINE_LENGTH) completedLines[player]--;
             staticScore += lineValue(line);
-            if (tracksThreats) adjustThreat(line, cell, +1); // this cell becomes the line's gap
+            adjustThreat(line, cell, +1); // this cell becomes the line's gap
         }
         owner[cell] = EMPTY;
         return player;
     }
 
-    /** Value of a line from player 0's point of view: only lines open to one player count. */
+    /** Value of a line from player 0's point of view: only a line open to one player counts. */
     int lineValue(int line) {
         int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1];
-        int[] weights = lineWeight[lineDirection[line]];
+        int[] weights = LINE_WEIGHT[lineDirection[line]];
         if (quarks1 == 0) return weights[quarks0];
         if (quarks0 == 0) return -weights[quarks1];
         return 0;
@@ -548,8 +440,8 @@ public final class SerenaBot implements Algorithm {
     /** The player for whom this line is one quark short and still open, or -1. */
     private int threatenedBy(int line) {
         int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1];
-        if (quarks0 == lineLength - 1 && quarks1 == 0) return 0;
-        if (quarks1 == lineLength - 1 && quarks0 == 0) return 1;
+        if (quarks0 == LINE_LENGTH - 1 && quarks1 == 0) return 0;
+        if (quarks1 == LINE_LENGTH - 1 && quarks0 == 0) return 1;
         return -1;
     }
 
@@ -563,7 +455,7 @@ public final class SerenaBot implements Algorithm {
         threatCount[player * cellCount + gap] += delta;
     }
 
-    /** The first empty cell of a line (used when the line has exactly one). */
+    /** The first empty cell of a line. */
     private int emptyCellOf(int line) {
         for (int cell : cellsOfLine[line]) if (owner[cell] == EMPTY) return cell;
         return -1;
@@ -571,13 +463,14 @@ public final class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ setting up a position
 
-    public void clear() {
+    /** Empties the board: no quarks, both players before their first bomb, player 0 to move. */
+    void clear() {
         Arrays.fill(owner, EMPTY);
         Arrays.fill(columnHeight, 0);
         Arrays.fill(lineQuarks, 0);
         Arrays.fill(threatCount, 0);
         completedLines[0] = completedLines[1] = 0;
-        bombCooldown[0] = bombCooldown[1] = bombsEnabled ? FIRST_BOMB_WAIT : 0;
+        bombCooldown[0] = bombCooldown[1] = FIRST_BOMB_WAIT;
         sideToMove = quarkCount = 0;
         boardHash = 0;
         staticScore = 0;
@@ -592,23 +485,9 @@ public final class SerenaBot implements Algorithm {
                 addQuark(column, field[row][column] == playerZero ? 0 : 1);
     }
 
-    /** Replaces the line weights (per direction class) and rescores the current position. */
-    public void setLineWeights(int[][] weights) {
-        for (int d = 0; d < lineWeight.length; d++)
-            for (int n = 0; n < lineWeight[d].length; n++) lineWeight[d][n] = weights[d][n];
-        staticScore = 0;
-        for (int line = 0; line < lineCount; line++) staticScore += lineValue(line);
-    }
+    // ------------------------------------------------------------------ saving and restoring (to undo a bomb)
 
-    // ------------------------------------------------------------------ saving and restoring
-
-    public int[] saveState() {
-        int[] state = new int[stateSize];
-        saveState(state);
-        return state;
-    }
-
-    public void saveState(int[] state) {
+    void saveState(int[] state) {
         int at = copyInto(state, 0, owner);
         at = copyInto(state, at, columnHeight);
         at = copyInto(state, at, lineQuarks);
@@ -624,7 +503,7 @@ public final class SerenaBot implements Algorithm {
         state[at + 8] = (int) (boardHash >>> 32);
     }
 
-    public void restoreState(int[] state) {
+    void restoreState(int[] state) {
         int at = copyFrom(state, 0, owner);
         at = copyFrom(state, at, columnHeight);
         at = copyFrom(state, at, lineQuarks);
@@ -640,22 +519,21 @@ public final class SerenaBot implements Algorithm {
     }
 
     private static int copyInto(int[] state, int at, int[] part) {
-        for (int i = 0; i < part.length; i++) state[at + i] = part[i];
+        System.arraycopy(part, 0, state, at, part.length);
         return at + part.length;
     }
 
     private static int copyFrom(int[] state, int at, int[] part) {
-        for (int i = 0; i < part.length; i++) part[i] = state[at + i];
+        System.arraycopy(state, at, part, 0, part.length);
         return at + part.length;
     }
 
     // ------------------------------------------------------------------ the loss book
 
     /**
-     * Positions from lost tournament games, each with the move a deep offline search prefers. One
-     * entry per {@code ;}: {@code rows x columns, position key in hex, action} (column, {@code b} for a
-     * bomb). Generated by {@code qc.sh learn} from params/serena/book.txt; split into chunks because a
-     * class-file string constant holds at most 64 KB. Do not edit by hand.
+     * Positions from our lost games, each with the move a deep offline search prefers. One entry per
+     * {@code ;}: board size, position key in hex, action (the column, {@code b} for a bomb). Split into
+     * chunks because a string constant holds at most 64 KB. Generated; do not edit by hand.
      */
     // LOSS BOOK BEGIN (generated by qc.sh learn)
     static final String[] LOSS_BOOK = {
@@ -663,25 +541,26 @@ public final class SerenaBot implements Algorithm {
     };
     // LOSS BOOK END
 
-    /** The book for this board size, sorted by key for binary search; built on first use per size. */
+    /** This board size's entries, sorted by key for binary search; parsed on first use. */
     long[] bookKeys = new long[0];
     int[] bookActions = new int[0];
     int bookRows = -1, bookColumns = -1;
 
-    /** The booked action for a position of this board, or NO_ACTION. */
+    /** The booked action for a position, or NO_ACTION. */
     public int bookAction(long key) {
         if (bookRows != rows || bookColumns != columns) loadBook();
         int at = Arrays.binarySearch(bookKeys, key);
         return at >= 0 ? bookActions[at] : NO_ACTION;
     }
 
-    /** Parses the entries of LOSS_BOOK that are for this board size. */
+    /** Parses the entries of LOSS_BOOK for this board size. */
     private void loadBook() {
-        String size = rows + "x" + columns;
+        // String.concat, not "+": javac compiles "+" on strings to a java.lang.invoke call, which the arena forbids.
+        String size = String.valueOf(rows).concat("x").concat(String.valueOf(columns));
         int count = 0;
         long[] keys = new long[64];
         int[] actions = new int[64];
-        for (String chunk : LOSS_BOOK) {
+        for (String chunk : LOSS_BOOK)
             for (String entry : chunk.split(";")) {
                 String[] parts = entry.trim().split(" ");
                 if (parts.length != 3 || !parts[0].equals(size)) continue;
@@ -693,7 +572,6 @@ public final class SerenaBot implements Algorithm {
                 actions[count] = parseAction(parts[2]);
                 count++;
             }
-        }
         sortByKey(keys, actions, count);
         bookKeys = Arrays.copyOf(keys, count);
         bookActions = Arrays.copyOf(actions, count);
@@ -701,13 +579,13 @@ public final class SerenaBot implements Algorithm {
         bookColumns = columns;
     }
 
-    /** An action written as the column, with {@code b} appended for a bomb: "14", "14b". */
+    /** An action written as its column, with {@code b} appended for a bomb: "14", "14b". */
     public static int parseAction(String text) {
         boolean bomb = text.endsWith("b");
         return action(Integer.parseInt(bomb ? text.substring(0, text.length() - 1) : text), bomb);
     }
 
-    /** Insertion sort of the first count keys, carrying the actions along; books are small. */
+    /** Insertion sort of the first count keys, carrying the actions along. */
     private static void sortByKey(long[] keys, int[] actions, int count) {
         for (int i = 1; i < count; i++) {
             long key = keys[i];
@@ -721,43 +599,25 @@ public final class SerenaBot implements Algorithm {
         }
     }
 
-    // ------------------------------------------------------------------ the clock
-
-    /**
-     * Now, in nanoseconds. The arena allows java.lang.System since 2026-11-04; QuarkBot, from before,
-     * reads java.util.Date at millisecond resolution instead.
-     */
-    static long nanoTime() {
-        return System.nanoTime();
-    }
-
     // ------------------------------------------------------------------ choosing an action
 
     /** The best action for the side to move, by iterative deepening within the time budget. */
     public int chooseAction(long budget) {
-        deadlineNanos = nanoTime() + budget;
+        deadlineNanos = System.nanoTime() + budget;
         outOfTime = false;
         nodesSearched = 0;
         for (int[] scores : historyScore) for (int a = 0; a < scores.length; a++) scores[a] >>= 2; // age old knowledge
 
         int best = firstLegalDrop();
-        for (int depth = 1; depth <= maxDepth; depth++) {
+        for (int depth = 1; depth < MAX_PLY - 1; depth++) {
             int score = negamax(depth, -WIN - 1, WIN + 1, 0);
             if (outOfTime) break;
             int fromTable = tableAction(positionKey());
             if (fromTable != NO_ACTION) best = fromTable;
             lastScore = score;
-            lastDepth = depth;
             if (Math.abs(score) > WIN - MAX_PLY) break; // a forced result: deeper search can't change it
         }
         return best;
-    }
-
-    /** The score of the current position for the side to move, by a full search of the given depth. */
-    public int searchValue(int depth) {
-        deadlineNanos = Long.MAX_VALUE;
-        outOfTime = false;
-        return negamax(depth, -WIN - 1, WIN + 1, 0);
     }
 
     private int firstLegalDrop() {
@@ -765,13 +625,10 @@ public final class SerenaBot implements Algorithm {
         return NO_ACTION;
     }
 
-    // ------------------------------------------------------------------ evaluation
-
     /** Static evaluation for the side to move: line values and bomb readiness. */
-    public int evaluate() {
+    int evaluate() {
         int score = sideToMove == 0 ? staticScore : -staticScore;
-        if (bombsEnabled) score += bombReadyBonus * (isBombReady(sideToMove) - isBombReady(1 - sideToMove));
-        return score;
+        return score + BOMB_READY_BONUS * (isBombReady(sideToMove) - isBombReady(1 - sideToMove));
     }
 
     private int isBombReady(int player) {
@@ -780,17 +637,18 @@ public final class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ alpha-beta search
 
+    /** The score of the position for the side to move, searched to the given depth within (alpha, beta). */
     int negamax(int depth, int alpha, int beta, int ply) {
-        if ((++nodesSearched & 1023) == 0 && nanoTime() > deadlineNanos) outOfTime = true;
+        if ((++nodesSearched & 1023) == 0 && System.nanoTime() > deadlineNanos) outOfTime = true;
         if (outOfTime) return 0;
 
         int mover = sideToMove;
         if (hasLine()) return ply - WIN; // any line wins for the last mover: the opponent
-        if (isFull()) return 0;
+        if (quarkCount == cellCount) return 0;
 
         // Forced moves, from the playable threats (cells at a column's top that complete a line).
         int forced = NOT_FORCED;
-        if (tracksThreats && ply > 0) {
+        if (ply > 0) {
             int opponentThreats = 0;
             for (int column = 0; column < columns; column++) {
                 if (completesLine(mover, column)) return WIN - ply - 1; // we complete a line next move
@@ -799,7 +657,7 @@ public final class SerenaBot implements Algorithm {
                     forced = column;
                 }
             }
-            boolean mayBomb = bombsEnabled && bombCooldown[mover] == 0;
+            boolean mayBomb = bombCooldown[mover] == 0;
             if (opponentThreats >= 2 && !mayBomb) return ply + 2 - WIN; // a drop blocks only one of them
             if (opponentThreats >= 2) forced = BOMBS_ONLY;
             if (opponentThreats == 1 && !mayBomb && depth == 0) depth = 1; // search the forced block, don't evaluate
@@ -808,7 +666,7 @@ public final class SerenaBot implements Algorithm {
 
         long key = positionKey();
         int slot = tableSlot(key), tableAction = NO_ACTION;
-        if (useTranspositionTable && tableKey[slot] == key) {
+        if (tableKey[slot] == key) {
             long entry = tableEntry[slot];
             tableAction = entryAction(entry);
             if (entryDepth(entry) >= depth) {
@@ -845,23 +703,18 @@ public final class SerenaBot implements Algorithm {
             }
         }
 
-        if (useTranspositionTable) {
-            int bound = bestScore <= originalAlpha ? UPPER_BOUND : bestScore >= beta ? LOWER_BOUND : EXACT;
-            tableKey[slot] = key;
-            tableEntry[slot] = packEntry(scoreToTable(bestScore, ply), depth, bound, bestAction);
-        }
+        int bound = bestScore <= originalAlpha ? UPPER_BOUND : bestScore >= beta ? LOWER_BOUND : EXACT;
+        tableKey[slot] = key;
+        tableEntry[slot] = packEntry(scoreToTable(bestScore, ply), depth, bound, bestAction);
         return bestScore;
     }
 
-    /** {@link #orderedLegalActions}'s {@code forced}: any drop may be played, or none (only bombs), or else the one column given. */
+    /** {@link #orderedLegalActions}'s {@code forced}: any drop may be played, none (bombs only), or only the column given. */
     static final int NOT_FORCED = -1, BOMBS_ONLY = -2;
 
-    /**
-     * Fills {@code actions} with the legal actions, best guess first, and returns how many there are.
-     * When forced to block a column, the only drop is there; bombs stay allowed.
-     */
+    /** Fills {@code actions} with the legal actions, best guess first, and returns how many there are. */
     int orderedLegalActions(int[] actions, int preferred, int forced) {
-        boolean mayBomb = bombsEnabled && bombCooldown[sideToMove] == 0;
+        boolean mayBomb = bombCooldown[sideToMove] == 0;
         int count = 0;
         for (int column : columnsCentreOut) {
             if (columnHeight[column] == rows) continue;
@@ -892,7 +745,7 @@ public final class SerenaBot implements Algorithm {
         return tableKey[slot] == key ? entryAction(tableEntry[slot]) : NO_ACTION;
     }
 
-    // An entry packs the score (32 bits), depth (8), bound (2) and action + 1 (rest) into one long.
+    // An entry packs the score (32 bits), depth (8), bound (2) and action + 1 (the rest) into one long.
     static long packEntry(int score, int depth, int bound, int action) {
         return score & 0xffffffffL | (long) depth << 32 | (long) bound << 40 | (long) (action + 1) << 42;
     }

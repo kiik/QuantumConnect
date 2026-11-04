@@ -153,7 +153,7 @@ public final class Learn {
 
     /** Our last {@code window} moves of the game, each with the position the bot saw before it. */
     List<Decision> decisionsOf(LostGame game) {
-        SerenaBot board = new SerenaBot(game.rows(), game.columns(), SerenaBot.LINE_LENGTH, true, true);
+        SerenaBot board = new SerenaBot(game.rows(), game.columns());
         List<Decision> ours = new ArrayList<>();
         for (int move = 0; move < game.actions().length; move++) {
             if (board.sideToMove != game.players()[move]) board.skipTurn(); // a turn lost to a timeout
@@ -187,7 +187,7 @@ public final class Learn {
     /** The position as SerenaBot builds it in accelerateQuark: loaded from the field, cooldowns set. */
     static SerenaBot positionOf(Decision decision) {
         LostGame game = decision.game();
-        SerenaBot board = new SerenaBot(game.rows(), game.columns(), SerenaBot.LINE_LENGTH, true, true);
+        SerenaBot board = new SerenaBot(game.rows(), game.columns());
         board.load(decision.field(), SpaceOwnership.FIRST_PLAYER);
         board.bombCooldown[SerenaBot.ME] = decision.ourCooldown();
         board.bombCooldown[SerenaBot.OPPONENT] = decision.opponentCooldown();
