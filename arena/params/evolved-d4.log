@@ -1,0 +1,172 @@
+tuning 16 parameters: depth 4, 16 pairs x 8 openings x 2 colours per generation, 16 threads
+gen   1  mean |r| 0,15  2,3 s
+gen   2  mean |r| 0,14  1,7 s
+gen   3  mean |r| 0,12  1,9 s
+gen   4  mean |r| 0,13  1,9 s
+gen   5  mean |r| 0,19  1,9 s
+gen   6  mean |r| 0,13  1,9 s
+gen   7  mean |r| 0,14  1,8 s
+gen   8  mean |r| 0,17  1,8 s
+gen   9  mean |r| 0,10  1,9 s
+gen  10  mean |r| 0,13  2,0 s
+  vs defaults: 51,3%  horizontal [0, 18, 82, 244, 823, 8504, 0]  vertical [0, 17, 66, 252, 890, 7757, 0]  diagonal [0, 16, 67, 232, 949, 8338, 0]  bombBonus 15
+  new best -> out\tune-params.txt
+gen  11  mean |r| 0,16  1,9 s
+gen  12  mean |r| 0,13  2,2 s
+gen  13  mean |r| 0,20  1,9 s
+gen  14  mean |r| 0,11  1,7 s
+gen  15  mean |r| 0,18  1,7 s
+gen  16  mean |r| 0,15  1,7 s
+gen  17  mean |r| 0,11  1,7 s
+gen  18  mean |r| 0,16  1,8 s
+gen  19  mean |r| 0,10  1,8 s
+gen  20  mean |r| 0,14  1,7 s
+  vs defaults: 53,8%  horizontal [0, 24, 106, 236, 737, 6808, 0]  vertical [0, 17, 66, 246, 845, 8791, 0]  diagonal [0, 15, 81, 256, 890, 7995, 0]  bombBonus 18
+  new best -> out\tune-params.txt
+gen  21  mean |r| 0,12  1,7 s
+gen  22  mean |r| 0,14  1,7 s
+gen  23  mean |r| 0,13  1,8 s
+gen  24  mean |r| 0,11  1,8 s
+gen  25  mean |r| 0,14  1,6 s
+gen  26  mean |r| 0,12  1,7 s
+gen  27  mean |r| 0,13  1,6 s
+gen  28  mean |r| 0,13  1,6 s
+gen  29  mean |r| 0,13  1,6 s
+gen  30  mean |r| 0,11  1,7 s
+  vs defaults: 53,5%  horizontal [0, 27, 107, 221, 630, 6630, 0]  vertical [0, 18, 77, 207, 818, 7961, 0]  diagonal [0, 15, 87, 224, 740, 7635, 0]  bombBonus 17
+gen  31  mean |r| 0,12  1,7 s
+gen  32  mean |r| 0,13  1,7 s
+gen  33  mean |r| 0,10  1,7 s
+gen  34  mean |r| 0,11  1,6 s
+gen  35  mean |r| 0,14  1,7 s
+gen  36  mean |r| 0,10  1,6 s
+gen  37  mean |r| 0,16  1,7 s
+gen  38  mean |r| 0,13  1,6 s
+gen  39  mean |r| 0,12  1,7 s
+gen  40  mean |r| 0,10  1,6 s
+  vs defaults: 61,0%  horizontal [0, 32, 121, 221, 610, 6103, 0]  vertical [0, 17, 68, 215, 776, 7812, 0]  diagonal [0, 14, 91, 223, 718, 7094, 0]  bombBonus 17
+  new best -> out\tune-params.txt
+gen  41  mean |r| 0,07  1,7 s
+gen  42  mean |r| 0,12  1,7 s
+gen  43  mean |r| 0,13  1,5 s
+gen  44  mean |r| 0,12  1,7 s
+gen  45  mean |r| 0,13  1,6 s
+gen  46  mean |r| 0,16  1,6 s
+gen  47  mean |r| 0,17  1,5 s
+gen  48  mean |r| 0,11  1,6 s
+gen  49  mean |r| 0,13  1,5 s
+gen  50  mean |r| 0,15  1,6 s
+  vs defaults: 57,5%  horizontal [0, 36, 122, 246, 582, 6188, 0]  vertical [0, 17, 65, 230, 700, 7371, 0]  diagonal [0, 15, 89, 255, 625, 8179, 0]  bombBonus 19
+gen  51  mean |r| 0,13  1,6 s
+gen  52  mean |r| 0,14  1,5 s
+gen  53  mean |r| 0,12  1,6 s
+gen  54  mean |r| 0,16  1,5 s
+gen  55  mean |r| 0,13  1,5 s
+gen  56  mean |r| 0,14  1,5 s
+gen  57  mean |r| 0,11  1,6 s
+gen  58  mean |r| 0,08  1,5 s
+gen  59  mean |r| 0,09  1,6 s
+gen  60  mean |r| 0,16  1,6 s
+  vs defaults: 62,5%  horizontal [0, 41, 131, 241, 540, 6367, 0]  vertical [0, 17, 75, 204, 658, 8300, 0]  diagonal [0, 15, 105, 261, 615, 7863, 0]  bombBonus 20
+  new best -> out\tune-params.txt
+gen  61  mean |r| 0,15  1,5 s
+gen  62  mean |r| 0,13  1,5 s
+gen  63  mean |r| 0,11  1,5 s
+gen  64  mean |r| 0,07  1,6 s
+gen  65  mean |r| 0,17  1,6 s
+gen  66  mean |r| 0,11  1,6 s
+gen  67  mean |r| 0,13  1,5 s
+gen  68  mean |r| 0,15  1,5 s
+gen  69  mean |r| 0,13  1,5 s
+gen  70  mean |r| 0,13  1,6 s
+  vs defaults: 57,5%  horizontal [0, 41, 126, 243, 525, 6227, 0]  vertical [0, 16, 73, 218, 620, 7710, 0]  diagonal [0, 14, 107, 257, 567, 7169, 0]  bombBonus 22
+gen  71  mean |r| 0,19  1,5 s
+gen  72  mean |r| 0,12  1,5 s
+gen  73  mean |r| 0,11  1,6 s
+gen  74  mean |r| 0,08  1,6 s
+gen  75  mean |r| 0,11  1,5 s
+gen  76  mean |r| 0,13  1,5 s
+gen  77  mean |r| 0,11  1,6 s
+gen  78  mean |r| 0,14  1,6 s
+gen  79  mean |r| 0,11  1,6 s
+gen  80  mean |r| 0,14  1,5 s
+  vs defaults: 58,8%  horizontal [0, 50, 128, 240, 527, 5843, 0]  vertical [0, 14, 56, 229, 563, 7565, 0]  diagonal [0, 14, 100, 233, 629, 7239, 0]  bombBonus 23
+gen  81  mean |r| 0,14  1,5 s
+gen  82  mean |r| 0,13  1,6 s
+gen  83  mean |r| 0,17  1,4 s
+gen  84  mean |r| 0,13  1,5 s
+gen  85  mean |r| 0,11  1,6 s
+gen  86  mean |r| 0,12  1,5 s
+gen  87  mean |r| 0,15  1,4 s
+gen  88  mean |r| 0,11  1,6 s
+gen  89  mean |r| 0,09  1,6 s
+gen  90  mean |r| 0,09  1,5 s
+  vs defaults: 60,0%  horizontal [0, 57, 151, 252, 511, 6806, 0]  vertical [0, 15, 62, 211, 509, 8579, 0]  diagonal [0, 14, 97, 231, 701, 8824, 0]  bombBonus 28
+gen  91  mean |r| 0,15  1,6 s
+gen  92  mean |r| 0,16  1,5 s
+gen  93  mean |r| 0,12  1,6 s
+gen  94  mean |r| 0,11  1,5 s
+gen  95  mean |r| 0,15  1,6 s
+gen  96  mean |r| 0,10  1,5 s
+gen  97  mean |r| 0,13  1,7 s
+gen  98  mean |r| 0,12  1,4 s
+gen  99  mean |r| 0,13  1,7 s
+gen 100  mean |r| 0,13  1,7 s
+  vs defaults: 59,0%  horizontal [0, 69, 144, 252, 461, 6317, 0]  vertical [0, 17, 54, 224, 527, 8677, 0]  diagonal [0, 14, 90, 231, 591, 9251, 0]  bombBonus 28
+gen 101  mean |r| 0,11  1,6 s
+gen 102  mean |r| 0,13  1,6 s
+gen 103  mean |r| 0,10  1,5 s
+gen 104  mean |r| 0,11  1,5 s
+gen 105  mean |r| 0,16  1,5 s
+gen 106  mean |r| 0,13  1,5 s
+gen 107  mean |r| 0,12  1,5 s
+gen 108  mean |r| 0,07  1,5 s
+gen 109  mean |r| 0,08  1,5 s
+gen 110  mean |r| 0,11  1,5 s
+  vs defaults: 61,7%  horizontal [0, 72, 139, 244, 439, 5944, 0]  vertical [0, 18, 52, 216, 507, 8679, 0]  diagonal [0, 15, 94, 241, 592, 9049, 0]  bombBonus 29
+gen 111  mean |r| 0,10  1,6 s
+gen 112  mean |r| 0,16  1,5 s
+gen 113  mean |r| 0,11  1,5 s
+gen 114  mean |r| 0,11  1,4 s
+gen 115  mean |r| 0,09  1,5 s
+gen 116  mean |r| 0,11  1,4 s
+gen 117  mean |r| 0,09  1,5 s
+gen 118  mean |r| 0,11  1,5 s
+gen 119  mean |r| 0,12  1,6 s
+gen 120  mean |r| 0,10  1,5 s
+  vs defaults: 62,5%  horizontal [0, 77, 133, 225, 429, 5877, 0]  vertical [0, 17, 59, 192, 539, 8995, 0]  diagonal [0, 15, 93, 234, 566, 8667, 0]  bombBonus 29
+gen 121  mean |r| 0,12  1,5 s
+gen 122  mean |r| 0,14  1,5 s
+gen 123  mean |r| 0,13  1,5 s
+gen 124  mean |r| 0,12  1,5 s
+gen 125  mean |r| 0,10  1,5 s
+gen 126  mean |r| 0,12  1,5 s
+gen 127  mean |r| 0,13  1,5 s
+gen 128  mean |r| 0,15  1,6 s
+gen 129  mean |r| 0,12  1,5 s
+gen 130  mean |r| 0,13  1,6 s
+  vs defaults: 57,8%  horizontal [0, 75, 144, 205, 426, 5818, 0]  vertical [0, 16, 64, 195, 519, 8621, 0]  diagonal [0, 15, 81, 243, 579, 8985, 0]  bombBonus 31
+gen 131  mean |r| 0,11  1,6 s
+gen 132  mean |r| 0,13  1,5 s
+gen 133  mean |r| 0,12  1,6 s
+gen 134  mean |r| 0,14  1,5 s
+gen 135  mean |r| 0,10  1,5 s
+gen 136  mean |r| 0,12  1,6 s
+gen 137  mean |r| 0,12  1,6 s
+gen 138  mean |r| 0,11  1,6 s
+gen 139  mean |r| 0,08  1,8 s
+gen 140  mean |r| 0,12  1,6 s
+  vs defaults: 61,2%  horizontal [0, 76, 138, 216, 462, 5655, 0]  vertical [0, 15, 70, 166, 479, 7079, 0]  diagonal [0, 15, 80, 247, 617, 9526, 0]  bombBonus 32
+gen 141  mean |r| 0,11  1,5 s
+gen 142  mean |r| 0,13  1,5 s
+gen 143  mean |r| 0,11  1,5 s
+gen 144  mean |r| 0,14  1,7 s
+gen 145  mean |r| 0,12  1,7 s
+gen 146  mean |r| 0,09  1,6 s
+gen 147  mean |r| 0,13  1,6 s
+gen 148  mean |r| 0,11  1,7 s
+gen 149  mean |r| 0,09  1,7 s
+gen 150  mean |r| 0,14  1,7 s
+  vs defaults: 60,2%  horizontal [0, 77, 156, 205, 432, 5836, 0]  vertical [0, 14, 67, 165, 488, 7474, 0]  diagonal [0, 15, 94, 221, 589, 9636, 0]  bombBonus 35
+best: 62,5% vs defaults at depth 4: horizontal [0, 41, 131, 241, 540, 6367, 0]  vertical [0, 17, 75, 204, 658, 8300, 0]  diagonal [0, 15, 105, 261, 615, 7863, 0]  bombBonus 20
+./qc.sh: line 81: unexpected EOF while looking for matching `"'

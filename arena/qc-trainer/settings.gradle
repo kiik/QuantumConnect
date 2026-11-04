@@ -1,0 +1,2 @@
+// Our tools for training, testing and analysing the bots. They never go in an upload JAR.
+rootProject.name = 'qc-trainer'

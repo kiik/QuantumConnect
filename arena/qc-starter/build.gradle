@@ -1,0 +1,69 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "ch.qos.logback:logback-classic:1.5.18"
+    implementation fileTree(dir: 'libs')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+// ./gradlew run plays the bots configured in EmulatorRunner on your machine
+application {
+    mainClass = 'EmulatorRunner'
+}
+
+
+// ---- Changed for our bots (ch.qc.meelik): one upload JAR per bot, and no other JAR ----
+// The starter's jar holds every class of the project, samples included, so it and the
+// distributions made from it are switched off. Instead each bot gets its own upload JAR, packaged
+// the way the starter's jar is: that one bot class and the bundled runtime classpath. A bot is a
+// self-contained class named *Bot (no helper classes), in one of two places:
+//   ch/qc/meelik/bots   our bots
+//   ch/qc/starter       the starter's samples
+//   ./gradlew build         ->  build/libs/<Bot>.jar for every bot   (../qc.sh build runs botJars)
+//   ./gradlew QuarkBotJar   ->  build/libs/QuarkBot.jar
+jar { enabled = false }
+distZip { enabled = false }
+distTar { enabled = false }
+startScripts { enabled = false }
+
+def bots = ['ch/qc/meelik/bots', 'ch/qc/starter'].collectMany { dir ->
+    fileTree("src/main/java/${dir}").matching { include '*Bot.java' }.collect { [name: it.name - '.java', dir: dir] }
+}.sort { it.name }
+if (bots*.name.toSet().size() != bots.size()) {
+    throw new GradleException("two bots share a name, so their JARs would too: ${bots*.name}")
+}
+def botJars = bots.collect { bot ->
+    tasks.register("${bot.name}Jar", Jar) {
+        archiveFileName = "${bot.name}.jar"
+        from(sourceSets.main.output) {
+            include "${bot.dir}/${bot.name}.class"
+        }
+        dependsOn configurations.runtimeClasspath
+        from {
+            configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+        }
+        manifest {
+            attributes('Bot-Class': bot.dir.replace('/', '.') + '.' + bot.name)
+        }
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+}
+tasks.register('botJars') {
+    dependsOn botJars
+}
+assemble.dependsOn botJars

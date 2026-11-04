@@ -1,0 +1,37 @@
+tuning 16 parameters: depth 5, 16 pairs x 8 openings, seed 6, start params/evolved-d4.txt; 16 threads -> params/tl-d5-s6.txt
+gen   1  mean |score difference| 0.21  15.5 s
+gen   2  mean |score difference| 0.17  14.5 s
+gen   3  mean |score difference| 0.16  13.5 s
+gen   4  mean |score difference| 0.15  13.9 s
+gen   5  mean |score difference| 0.20  13.0 s
+gen   6  mean |score difference| 0.16  12.3 s
+gen   7  mean |score difference| 0.15  12.4 s
+gen   8  mean |score difference| 0.18  12.5 s
+gen   9  mean |score difference| 0.13  12.9 s
+gen  10  mean |score difference| 0.20  13.2 s
+  vs defaults: 59.0%  horizontal [0, 49, 168, 217, 592, 6537, 0]  vertical [0, 16, 68, 179, 665, 7062, 0]  diagonal [0, 14, 96, 212, 761, 9325, 0]  bombReadyBonus 24
+  new best -> params/tl-d5-s6.txt
+gen  11  mean |score difference| 0.20  13.8 s
+gen  12  mean |score difference| 0.20  14.5 s
+gen  13  mean |score difference| 0.17  14.9 s
+gen  14  mean |score difference| 0.18  17.3 s
+gen  15  mean |score difference| 0.19  16.8 s
+gen  16  mean |score difference| 0.22  15.4 s
+gen  17  mean |score difference| 0.16  13.2 s
+gen  18  mean |score difference| 0.13  12.9 s
+gen  19  mean |score difference| 0.17  13.2 s
+gen  20  mean |score difference| 0.16  12.1 s
+  vs defaults: 62.5%  horizontal [0, 65, 178, 253, 614, 7606, 0]  vertical [0, 17, 63, 167, 678, 6437, 0]  diagonal [0, 16, 107, 198, 700, 8183, 0]  bombReadyBonus 22
+  new best -> params/tl-d5-s6.txt
+gen  21  mean |score difference| 0.12  12.4 s
+gen  22  mean |score difference| 0.14  12.8 s
+gen  23  mean |score difference| 0.17  11.7 s
+gen  24  mean |score difference| 0.21  12.7 s
+gen  25  mean |score difference| 0.18  11.6 s
+gen  26  mean |score difference| 0.12  12.0 s
+gen  27  mean |score difference| 0.12  11.6 s
+gen  28  mean |score difference| 0.18  11.6 s
+gen  29  mean |score difference| 0.13  11.2 s
+gen  30  mean |score difference| 0.16  11.2 s
+  vs defaults: 57.5%  horizontal [0, 67, 168, 232, 625, 8123, 0]  vertical [0, 19, 54, 166, 639, 7344, 0]  diagonal [0, 14, 103, 199, 689, 8228, 0]  bombReadyBonus 22
+best: 62.5% vs defaults at depth 5 -> params/tl-d5-s6.txt
