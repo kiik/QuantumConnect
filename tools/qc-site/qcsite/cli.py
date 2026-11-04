@@ -10,6 +10,7 @@ person at a terminal and a script or agent. `qcsite mcp` serves the same reads a
     qcsite archive [--bot SEL]...    save new matches of ours and the top 3 in arena/archive
     qcsite archive-losses -o FILE    archived lost games, as text for `qc.sh learn`
     qcsite upload NAME JAR --yes     upload a bot: replaces ours and deletes its matches
+    qcsite autopilot [--yes]         upload a gated Tank revision when we are not first (dry run)
     qcsite wait NAME                 wait until the tournament has played the bot's games
     qcsite team                      our team's name
     qcsite login                     check the credentials in .env
@@ -21,12 +22,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
 
-from . import archive, client
+from . import archive, client, upload
 
 
 # ---------------------------------------------------------------------------------------------
@@ -144,7 +146,7 @@ def command_archive(site: client.Site, arguments) -> None:
 
 
 def command_archive_losses(site: client.Site, arguments) -> None:
-    patterns = arguments.loser or ["SerenaBot-*"]
+    patterns = arguments.loser or archive.OUR_LOSER_PATTERNS
     games = archive.archived_losses(patterns)
     if arguments.json:
         text = json.dumps(games, indent=1, ensure_ascii=False) + "\n"
@@ -172,6 +174,19 @@ def command_upload(site: client.Site, arguments) -> None:
     else:
         print(f"uploaded {result['jar']} as {result['bot']}; the site answered with {result['landed_on']}")
         print(result["page_text"])
+
+
+def command_autopilot(site: client.Site, arguments) -> None:
+    really = arguments.yes or os.environ.get("QC_AUTOPILOT") == "1"
+    decision = upload.autopilot(site, really)
+    if arguments.json:
+        print_json(decision)
+        return
+    print(f"we are {decision['bot']} at rank {decision['rank']}: {decision['action']} ({decision['reason']})")
+    candidate = decision["candidate"]
+    if candidate:
+        print(f"candidate {candidate['name']}: {candidate['gate_score']:.0%} over "
+              f"{candidate['gate_games']} gate games, {candidate['jar']}")
 
 
 def command_wait(site: client.Site, arguments) -> None:
@@ -278,13 +293,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     archive_losses = commands.add_parser("archive-losses", help="archived lost games, for qc.sh learn")
     archive_losses.add_argument("--loser", action="append",
-                                help='loser bot name pattern, e.g. "SerenaBot-*" (default) or "King beater"; repeatable')
+                                help='loser bot name pattern, e.g. "Tank-*", "King beater" or "top:3" (the latest '
+                                     'saved top 3); repeatable; default "Tank-*" and "SerenaBot-*"')
     archive_losses.add_argument("-o", "--output", help="write to this file instead of stdout")
 
     upload = commands.add_parser("upload", help="upload a bot JAR: replaces our bot, deletes its matches")
     upload.add_argument("name", help="bot name, 5-20 characters, e.g. SerenaBot-04-1809")
     upload.add_argument("jar", help="the JAR, e.g. arena/qc-starter/build/libs/SerenaBot.jar")
     upload.add_argument("--yes", action="store_true", help="really upload")
+
+    autopilot = commands.add_parser("autopilot", help="upload a gated Tank revision when we are not first")
+    autopilot.add_argument("--yes", action="store_true", help="really upload (or QC_AUTOPILOT=1); else a dry run")
 
     wait = commands.add_parser("wait", help="wait until the tournament has played the bot's games")
     wait.add_argument("name", help="the bot name as uploaded")
@@ -311,6 +330,7 @@ COMMANDS = {
     "archive": command_archive,
     "archive-losses": command_archive_losses,
     "upload": command_upload,
+    "autopilot": command_autopilot,
     "wait": command_wait,
     "login": command_login,
     "page": command_page,

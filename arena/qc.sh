@@ -8,6 +8,8 @@
 #   ./qc.sh census [geom] [ply]   state-space census, e.g. ./qc.sh census 6x7x4-nobomb 9
 #   ./qc.sh tree [moves] [plies] [evalDepth] [width] [geom]   tree + heatmap, renders out/tree.svg
 #   ./qc.sh tune [gens] [depth] [pairs] [openings] [threads]  evolve eval weights -> out/tune-params.txt
+#   ./qc.sh tune --islands N --migrate K [--generations g] [--population p] [--openings o] [--size 15x30] [--depth 0]
+#                                            island evolution of SerenaBot -> out/serena-islands.txt, results/islands.tsv
 #   ./qc.sh train [recipes]                  train every model in training.txt not yet in params/
 #   ./qc.sh league [file] [games] [threads]  round robin of league.txt -> results/league.md, out/league.html
 #   ./qc.sh stats [file] [games] [threads] [opening plies] [size]
@@ -16,7 +18,13 @@
 #                                            SerenaBot's loss book from lost games (qcsite archive-losses)
 #                                            -> params/serena/book.txt and SerenaBot.java's LOSS_BOOK
 #   ./qc.sh snapshot <Bot> [git revision]    freeze a bot as Bots/<Bot>-<revision>.jar, to keep it in the field
+#   ./qc.sh tank [learn options]             SerenaBot's revision loop: archive, learn, build, test, check, gate
+#                                            vs the newest Bots/Tank-*.jar on 15x30 (GATE_GAMES, default 10),
+#                                            -> Bots/Tank-DD-HHMM.jar, params/serena/revisions.tsv; prints the upload
 #   ./qc.sh replay [A] [B] [games]           record games -> out/replay.html (browser viewer)
+#   ./qc.sh dataset [out dir] [--search ms] [--self-play games] [--threads n]
+#                                            archived matches (+ self-play) -> input planes, results, search scores under out/dataset/
+#   ./qc.sh network [every n] [budget ms]    SerenaBot's network: incremental == rebuilt, nodes/s with and without
 #   ./qc.sh conformance [games] [size]       replay engine games on our Board: same boards, same winners
 #   ./qc.sh watch [A] [B]                    one game in the engine's window, as qc-starter runs it
 # The bots live in the starter project (qc-starter/src/main/java/ch/qc/meelik), whose build.gradle packages
@@ -109,6 +117,48 @@ snapshot() {
     echo "built Bots/$bot-$tag.jar (Bot-Class ${class//\//.})"
 }
 
+# SerenaBot's revision loop. Archives the site's matches (before an upload deletes ours), learns from
+# the archived losses of our bots and the top three, rebuilds and checks the bot, plays a short gate
+# against the newest Tank on the tournament board and snapshots the upload JAR as Bots/Tank-DD-HHMM.jar.
+# Each revision is a row of params/serena/revisions.tsv, each gate one of results/gates.tsv. It prints
+# the upload command and never runs it: the user decides what enters the tournament.
+tank() {
+    local name; name=Tank-$(date +%d-%H%M)
+    local site=(uv run --quiet --project ../tools/qc-site qcsite) jar=qc-starter/build/libs/SerenaBot.jar games=${GATE_GAMES:-10}
+    mkdir -p out/serena Bots
+    "${site[@]}" archive || echo "archive failed: learning from the matches archived so far" >&2
+    "${site[@]}" archive-losses --loser 'Tank-*' --loser 'SerenaBot-*' --loser 'QuarkBot-*' --loser top:3 -o out/serena/losses.txt
+    run Learn out/serena/losses.txt "$@"
+    build
+    run SelfTest
+    run Check "$jar" | tee out/serena/check.txt
+    local size; size=$(grep -o 'size: .*' out/serena/check.txt)
+    field() { echo "$size" | sed -n "s/.* $1=\([0-9]*\).*/\1/p"; }
+
+    local previous score=- results=-; previous=$(ls -t Bots/Tank-*.jar 2>/dev/null | head -1 || true)
+    if [ -n "$previous" ]; then
+        run Arena "jar:$jar" "jar:$previous" "$games" 15x30 | tee out/serena/gate.txt
+        results=$(sed -n 's/.* wins \([0-9]*\), draws \([0-9]*\), .* wins \([0-9]*\), avg.*/\1 \2 \3/p' out/serena/gate.txt)
+        score=$(echo "$results" | awk -v n="$games" '{ printf "%.3f", ($1 + $2 / 2) / n }')
+        [ -f results/gates.tsv ] || printf '%s\n' "time	candidate	opponent	games	wins	draws	losses	score	size" \
+            "# ./qc.sh tank: the candidate SerenaBot upload JAR vs the newest Bots/Tank-*.jar, starts alternating, engine Experiment, 15x30" > results/gates.tsv
+        printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -Iseconds)" "$name" "$(basename "$previous" .jar)" "$games" "${results// /	}" "$score	15x30" >> results/gates.tsv
+    else
+        echo "no Bots/Tank-*.jar yet: no gate"
+    fi
+
+    cp "$jar" "Bots/$name.jar"
+    local rev; rev=$(git rev-parse --short HEAD)
+    [ -z "$(git status --porcelain -- "$BOTS")" ] || rev=$rev-wip
+    [ -f params/serena/revisions.tsv ] || printf '%s\n' "name	git_rev	book_entries	gate_games	gate_score	class_kb	jar_kb	heap_mb" \
+        "# ./qc.sh tank: one row per SerenaBot revision; gate vs the newest Tank before it on 15x30, sizes from ./qc.sh check" > params/serena/revisions.tsv
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$rev" "$(field book)" "$([ -n "$previous" ] && echo "$games" || echo 0)" "$score" \
+        "$(field class)" "$(field jar)" "$(field heap)" >> params/serena/revisions.tsv
+    echo "$name: gate $score vs ${previous:-nothing}; $size -> Bots/$name.jar, params/serena/revisions.tsv"
+    echo "to upload (archive first; replaces our bot), from the repository root:"
+    echo "  cd tools/qc-site && uv run qcsite archive && uv run qcsite upload $name ../../arena/Bots/$name.jar --yes"
+}
+
 run() { deps; "$JAVA" -cp "out/bot${SEP}out/tools${SEP}$ENGINE_CP" "ch.qc.meelik.tools.$@"; }
 
 cmd=${1:-build}; shift || true
@@ -124,6 +174,7 @@ case "$cmd" in
         command -v wslpath >/dev/null && echo "open in a browser: $(wslpath -w out/stats.html)"
         ;;
     snapshot) snapshot "$@" ;;
+    tank) tank "$@" ;;
     check) run Check "$@" ;;
     replay)
         run Replay "$@"
@@ -136,6 +187,8 @@ case "$cmd" in
     census) run Census "$@" ;;
     tune) run Tune "$@" ;;
     learn) run Learn "$@" ;;
+    dataset) run Network dataset "$@" ;;
+    network) run Network bench "$@" ;;
     train)
         grep -v '^[[:space:]]*\(#\|$\)' "${1:-training.txt}" | while read -r name gens depth pairs openings seed start bot field; do
             if [ -f "params/$name.txt" ]; then echo "params/$name.txt exists; skipping"; continue; fi
@@ -149,5 +202,5 @@ case "$cmd" in
         DOT=$(command -v dot || ls /mnt/c/Program\ Files/Graphviz/bin/dot.exe 2>/dev/null || true)
         if [ -n "$DOT" ]; then "$DOT" -Tsvg out/tree.dot -o out/tree.svg && echo "rendered out/tree.svg"; fi
         ;;
-    *) sed -n '2,26p' "$0"; exit 1 ;;
+    *) sed -n '2,34p' "$0"; exit 1 ;;
 esac

@@ -2,20 +2,22 @@
 
 One Site (one logged-in session) serves every tool call for the life of the process; it logs in
 again by itself when the session expires. Tools return the same shapes as `qcsite <command> --json`.
-The server only reads: uploading a bot replaces our tournament entry, so it stays a CLI command a
-person runs on purpose.
+The tools read, except upload_bot: it replaces our tournament entry, so it goes through the guards
+of upload.guarded_upload (a Tank-DD-HHMM name typed twice, ./qc.sh check, archive first).
 """
 
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
-from . import archive, client
+from pathlib import Path
+
+from . import archive, client, upload
 
 server = FastMCP(
     "qc-site",
     instructions=(
-        "Read-only access to the QuantumConnect arena site (quantum-connect.web.cern.ch), logged in "
+        "Access to the QuantumConnect arena site (quantum-connect.web.cern.ch), logged in "
         "as our team. Start with leaderboard; bot_matches lists a bot's games (bot = name, id or "
         "'ours'); match gives the moves, the replayed winner and the final board; lost_games gives "
         "every loss of a bot with its moves. Players are 'first' (1) and 'second' (2); columns count "
@@ -80,7 +82,7 @@ def lost_games(bot: str = "ours") -> dict:
 def archived_matches(bot_pattern: str = "*", lost_only: bool = False, include_moves: bool = False) -> list[dict]:
     """Matches saved in the local archive (arena/archive), which keeps games the site has deleted
     (a re-upload deletes a bot's matches). bot_pattern is a shell pattern on either player's bot
-    name, e.g. "SerenaBot-*"; with lost_only, only matches that bot lost. Refresh with `qcsite archive`."""
+    name, e.g. "Tank-*"; with lost_only, only matches that bot lost. Refresh with `qcsite archive`."""
     if lost_only:
         matches = archive.archived_losses([bot_pattern])
     else:
@@ -98,6 +100,15 @@ def site_page(path: str) -> dict:
     tools don't cover. `path` is a site path such as "/rules"."""
     final_path, html = site().page(path)
     return client.page_summary(final_path, html)
+
+
+@server.tool()
+def upload_bot(jar_path: str, name: str, confirm: str) -> dict:
+    """Uploads a bot JAR to the tournament: it REPLACES our ranked bot and deletes its matches.
+    Only on the user's explicit go. Refused unless name is a Tank revision (Tank-DD-HHMM), confirm
+    repeats name exactly, and ./qc.sh check passes. Archives our matches first, logs the upload in
+    arena/archive/uploads.jsonl and keeps the JAR as arena/Bots/<name>.jar."""
+    return upload.guarded_upload(site(), Path(jar_path), name, confirm, "mcp")
 
 
 def run() -> None:

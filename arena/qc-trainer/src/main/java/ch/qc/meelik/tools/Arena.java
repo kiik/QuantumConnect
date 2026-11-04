@@ -9,6 +9,7 @@ import ch.cern.quantumconnect.core.QuantumField;
 import ch.cern.quantumconnect.core.SpaceOwnership;
 import ch.qc.meelik.bots.QuarkBot;
 import ch.qc.meelik.bots.QuarkV2Bot;
+import ch.qc.meelik.bots.SerenaBot;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -35,7 +36,8 @@ import java.util.jar.JarFile;
  *       ...) or any fully qualified bot class, optionally followed by {@code @<ms>} (time budget per
  *       move), {@code /<depth>} (fixed search depth) and {@code :<file>} (evaluation parameters from
  *       Tune), e.g. {@code quark@10}, {@code quark/2}, {@code quark:params/evolved-d4.txt}; the same
- *       options work for {@code quarkV2};
+ *       options work for {@code quarkV2}; {@code serena+net} is SerenaBot evaluating with its network
+ *       (it loads when the bot sets up the arena's board, for the size it was trained on);
  *   <li>{@code tuned}: short for {@code quark:out/tune-params.txt};
  *   <li>{@code jar:<path>}: the bot in a packaged JAR (its Bot-Class), in its own class loader, so
  *       two versions of the same bot can play each other.
@@ -257,6 +259,8 @@ public final class Arena {
         if (spec.equals("tuned")) spec = "quark:" + Tune.OUTPUT;
         if (spec.startsWith("jar:")) return fromJar(Path.of(spec.substring(4)));
 
+        boolean network = spec.endsWith("+net");
+        if (network) spec = spec.substring(0, spec.length() - "+net".length());
         String parameterFile = null;
         if (spec.contains(":")) {
             parameterFile = spec.substring(spec.indexOf(':') + 1);
@@ -280,6 +284,8 @@ public final class Arena {
                 v2.budgetNanos = Long.MAX_VALUE / 4;
             }
         }
+        if (bot instanceof SerenaBot serena && parameterFile != null) Tune.applySerena(serena, Tune.load(Path.of(parameterFile)));
+        if (bot instanceof SerenaBot serena) serena.withNetwork = network;
         return bot;
     }
 

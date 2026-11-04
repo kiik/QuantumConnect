@@ -182,6 +182,7 @@ the table and the commands below are relative to it: `cd arena` first, or call `
 ./qc.sh stats league.txt 10 8 4      #   the same with 8 threads and 4 random opening plies (always distinct games)
 ./qc.sh snapshot QuarkBot            # freeze the working tree's QuarkBot as Bots/QuarkBot-<commit>[-wip<time>].jar
 ./qc.sh snapshot QuarkBot 239fe55    #   or the one from any commit, to keep old versions in the field
+./qc.sh tank                         # SerenaBot revision: archive, learn, build, check, gate -> Bots/Tank-DD-HHMM.jar
 ./qc.sh tune 150 4                   # evolve the scoring weights once -> out/tune-params.txt
 ./qc.sh census 6x7x4-nobomb 10       # distinct positions per ply; checked against the known Connect-4 counts
 ./qc.sh tree 5,6,5 2 6 3             # board, per-column scores, best line, game tree -> out/tree.svg
