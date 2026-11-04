@@ -22,7 +22,8 @@
 #                                            vs the newest Bots/Tank-*.jar on 15x30 (GATE_GAMES, default 10),
 #                                            -> Bots/Tank-DD-HHMM.jar, params/serena/revisions.tsv; prints the upload
 #   ./qc.sh replay [A] [B] [games]           record games -> out/replay.html (browser viewer)
-#   ./qc.sh dataset [out dir]               archived matches -> input planes + results under out/dataset/
+#   ./qc.sh dataset [out dir] [--search ms] [--self-play games] [--threads n]
+#                                            archived matches (+ self-play) -> input planes, results, search scores under out/dataset/
 #   ./qc.sh network [every n] [budget ms]    SerenaBot's network: incremental == rebuilt, nodes/s with and without
 #   ./qc.sh conformance [games] [size]       replay engine games on our Board: same boards, same winners
 #   ./qc.sh watch [A] [B]                    one game in the engine's window, as qc-starter runs it
@@ -201,5 +202,5 @@ case "$cmd" in
         DOT=$(command -v dot || ls /mnt/c/Program\ Files/Graphviz/bin/dot.exe 2>/dev/null || true)
         if [ -n "$DOT" ]; then "$DOT" -Tsvg out/tree.dot -o out/tree.svg && echo "rendered out/tree.svg"; fi
         ;;
-    *) sed -n '2,33p' "$0"; exit 1 ;;
+    *) sed -n '2,34p' "$0"; exit 1 ;;
 esac

@@ -3,10 +3,21 @@
 The network, NNUE-style:
     sparse 0/1 features -> accumulator (hidden units) -> clipped ReLU [0, 1] -> one output,
 the output being the log-odds that the side to move wins. It trains in floating point with Adam,
-each position also mirrored left to right. The target is the mover's result in the archived match,
-pulled towards a draw the further the position is from the end: 0.5 + (result - 0.5) * exp(-plies
-left / horizon), since an early position says little about who wins. 10% of the matches are held
-out, and the epoch with the best held-out loss is kept.
+each position also mirrored left to right.
+
+The target blends two labels, as NNUE trainers do (lambda):
+    lambda * searched + (1 - lambda) * faded result,
+    searched = 0.5 + confidence * (sigmoid(search score / scale) - 0.5)
+The search score is SerenaBot's own score for the position after a deeper search (./qc.sh dataset
+--search ms). Scale (score units per log-odds) and confidence (below 1: even a search that sees a
+forced win is not always right about the game, since players blunder) are fitted to the game results
+on the training positions unless given. The faded result is the mover's result pulled towards a draw the further the
+position is from the end, 0.5 + (result - 0.5) * exp(-plies left / horizon), since an early position
+says little about who wins. Without search scores, lambda is 0.
+
+10% of the archived matches (and 10% of the self-play games) are held out, and the epoch with the
+best held-out loss is kept. The embedded network is then compared with the one it replaces on the
+held-out archived positions against the faded result, the measure the earlier runs used.
 
 Quantised as SerenaBot computes it: input weights and hidden biases times 64 (int8, int16), the
 clipped ReLU on 0..64, output weights times 64 (int16), the output bias times 64 * 64 (int32).
@@ -14,7 +25,8 @@ clipped ReLU on 0..64, output weights times 64 (int16), the output bias times 64
 Writes params/serena/network.txt (provenance and base64), the NETWORK block of SerenaBot.java, and
 one row per epoch to results/network-training.tsv.
 
-Usage: uv run qcnet [--hidden 32] [--epochs 40] [--seed 1] [--rate 1e-3] [--decay 3] [--horizon 20] [--no-embed]
+Usage: uv run qcnet [--hidden 32] [--epochs 40] [--seed 1] [--rate 1e-3] [--decay 3] [--horizon 20]
+                   [--lam 0.7] [--scale fitted] [--confidence fitted] [--no-embed]
 """
 
 import argparse
@@ -44,7 +56,28 @@ def load(directory):
     planes = np.fromfile(directory / "planes.bin", dtype=np.uint8).reshape(meta["positions"], -1)
     results = np.fromfile(directory / "results.bin", dtype=np.uint8).astype(np.float32) / 2
     games = np.fromfile(directory / "games.bin", dtype="<i4")
-    return meta, planes, results, games
+    scores = directory / "scores.bin"
+    scores = np.fromfile(scores, dtype="<i4").astype(np.float64) if scores.exists() else None
+    comment = next((line[2:] for line in (directory / "meta.txt").read_text().splitlines() if line.startswith("# ")), "")
+    return meta, planes, results, games, scores, comment
+
+
+def win_probability(scores, scale, confidence):
+    """The search score as a probability of winning, at most confidence away from even."""
+    return 0.5 + confidence * (1 / (1 + np.exp(-np.clip(scores / scale, -30, 30))) - 0.5)
+
+
+def fit_calibration(scores, results):
+    """The scale and confidence whose win probabilities best predict the game results (a grid search)."""
+    candidates = [(scale, confidence) for scale in np.logspace(1, 5, 81) for confidence in np.arange(0.5, 1.001, 0.05)]
+    losses = [bce_probabilities(win_probability(scores, *candidate), results) for candidate in candidates]
+    scale, confidence = candidates[int(np.argmin(losses))]
+    return float(scale), float(round(confidence, 2))
+
+
+def bce_probabilities(predicted, targets):
+    predicted = np.clip(predicted, 1e-7, 1 - 1e-7)
+    return float(-np.mean(targets * np.log(predicted) + (1 - targets) * np.log(1 - predicted)))
 
 
 def plies_left(games):
@@ -145,6 +178,28 @@ def quantised_logits(q, planes, features):
     return (hidden @ q["w2"].astype(np.int64) + int(q["b2"])) / (ACTIVATION_ONE * OUTPUT_ONE), int(np.abs(accumulator).max())
 
 
+def unblob(meta, data):
+    """The quantised network of a blob, or None if it was trained for another layout."""
+    if len(data) < 4 or data[0] != meta["rows"] or data[1] != meta["columns"]:
+        return None
+    hidden, features = data[2], meta["features"]
+    at = 4 + features * hidden
+    if len(data) != at + 4 * hidden + 4:
+        return None
+    return {"w1": np.frombuffer(data, np.int8, features * hidden, 4).reshape(features, hidden),
+            "b1": np.frombuffer(data, "<i2", hidden, at), "w2": np.frombuffer(data, "<i2", hidden, at + 2 * hidden),
+            "b2": np.int32(struct.unpack_from("<i", data, at + 4 * hidden)[0])}
+
+
+def embedded(meta):
+    """The network SerenaBot embeds now (params/serena/network.txt), or None."""
+    params = ARENA / "params/serena/network.txt"
+    if not params.exists():
+        return None
+    text = "".join(line.strip() for line in params.read_text().splitlines() if not line.startswith("#"))
+    return unblob(meta, base64.b64decode(text)) if text else None
+
+
 def blob(meta, q, hidden):
     return (bytes([meta["rows"], meta["columns"], hidden, 1]) + q["w1"].tobytes()
             + q["b1"].astype("<i2").tobytes() + q["w2"].astype("<i2").tobytes() + struct.pack("<i", int(q["b2"])))
@@ -173,23 +228,45 @@ def main():
     parser.add_argument("--rate", type=float, default=1e-3, help="Adam's learning rate")
     parser.add_argument("--decay", type=float, default=3, help="decoupled weight decay")
     parser.add_argument("--horizon", type=float, default=20, help="plies over which the result fades to a draw")
+    parser.add_argument("--lam", type=float, default=0.7, help="weight of the search label against the faded result")
+    parser.add_argument("--scale", type=float, default=0, help="search score units per log-odds (0: fitted to the results)")
+    parser.add_argument("--confidence", type=float, default=0, help="the searched label's largest distance from 0.5, doubled (0: fitted)")
     parser.add_argument("--no-embed", action="store_true", help="train and report, but leave the bot as it is")
     args = parser.parse_args()
 
-    meta, planes, results, games = load(args.data)
-    targets = (0.5 + (results - 0.5) * np.exp(-plies_left(games) / args.horizon)).astype(np.float32)
+    meta, planes, results, games, scores, data_comment = load(args.data)
+    faded = (0.5 + (results - 0.5) * np.exp(-plies_left(games) / args.horizon)).astype(np.float32)
     rng = np.random.default_rng(args.seed)
-    match_ids = np.unique(games)
-    held_out = rng.choice(match_ids, max(1, len(match_ids) // 10), replace=False)
+    archived = games < meta.get("archive_games", games.max() + 1)
+    match_ids, self_play_ids = np.unique(games[archived]), np.unique(games[~archived])
+    held_out = rng.choice(match_ids, max(1, len(match_ids) // 10), replace=False)  # as in the earlier runs
+    if len(self_play_ids):
+        held_out = np.concatenate([held_out, rng.choice(self_play_ids, max(1, len(self_play_ids) // 10), replace=False)])
     validation = np.isin(games, held_out)
     train_rows, validation_rows = np.flatnonzero(~validation), np.flatnonzero(validation)
+    archived_validation = np.flatnonzero(validation & archived)
+
+    lam, scale, confidence, searched = 0.0, 1.0, 1.0, faded
+    if scores is not None:
+        lam = args.lam
+        scale, confidence = fit_calibration(scores[train_rows], results[train_rows])
+        scale, confidence = args.scale or scale, args.confidence or confidence
+        searched = win_probability(scores, scale, confidence)
+        print(f"labels: {lam} x (0.5 + {confidence} x (sigmoid(search score / {scale:.0f}) - 0.5)) + {1 - lam:.1f} x result faded over "
+              f"{args.horizon:g} plies; search alone predicts the held-out results with loss "
+              f"{bce_probabilities(searched[validation_rows], results[validation_rows]):.4f}")
+    targets = (lam * searched + (1 - lam) * faded).astype(np.float32)
 
     stamp = datetime.datetime.now().isoformat(timespec="seconds")
-    run = f"{stamp} h{args.hidden} s{args.seed} d{args.decay}"
+    run = f"{stamp} h{args.hidden} s{args.seed} d{args.decay}" + (f" lam{lam}" if scores is not None else "")
+    labels = (f"; target {lam} x (0.5 + {confidence} x (sigmoid(search score / {scale:.0f}) - 0.5)) + {1 - lam:.1f} x faded result; "
+              f"data: {data_comment}"
+              if scores is not None else "")
     provenance = [f"{stamp}: uv run qcnet --hidden {args.hidden} --epochs {args.epochs} --seed {args.seed} "
-                  f"--rate {args.rate} --decay {args.decay} --horizon {args.horizon}; "
-                  f"{len(train_rows)} training / {len(validation_rows)} held-out positions from {len(match_ids)} matches "
-                  f"({meta['rows']}x{meta['columns']}, {meta['features']} features)"]
+                  f"--rate {args.rate} --decay {args.decay} --horizon {args.horizon}" + (f" --lam {lam}" if scores is not None else "") + "; "
+                  f"{len(train_rows)} training / {len(validation_rows)} held-out positions from {len(match_ids)} matches"
+                  + (f" and {len(self_play_ids)} self-play games" if len(self_play_ids) else "")
+                  + f" ({meta['rows']}x{meta['columns']}, {meta['features']} features){labels}"]
     table = ARENA / "results/network-training.tsv"
     new_table = not table.exists()
     with table.open("a") as out:
@@ -209,6 +286,17 @@ def main():
         logits, largest = quantised_logits(q, planes[validation_rows], meta["features"])
         held_out_loss, held_out_accuracy = bce(logits, targets[validation_rows]), accuracy(logits, results[validation_rows])
         log(best_epoch, float("nan"), held_out_loss, held_out_accuracy, "int")
+        comparison = []  # on the held-out archived positions, against the faded result: the earlier runs' measure
+        for name, network in [("this network", q), ("the network it replaces", embedded(meta))]:
+            if network is not None and network["w1"].shape[1] > 0:
+                old_logits = quantised_logits(network, planes[archived_validation], meta["features"])[0]
+                comparison.append(f"{name} {bce(old_logits, faded[archived_validation]):.4f} "
+                                  f"(accuracy {accuracy(old_logits, results[archived_validation]):.3f})")
+        if comparison:
+            line = (f"held-out archived positions ({len(archived_validation)}), loss against the result faded over "
+                    f"{args.horizon:g} plies: " + ", ".join(comparison) + "; coin flip 0.6931")
+            out.write(f"# {line}\n")
+            print(line)
 
     data = blob(meta, q, args.hidden)
     text = base64.b64encode(data).decode()

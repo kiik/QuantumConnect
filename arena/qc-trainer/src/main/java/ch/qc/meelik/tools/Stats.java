@@ -112,7 +112,7 @@ public final class Stats {
 
     /**
      * A short hash of everything that decides how a spec plays: for a JAR its bytes; otherwise the
-     * spec's options ({@code @ms}, {@code /depth}), the bot's class file and its parameter file.
+     * spec's options ({@code @ms}, {@code /depth}, {@code +net}), the bot's class file and its parameter file.
      */
     static String fingerprint(String spec) throws Exception {
         if (spec.equals("random")) return "random";
@@ -122,7 +122,7 @@ public final class Stats {
             digest.update(Files.readAllBytes(Path.of(spec.substring(4))));
         } else {
             String bot = spec.contains(":") ? spec.substring(0, spec.indexOf(':')) : spec;
-            String name = bot.split("[@/]")[0], className = Arena.className(name);
+            String name = bot.split("[@/+]")[0], className = Arena.className(name);
             digest.update(bot.substring(name.length()).getBytes());
             try (InputStream classFile = Stats.class.getClassLoader().getResourceAsStream(className.replace('.', '/') + ".class")) {
                 if (classFile == null) throw new IllegalArgumentException("unknown bot " + className);

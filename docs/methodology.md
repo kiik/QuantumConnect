@@ -74,7 +74,14 @@ five planes of 450 cells each, plus 9 extra bits.
 | the mover moved first | 1 |
 
 `./qc.sh dataset` replays all 301 archived 15×30 matches and writes 23,668 positions with the result
-for the mover.
+for the mover. Results are few and noisy labels: one blunder decides the label of every earlier
+position in the match. So `./qc.sh dataset --search 120 --self-play 48 --threads 16` also labels
+every position with SerenaBot's own score after a 120 ms search, using the line weights. It also adds
+48 games of SerenaBot against itself, each from a random opening of 2 to 8 drops, and every move in
+them is searched once: the search both labels the position and picks the move. That run wrote
+34,891 positions (11,223 from self-play) in 282 s. Its searches reached a mean depth of 4.57 plies.
+A move in a real game, at 40 ms on one thread, reaches 4.46. A larger run takes, by the tool's own
+estimate, 13 minutes per 100k positions at 120 ms, or 54 minutes at 480 ms (roughly one ply deeper).
 
 ## 4. Network and memory
 
@@ -95,10 +102,37 @@ change the training target. It is now the game result pulled towards a
 draw the further the position is from the end (horizon 20 plies). The four earliest runs used the
 plain result, so their curves aren't directly comparable with the later ones.
 
-The final network, quantised, has a held-out loss of 0.682 and calls 64.6% of decisive games right.
-That is only slightly better than a coin flip. It has not played any games yet, so it is **off by
-default** (`useNetwork = false`). Turning it on costs 26% of search speed (1.04M nodes/s against
-1.41M off), 39 KB of JAR and about 0.2 MB of heap.
+That network, trained on results alone, has a held-out loss of 0.682 (quantised) and calls 64.6% of
+decisive games right, only slightly better than a coin flip.
+
+**Search labels.** The current network trains on a blend of two labels, as NNUE trainers do:
+0.7 × the search label + 0.3 × the faded result. The search label is the search score turned into a
+probability, 0.5 + c × (sigmoid(score / s) − 0.5). The trainer fits s and c to the game results of
+the training positions. It found s = 891 score units per unit of log-odds, and c = 0.5, the lowest
+value it tries: even a search that sees a forced win is not always right about the game, because
+players blunder. The loss on these soft targets has a floor above zero, so the newest curve in the
+chart isn't comparable with the older ones either. The trainer therefore also scores each network on
+the old measure: held-out archived positions against the faded result. On that measure the new
+network scores 0.674 (63.3% of decisive games right), against 0.682 (64.6%) for the network it
+replaced. Weight decay 3 suited the noisy labels. With search labels, less decay does better: decay 3,
+1, 0.3, 0.05 and 0 gave 0.683, 0.679, 0.676, 0.674 and 0.675. With 64 hidden units the result was
+0.677, no better, so the network stays at 32. Generating the data (282 s) and training (16 s)
+together take about 5 minutes.
+
+**Speed.** With the network on, the bot searches 1.21M nodes/s against 1.71M off, 29% slower, and
+reaches a mean depth of 4.21 plies against 4.46 in 40 ms (`./qc.sh network 40 40`). The two players'
+accumulators now share one array, and each quark or threat adds one precomputed double row, in a
+loop the JIT can vectorise; before that the gap was 32%. We also tried ordering moves by the
+network's value of each child, after the table's move. Done from 3 plies above the horizon, it cut
+speed to 1.11M nodes/s and depth to 4.11. From 5 plies it made no difference (4.18 against 4.20). So
+it was dropped. With the network embedded the JAR is 1056 KB (1040 KB with the previous weights,
+which compressed better), and the precomputed rows take about 0.25 MB of heap.
+
+**Gate.** SerenaBot with the network played SerenaBot without it on 15×30: 40 games from random
+4-ply openings, each opening played once with each colour, at the real 40 ms per move
+(`./qc.sh stats` with the entrants `serena+net` and `serena`). The network won 10 games and lost 30,
+a score of 25%. A distilled copy of the line weights' search, evaluated 29% slower, plays worse than
+the line weights themselves. The network therefore stays **off by default** (`useNetwork = false`).
 
 ## 5. Island evolution
 
@@ -123,7 +157,7 @@ estimated at 7–8 minutes and has not been run.
 |---|---|---|
 | Move time | 100 ms (arena) | 40 ms per move; an eighth of that after 20 s in a match |
 | Program memory | 80 MB (ours, below the arena's) | about 12 MB heap; check fails above 60 MB |
-| Upload JAR | tracked per revision | 1001 KB; 1040 KB with the network embedded |
+| Upload JAR | tracked per revision | 1001 KB; 1056 KB with the network embedded |
 | Network | grows only when it wins games | 32 hidden units, 70.7 KB of weights |
 
 `./qc.sh check` prints a size line for each JAR, for example

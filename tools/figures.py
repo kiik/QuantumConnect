@@ -116,7 +116,8 @@ def network_training(rows):
     names = list(runs)
     series = [("tuning runs" if i == 0 else None, None, runs[name]) for i, name in enumerate(names[1:-1])]
     series.append(("first run", COLOURS[1], runs[names[0]]))
-    series.append(("final run", COLOURS[0], runs[names[-1]]))
+    final = "final, search labels" if " lam" in names[-1] else "final run"
+    series.append((final, COLOURS[0], runs[names[-1]]))
     return line_chart("Network: held-out loss per epoch", "epoch", "cross-entropy", series,
                       ("coin flip 0.693", 0.6931))
 
