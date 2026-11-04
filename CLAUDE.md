@@ -11,7 +11,8 @@ for the rules, the tools and the results so far.
 
 - Layout: the root stays clean: `arena/` holds the Java side (`qc-starter/`, `qc-trainer/`, `qc.sh`,
   `params/`, `Bots/`, `results/`, `out/`, `league.txt`, `training.txt`); `tools/` holds non-Java
-  helpers (`tools/qc-site/`: CLI and MCP server for the arena site); `docs/` and `Data/` stay at the
+  helpers (`tools/qc-site/`: CLI and MCP server for the arena site; `tools/qc-net/`: trainer of
+  SerenaBot's network, from `./qc.sh dataset`); `docs/` and `Data/` stay at the
   root. Paths and `./qc.sh` commands below are relative to `arena/`.
 - The bots live inside the starter project, in `qc-starter/src/main/java/ch/qc/meelik/bots/`;
   our tools live in `qc-trainer/`. There is no `src/`. Keep
