@@ -8,6 +8,8 @@
 #   ./qc.sh census [geom] [ply]   state-space census, e.g. ./qc.sh census 6x7x4-nobomb 9
 #   ./qc.sh tree [moves] [plies] [evalDepth] [width] [geom]   tree + heatmap, renders out/tree.svg
 #   ./qc.sh tune [gens] [depth] [pairs] [openings] [threads]  evolve eval weights -> out/tune-params.txt
+#   ./qc.sh tune --islands N --migrate K [--generations g] [--population p] [--openings o] [--size 15x30] [--depth 0]
+#                                            island evolution of SerenaBot -> out/serena-islands.txt, results/islands.tsv
 #   ./qc.sh train [recipes]                  train every model in training.txt not yet in params/
 #   ./qc.sh league [file] [games] [threads]  round robin of league.txt -> results/league.md, out/league.html
 #   ./qc.sh stats [file] [games] [threads] [opening plies] [size]
@@ -199,5 +201,5 @@ case "$cmd" in
         DOT=$(command -v dot || ls /mnt/c/Program\ Files/Graphviz/bin/dot.exe 2>/dev/null || true)
         if [ -n "$DOT" ]; then "$DOT" -Tsvg out/tree.dot -o out/tree.svg && echo "rendered out/tree.svg"; fi
         ;;
-    *) sed -n '2,31p' "$0"; exit 1 ;;
+    *) sed -n '2,33p' "$0"; exit 1 ;;
 esac

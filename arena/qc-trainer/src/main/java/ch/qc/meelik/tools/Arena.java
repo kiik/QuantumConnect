@@ -9,6 +9,7 @@ import ch.cern.quantumconnect.core.QuantumField;
 import ch.cern.quantumconnect.core.SpaceOwnership;
 import ch.qc.meelik.bots.QuarkBot;
 import ch.qc.meelik.bots.QuarkV2Bot;
+import ch.qc.meelik.bots.SerenaBot;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -280,6 +281,7 @@ public final class Arena {
                 v2.budgetNanos = Long.MAX_VALUE / 4;
             }
         }
+        if (bot instanceof SerenaBot serena && parameterFile != null) Tune.applySerena(serena, Tune.load(Path.of(parameterFile)));
         return bot;
     }
 

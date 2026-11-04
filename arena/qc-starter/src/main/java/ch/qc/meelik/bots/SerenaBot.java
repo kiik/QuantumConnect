@@ -87,6 +87,9 @@ public final class SerenaBot implements Algorithm {
             {0, 15, 105, 261, 615, 7863, 0}};
     /** Bonus for having the bomb ready while the opponent hasn't. */
     static final int BOMB_READY_BONUS = 20;
+    /** This bot's weights and bonus: the constants above, unless a tuning tool sets others. */
+    public int[][] lineWeight = LINE_WEIGHT;
+    public int bombReadyBonus = BOMB_READY_BONUS;
 
     // ------------------------------------------------------------------ search constants
 
@@ -134,15 +137,17 @@ public final class SerenaBot implements Algorithm {
     int[] fallingQuarks;
     int stateSize;
 
-    // ------------------------------------------------------------------ search memory (about 8 MB)
+    // ------------------------------------------------------------------ search memory (about 8 MB at the default table size)
 
-    static final int TABLE_SIZE = 1 << 19;
+    public static final int TABLE_BITS = 19;
     static final int EXACT = 0, LOWER_BOUND = 1, UPPER_BOUND = 2;
-    final long[] tableKey = new long[TABLE_SIZE], tableEntry = new long[TABLE_SIZE];
+    long[] tableKey = new long[1 << TABLE_BITS], tableEntry = new long[1 << TABLE_BITS];
     final int[][] actionLists = new int[MAX_PLY][], undoStates = new int[MAX_PLY][];
     /** How often each action of each player caused a cut-off, weighted by depth. */
     int[][] historyScore;
     public long budgetNanos = 40_000_000L;
+    /** Deepest iteration of the search; a tuning tool may fix it. */
+    public int maxDepth = MAX_PLY - 2;
     long deadlineNanos;
     public long nodesSearched;
     boolean outOfTime;
@@ -447,7 +452,7 @@ public final class SerenaBot implements Algorithm {
     /** Value of a line from player 0's point of view: only a line open to one player counts. */
     int lineValue(int line) {
         int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1];
-        int[] weights = LINE_WEIGHT[lineDirection[line]];
+        int[] weights = lineWeight[lineDirection[line]];
         if (quarks1 == 0) return weights[quarks0];
         if (quarks0 == 0) return -weights[quarks1];
         return 0;
@@ -641,7 +646,7 @@ public final class SerenaBot implements Algorithm {
         for (int[] scores : historyScore) for (int a = 0; a < scores.length; a++) scores[a] >>= 2; // age old knowledge
 
         int best = firstLegalDrop();
-        for (int depth = 1; depth < MAX_PLY - 1; depth++) {
+        for (int depth = 1; depth <= maxDepth; depth++) {
             int score = negamax(depth, -WIN - 1, WIN + 1, 0);
             if (outOfTime) break;
             int fromTable = tableAction(positionKey());
@@ -661,7 +666,7 @@ public final class SerenaBot implements Algorithm {
     int evaluate() {
         if (networkOn) return networkScore();
         int score = sideToMove == 0 ? staticScore : -staticScore;
-        return score + BOMB_READY_BONUS * (isBombReady(sideToMove) - isBombReady(1 - sideToMove));
+        return score + bombReadyBonus * (isBombReady(sideToMove) - isBombReady(1 - sideToMove));
     }
 
     private int isBombReady(int player) {
@@ -912,8 +917,14 @@ public final class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ transposition table
 
-    static int tableSlot(long key) {
-        return (int) key & TABLE_SIZE - 1;
+    /** Resizes the table to 2^bits entries of 16 bytes each, forgetting what it held. */
+    public void resizeTable(int bits) {
+        tableKey = new long[1 << bits];
+        tableEntry = new long[1 << bits];
+    }
+
+    int tableSlot(long key) {
+        return (int) key & tableKey.length - 1;
     }
 
     /** The best action stored for a position, or NO_ACTION. */
