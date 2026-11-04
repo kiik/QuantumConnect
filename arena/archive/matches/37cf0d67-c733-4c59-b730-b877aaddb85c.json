@@ -1,0 +1,19 @@
+{
+ "match_id": "37cf0d67-c733-4c59-b730-b877aaddb85c",
+ "first": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "QuarkStorm",
+  "bot_id": "a91e046e-ef52-484f-a053-44d0b90353bb",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 10,
+ "moves": "f14 s0 f14 s0 f14 s0 f14 s0 f14 s0 f14",
+ "fetched_at": "2026-11-04T18:20:33"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "139999e9-526e-4ba2-8d87-ce27c4dc2d4a",
+ "first": {
+  "bot": "QuarkBot-04-1713",
+  "bot_id": "75cd62ef-8202-431b-9941-011adf306e78",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 61,
+ "moves": "f15 f15 f9 s6 f6 s6 f6 s5 f5 s5 f5 s7 f5 s7 f7 s4 f3 s4 f6 s4 f6 s4 f4b f4 s5 f5 s8 f4 s8 f4 s8 f5 s8 f8 s2 f6 s6 f8 s2 f2 s10 f10 s10 f6b s10 f4 s10 f10 s1 f1 s1 f0 s1 f10 s1 f11 s1 f1 f5 f8 f6 f6",
+ "fetched_at": "2026-11-04T18:20:14"
+}

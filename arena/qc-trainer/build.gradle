@@ -1,0 +1,40 @@
+// The trainer: arena, league, tuner, replay viewer and the pre-upload check, compiled together with
+// our bot sources from ../qc-starter (only ch/qc/meelik, not the starter's samples) and against its
+// engine library. ../qc.sh builds and runs these the same way with javac; this build is there so an
+// IDE sees the project.
+plugins {
+    id 'application'
+}
+
+// ../qc-starter/gradlew -p qc-trainer run --args="quarkV2 jar:Bots/qc-bot-gen002-safe-62ms.jar 20"
+// plays headless matches as ./qc.sh arena does, from the repository root so the same paths work.
+application {
+    mainClass = 'ch.qc.meelik.tools.Arena'
+}
+tasks.named('run') {
+    workingDir = rootDir.parentFile
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "ch.qos.logback:logback-classic:1.5.18"
+    implementation fileTree(dir: '../qc-starter/libs')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir '../qc-starter/src/main/java'
+            include 'ch/qc/meelik/**'
+        }
+    }
+}

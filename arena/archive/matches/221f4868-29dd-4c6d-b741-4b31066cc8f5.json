@@ -1,0 +1,19 @@
+{
+ "match_id": "221f4868-29dd-4c6d-b741-4b31066cc8f5",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 31,
+ "moves": "f6 s14 s14 s6 f6 s6 f5 s6 f5 s6 f5 s6 f6 s5 f7 s5 f7 s5 f7 s5 f5 s8b s5 f7 s4 f7 s6 f7 s14 s14 s14 s14",
+ "fetched_at": "2026-11-04T18:20:40"
+}

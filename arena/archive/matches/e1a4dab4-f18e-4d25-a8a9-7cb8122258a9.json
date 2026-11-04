@@ -1,0 +1,19 @@
+{
+ "match_id": "e1a4dab4-f18e-4d25-a8a9-7cb8122258a9",
+ "first": {
+  "bot": "lalalalalabotfixed",
+  "bot_id": "d8234a73-da2d-4664-9009-121163c79efd",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "second": {
+  "bot": "True Random Bot",
+  "bot_id": "e720c76c-8cef-49c1-b9b4-96ae5f9f66cb",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 56,
+ "moves": "f5 s5 f5 s24 f6 s10 f4 s27 f3 s7 f4 s10 f4 s25 f26 s24 f4 s9 f5 s24 f4 s4 f5 s2 f5 s10 f5 s5 f10 s14 f12 s9 f7 s8 f24 s3 f3 s2 f2 s20 f7 s7 f3 s7 f0 s18 f2 s27 f21 s4 f9 s15 f16 s22 f2 s1 f1",
+ "fetched_at": "2026-11-04T18:21:28"
+}

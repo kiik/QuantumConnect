@@ -1,0 +1,19 @@
+{
+ "match_id": "811e622e-b841-4d49-a1aa-ee62aac05ba7",
+ "first": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "Savi12 - \"The King\"",
+  "bot_id": "62a9b7e3-5438-440d-a145-fce6e8e123ca",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 287,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s15 f15 s15 f14 s17 f15 s15 f19 s17 f15 s15 f15 s15 f15 s15 f15 s17 f16b s15 f15 s17 f17 s17 f17 s17 f17 s17 f17 s17 f17 s17 f17 s15 f17 s15 f17 s15 f18b s17 f17 s16 f9 s10 f10 s10 f10 s16 f10 s10 f10 s10 f10 s16 f10 s16 f16 s10 f16 s10 f16 s10 f16 s16 f21 s16 f22 s23 f23 s22 f22 s10 f21 s21 f21 s21 f21 s21 f21 s22 f21 s21 f21 s22 f22b s22 f22 s22 f21 s21 f22 s22 f22 s21 f22 s22 f9 s21 f9 s16 f9 s9 f9 s9 f16 s21 f22b s21 f22 s9 f22 s22 f19 s21 f18 s20 f6 s21 f21 s6 f18 s9 f9 s9 f18 s5 f18 s18 f18b s18 f18 s18 f12 s16 f6 s6 f6 s9 f6 s9 f20 s9 f24 s6 f20 s20 f6 s9 f6 s6 f5 s5 f5 s6 f5 s6 f5 s5 f5 s6 f20 s20 f23b s19 f20 s6 f6 s20 f20 s23 f5 s5 f20 s20 f5 s17 f5 s5 f20 s20 f20 s22 f16b s22 f16 s17 f17 s5 f14 s10 f20 s4 f4 s4 f17 s11 f11 s5 f12 s12 f12 s12 f12 s12 f11 s12 f12 s12 f11 s11 f16 s12 f12 s15b f16b s17 f4 s11 f4 s16 f16 s16 f12 s12 f26 s11 f11 s11 f8 s8 f12 s11 f11 s11 f14 s11 f11 s14 f4 s4 f7b s11 f23 s15 f23 s15 f23 s8 f23 s8b f9 s9 f23 s23 f23 s23 f23 s9 f23 s15 f23 s23 f8b s9 f23 s9 f17 s8 f24 s8 f13 s13 f24 s8 f17 s8b",
+ "fetched_at": "2026-11-04T18:20:34"
+}

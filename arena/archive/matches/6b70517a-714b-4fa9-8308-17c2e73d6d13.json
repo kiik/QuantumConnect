@@ -1,0 +1,19 @@
+{
+ "match_id": "6b70517a-714b-4fa9-8308-17c2e73d6d13",
+ "first": {
+  "bot": "QuarkBot-04-1713",
+  "bot_id": "75cd62ef-8202-431b-9941-011adf306e78",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "lalalalalabotfixed",
+  "bot_id": "d8234a73-da2d-4664-9009-121163c79efd",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 390,
+ "moves": "f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f11 s11 f11 s11 f11 s11 f11 s13 f13 s11 f13 s13 f13 s13 f13 s13 f13 s11 f13 s13 f13b s13 f11 s11 f13 s15 f13 s15 f10 s16 f11 s8 f13 s18 f11 s20 f19 s19 f12 s18 f17b s16 f12 s16 f12 s12 f12 s16 f16 s12 f12 s12 f10 s10 f10 s10 f10 s10 f10 s16 f16 s16 f9 s16 f16 s20 f11 s12 f14b s14 f13 s13 f15 s10 f16 s14 f12 s10 f12 s16 f11 s16 f10 s20 f20 s19 f12 s12 f21b s10 f15 s19 f20 s19 f19 s20 f20 s20 f20 s20 f20 s19 f20 s19 f20 s19 f20 s20 f7b s8 f20 s19 f19 s19 f19 s19 f20 s23 f19 s24 f25 s24 f15 s24 f24 s23 f23 s25 f7b s8 f21 s21 f13 s21 f21 s21 f23 s23 f24 s24 f24 s24 f24 s24 f24 s24 f24 s21 f25b s21 f10 s10 f21 s21 f23 s23 f10 s24 f12 s12 f17 s17 f17 s17 f24 s17 f24 s6 f9b s14b f13 s8 f17 s17 f17 s17 f10 s17 f17 s5 f4 s6 f6 s5 f5 s4 f9 s8 f7b s8 f18 s18 f15 s15 f6 s6 f24 s5 f24 s6 f23 s23 f10 s23 f23 s13 f23 s6 f7b s8 f8 s6 f6 s6 f5 s5 f10 s5 f21 s6 f21 s21 f21 s23 f5 s6 f6 s5 f7b s8 f8 s8 f8 s8 f8 s8 f6 s4 f6 s6 f6 s8 f21 s21 f5 s5 f15 s9 f18b s2 f23 s2 f16 s4 f17 s17 f17 s17 f19 s19 f19 s4 f17 s17 f17 s2 f16 s16 f18b s2 f19 s19 f8 s8 f8 s2 f2 s8 f19 s0 f17 s0 f8 s17 f8 s8 f2 s2 f25b s24 f23 s6 f24 s5 f17 s2 f6 s5 f6 s2 f24 s2 f2 s5 f2 s2 f13 s6 f4 s4 f18 s18 f5 s0 f0 s0 f18 s0 f9 s0 f0 s0 f27 s0 f27 s0 f27 s0 f0 s0 f27 s0 f27 s27 f28 s1 f1 s1 f1 s2 f27 s3 f3 s3 f3b s3 f26 s4 f26 s26 f1 s4 f29 s25 f1 s4 f9 s1 f27 s4 f4 s4 f9 s1 f18 s1 f18 s1 f18 s1 f1 s1 f18 s18 f18 s18b f14b s14 f14",
+ "fetched_at": "2026-11-04T18:20:12"
+}

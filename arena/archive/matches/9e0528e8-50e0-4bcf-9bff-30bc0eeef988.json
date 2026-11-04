@@ -1,0 +1,19 @@
+{
+ "match_id": "9e0528e8-50e0-4bcf-9bff-30bc0eeef988",
+ "first": {
+  "bot": "Back To Basics",
+  "bot_id": "97a33ebe-8f3d-4cd0-bfe3-f663375381be",
+  "team": "Shalomtehnikud"
+ },
+ "second": {
+  "bot": "lalalalalabotfixed",
+  "bot_id": "d8234a73-da2d-4664-9009-121163c79efd",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 17,
+ "moves": "f0 s6 f1 s7 f2 s5 f3 s6 f4 s7 f8 s5 f9 s8 f10 s4 f11 s3",
+ "fetched_at": "2026-11-04T18:21:36"
+}

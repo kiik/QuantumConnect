@@ -1,0 +1,19 @@
+{
+ "match_id": "8e306d41-f3a3-4600-9597-1947472315a6",
+ "first": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "QuarkBot-04-1713",
+  "bot_id": "75cd62ef-8202-431b-9941-011adf306e78",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 160,
+ "moves": "f14 s17 f14 s14 f14 s14 f14 s14 f14 s14 f14 s17 f14 s14 f17 s17 f17 s17 f17 s17 f17b s15b f17 s17 f17 s14 f17 s14 f15 s17 f14 s17 f15 s15 f15 s15 f15 s17 f15 s14 f15 s15b f15b s15 f15 s14 f15 s15 f15 s15 f14 s14 f14 s15 f14 s15 f14 s14 f15 s17 f10 s16 f13 s16b f13 s15 f15 s13 f13b s13 f10 s13 f17 s13 f13 s13 f13 s17 f13 s13 f13 s10 f10 s10 f10 s13 f10 s13 f10 s15 f10 s10 f10 s17 f13 s13 f14 s14 f14 s21 f21 s21 f21 s21 f21 s21 f21 s21 f21 s21 f21 s21 f9 s7 f9 s21 f12 s11b f12 s12 f9 s16 f12b s12 f9 s13 f9 s9 f9 s10 f10 s10 f9 s9 f12 s12 f9 s20 f12 s12 f12 s11 f9 s12b f12 s22 f19 s12 f12 s24 f16 s25 f23 s13 f16 s18 f16 s16 f16 s16 f11b",
+ "fetched_at": "2026-11-04T18:20:30"
+}

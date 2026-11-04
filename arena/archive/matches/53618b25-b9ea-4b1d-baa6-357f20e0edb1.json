@@ -1,0 +1,19 @@
+{
+ "match_id": "53618b25-b9ea-4b1d-baa6-357f20e0edb1",
+ "first": {
+  "bot": "QuarkBot-04-1713",
+  "bot_id": "75cd62ef-8202-431b-9941-011adf306e78",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "BeetaSaag",
+  "bot_id": "93e3a0e3-817f-4a1b-82f7-0d0b1f640921",
+  "team": "Saag1"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 136,
+ "moves": "f15 s5 f9 s5 f5 s5 f5 s5 f5 s5 f5 s5 f5 s6 f4 s6 f4 s6 f6 s6 f7b s6 f18 s6 f6 s6 f6 s6 f6 s4 f16 s4 f4 s4 f4 s4 f6 s4 f19 s4 f11 s4 f4 s7 f7b s6 f13 s6 f20 s17 f21 s6 f23 s22 f19 s6 f20 s6 f6 s7 f17 s7 f12 s14 f8 s10 f5b s5 f5 s4 f9 s4 f4 s7 f15 s7 f7 s7 f7 s7 f7 s7 f9 s7 f16 s18 f9 s7 f4 s7 f6b s5 f14 s5 f12 s13 f6 s5 f5 s7 f6 s7 f19 s7 f19 s7 f7 s3 f19 s19 f19b s19 f18 s3 f17 s3 f18 s3 f9 s9 f9 s3 f3 s3 f17 s3 f12 s3 f3 s8 f3b s3 f3 s8 f8 s8 f8",
+ "fetched_at": "2026-11-04T18:20:17"
+}

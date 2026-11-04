@@ -1,0 +1,14 @@
+# Model recipes for ./qc.sh train, one per line:
+#   name  generations  depth  pairs  openings  seed  [start model]  [bot]  [field]
+# Each run evolves line weights by self-play (see Tune) and writes params/<name>.txt, with how it was
+# made in its '#' lines, and the run's log to params/<name>.log. Models that already exist are
+# skipped, so add a line and rerun to grow the collection. Naming: es = evolved from the defaults,
+# tl = transfer learning (refined from an existing model); d = training search depth; s = seed.
+# The bot is quark (QuarkBot, the default) or quarkV2; its models go in params/<bot>/ unless it is
+# quark, so that the league's "params/" line enters only QuarkBot models. A field (Arena specs,
+# comma separated) picks the checkpoint by score against those bots at the real time limit.
+# Pruned 2026-11-04, after results/stats.md put them within noise of quark: es-d3-s1/s2/s3,
+# es-d4-s2/s3, es-d5-s1, tl-d4-s4 (still in git history).
+tl-d4-s5   40  4  16  8  5  params/evolved-d4.txt
+tl-d5-s6   30  5  16  8  6  params/evolved-d4.txt
+quarkV2/tl-d4-s8  40  4  16  8  8  params/tl-d5-s6.txt  quarkV2  quark,quark:params/handwritten.txt,scrap

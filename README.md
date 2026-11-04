@@ -114,53 +114,57 @@ Coordinates: **row 0 is the top**, column 0 is the left.
   That means **search single-threaded, with no background thinking**.
 - Every match should create a new instance, but the local `Experiment.restart()` reuses the old
   ones, so reset per-match state when a new game starts.
-- Local testing: in the starter project ([qc-starter/](qc-starter/)), edit `EmulatorRunner` to run
+- Local testing: in the starter project ([qc-starter/](arena/qc-starter/)), edit `EmulatorRunner` to run
   `new Experiment(new MyBot(), new RandomBot())`, then `./gradlew run`. For fast runs without the
   window use `new Experiment(a, b, false, false)`. The target is > 90% wins against `RandomBot`.
   `./qc.sh watch` does this for our bots, and `./qc.sh arena` plays the same `Experiment` headless.
 - Packaging: set `'Bot-Class'` in the `jar.manifest` block of `build.gradle`, run `./gradlew build`,
   then upload `build/libs/quantumconnect-starter-1.0-SNAPSHOT.jar`. That JAR bundles the whole
   runtime classpath (the engine, slf4j, logback) next to the bot. Our bots live in the starter
-  project itself, so this works as described: `Bot-Class` names `ch.qc.meelik.bots.EvolvedBot`, and
-  the same build.gradle also packages every bot on its own, as `build/libs/<Name>.jar`. The upload
-  only reads the JAR, so the package name is ours to choose; `ch.qc.meelik` keeps it apart from
-  other teams' classes.
+  project itself, but its build.gradle no longer makes that all-in-one JAR: it packages every bot
+  on its own, as `build/libs/<Name>.jar`: the one bot class, the same bundled libraries and
+  `Bot-Class` set to that bot. A bot is one self-contained class, like the starter's samples: the
+  arena ran games for those, but none for our bot while it came with helper classes (`Board`,
+  `Engine`). The upload only reads the JAR, so the package name is ours to choose; `ch.qc.meelik`
+  keeps it apart from other teams' classes.
 
 ## This repo
 
+The Java side, the bots and everything `qc.sh` builds, runs and writes, lives in `arena/`. Paths in
+the table and the commands below are relative to it: `cd arena` first, or call `arena/qc.sh`.
+
 | Path | What |
 |---|---|
-| [qc-starter/](qc-starter/) | **The starter project, with our bots in it.** The organisers' project (engine library `libs/core-*.jar`, Gradle wrapper, `EmulatorRunner`) plus our sources under `src/main/java/ch/qc/meelik/`. Its `build.gradle` is the starter's with two changes: `Bot-Class` points at our bot, and a labelled block at the end adds one upload JAR per bot. To take a new starter version, copy `src/main/java/ch/qc/meelik/` and those two changes into it, as the starter's README says. |
-| [qc-starter/src/main/java/ch/qc/meelik/engine/Board.java](qc-starter/src/main/java/ch/qc/meelik/engine/Board.java) | **The game model:** rules, the line counts behind wins, scores and threats, and bombs. No search. |
-| [qc-starter/src/main/java/ch/qc/meelik/engine/Engine.java](qc-starter/src/main/java/ch/qc/meelik/engine/Engine.java) | **The shared brain:** alpha-beta search and the arena adapter. The base class of every bot. |
-| [qc-starter/src/main/java/ch/qc/meelik/bots/](qc-starter/src/main/java/ch/qc/meelik/bots/) | **The bots, one class per solution method:** `QuarkBot` (simple), `EvolvedBot` (evolved weights). Each ships as its own upload JAR, `qc-starter/build/libs/<Name>.jar`, packaged like the starter's: that class, the `engine` package and the bundled libraries. |
+| [arena/qc-starter/](arena/qc-starter/) | **The starter project, with our bots in it.** The organisers' project (engine library `libs/core-*.jar`, Gradle wrapper, `EmulatorRunner`) plus our sources under `src/main/java/ch/qc/meelik/`. Its `build.gradle` is the starter's with one change, a labelled block at the end: instead of the starter's all-in-one JAR it builds one upload JAR per bot, `build/libs/<Name>.jar`, for our bots and for the starter's samples (`RandomBot.jar`, `SpecialMoveBot.jar`). To take a new starter version, copy `src/main/java/ch/qc/meelik/` and that block into it, as the starter's README says. |
+| [qc-starter/src/main/java/ch/qc/meelik/bots/QuarkBot.java](arena/qc-starter/src/main/java/ch/qc/meelik/bots/QuarkBot.java) | **The bot, one self-contained class:** the game model (rules, the line counts behind wins, scores and threats, bombs), the alpha-beta search and the arena interface, with the evolved line weights. The tools use it as their board too. It ships as `qc-starter/build/libs/QuarkBot.jar`: that one class and the bundled libraries. |
 | [docs/roadmap.md](docs/roadmap.md) | The solution methods, their status and branches, and how to add one. |
-| [qc-trainer/](qc-trainer/) | **Our own tools** for training, testing and analysis (arena, league, tuner, replay, conformance, the pre-upload check). They never go in an upload JAR. Its Gradle build compiles them against the starter project, for the IDE; `./qc.sh` builds and runs them with plain `javac`. |
-| [qc-trainer/src/main/resources/replay.html](qc-trainer/src/main/resources/replay.html) | The replay viewer template. `./qc.sh replay` and `./qc.sh league` write the recorded games into it. |
-| [training.txt](training.txt) | The model recipes. `./qc.sh train` trains every recipe that isn't in `params/` yet. |
-| [params/](params/) | The trained models: evaluation weights, one file per model, versioned, with the training log beside each. Each file starts with `#` lines saying how it was made. |
-| [league.txt](league.txt) | The entrants of the local league. The line `params/` enters every model. |
-| [results/league.md](results/league.md) | Latest league standings, committed so everyone sees them. |
-| [qc.sh](qc.sh) | Builds the bots and runs the tools. Needs a JDK 25: `JAVA_HOME`, then `javac` on PATH, then `~/.local/share/jdks/jdk-*`. |
+| [qc-trainer/](arena/qc-trainer/) | **Our own tools** for training, testing and analysis (arena, league, tuner, replay, conformance, the pre-upload check). They never go in an upload JAR. Its Gradle build compiles them against the starter project, for the IDE; `./qc.sh` builds and runs them with plain `javac`. |
+| [qc-trainer/src/main/resources/replay.html](arena/qc-trainer/src/main/resources/replay.html) | The replay viewer template. `./qc.sh replay` and `./qc.sh league` write the recorded games into it. |
+| [training.txt](arena/training.txt) | The model recipes. `./qc.sh train` trains every recipe that isn't in `params/` yet. |
+| [params/](arena/params/) | The trained models: evaluation weights, one file per model, versioned, with the training log beside each. Each file starts with `#` lines saying how it was made. |
+| [league.txt](arena/league.txt) | The entrants of the local league and of `./qc.sh stats`. The line `params/` enters every model, the line `Bots/` every bot JAR in it. |
+| [Bots/](arena/Bots/) | Bot JARs from outside the build: teammates' bots (also when mailed as `.jar.zip`) and snapshots of our own older versions (`./qc.sh snapshot`). |
+| [results/league.md](arena/results/league.md) | Latest league standings, committed so everyone sees them. `results/stats.md` is the same for `./qc.sh stats`. |
+| [qc.sh](arena/qc.sh) | Builds the bots and runs the tools. Needs a JDK 25: `JAVA_HOME`, then `javac` on PATH, then `~/.local/share/jdks/jdk-*`. |
 
 **How the bots work:**
 - **Board.** Columns are stacks of quarks. Every possible line of 6 cells (134 of them) keeps a count of each player's quarks. Dropping or removing a quark updates only the lines through that cell. That gives the win test (a count reaching 6), the evaluation, and optionally the threats (cells that would complete a line).
 - **Memory.** About 8 MB in total, almost all of it the search's position hash table. The limit is roughly 100 MB.
-- **Evaluation.** A line that only one player occupies is worth `16, 64, 256, 1024, 8192` points for 1–5 quarks in it (`Board.lineWeight`, per direction, so it can be tuned).
+- **Evaluation.** A line that only one player occupies is worth points by the number of its quarks, per direction (`QuarkBot.lineWeight`). The weights were evolved by self-play (`QuarkBot.EVOLVED_LINE_WEIGHTS`, from `params/evolved-d4.txt`). The hand-written ones they replaced, `16, 64, 256, 1024, 8192` for 1–5 quarks, are `params/handwritten.txt`.
 - **Search.** Negamax with alpha-beta pruning, deepening one ply at a time within a 40 ms budget per move. It uses a 512k-entry hash table of positions it has already searched and orders moves by which ones caused cut-offs before.
 - **Moves.** Each move is a column plus whether to bomb, so the bomb is planned in `accelerateQuark` and only reported in `useSpecialMove`.
-- **Board size.** The engine's `Experiment` takes the size as a parameter (8×12 by default; its own `Main` uses 25×25), so the bot reads it from the field: on a field of another size it rebuilds its `Board` at that size, with the same weights (`Engine.fitBoardTo`). Six in a row wins on every size. The weights were tuned on 8×12: on 25×25, QuarkBot beat EvolvedBot 3–1 in four games.
+- **Board size.** The engine's `Experiment` takes the size as a parameter (8×12 by default; its own `Main` uses 25×25), so the bot reads it from the field: on a field of another size it rebuilds its board at that size, with the same weights (`QuarkBot.fitBoardTo`). Six in a row wins on every size. The weights were tuned on 8×12: on 25×25, the hand-written weights beat the evolved ones 3–1 in four games.
 - **Cooldowns.** The bot counts its own bomb cooldown, and the opponent's from `getMoveHistory()`, which marks every bomb.
-- **Why our own `Board`:** a search tries thousands of moves per turn and takes them back. The
+- **Why our own board model:** a search tries thousands of moves per turn and takes them back. The
   engine's `QuantumField` can't do that for a bot: its constructor and its drop and blast methods
-  aren't public, bots may not use reflection, and it has no undo. So `Board` models the same rules
+  aren't public, bots may not use reflection, and it has no undo. So QuarkBot models the same rules
   for the search, and everything else (the API types, the referee, the packaging) is the engine's.
 - **Rules,** checked against the engine: `./qc.sh conformance` has the engine's bombing bot
-  play itself and replays every game on `Board`. All final boards and winners must be identical.
-  Every arena, league and replay game is checked the same way.
-  The engine's rules are in `Board.FIRST_BOMB_WAIT`, `Board.play` (a bomb always blasts),
-  `Board.winner()` (any line wins for the last mover) and `Board.skipTurn()` (counts toward the
-  cooldown).
+  play itself and replays every game on QuarkBot's model. All final boards and winners must be
+  identical. Every arena, league and replay game is checked the same way.
+  The engine's rules are in `QuarkBot.FIRST_BOMB_WAIT`, `QuarkBot.play` (a bomb always blasts),
+  `QuarkBot.winner()` (any line wins for the last mover) and `QuarkBot.skipTurn()` (counts toward
+  the cooldown).
 
 **Commands:**
 
@@ -168,23 +172,28 @@ Coordinates: **row 0 is the top**, column 0 is the left.
 ./qc.sh build                        # compile; one upload JAR per bot: qc-starter/build/libs/QuarkBot.jar, ...
 ./qc.sh test                         # engine self-test
 ./qc.sh arena quark random 20        # headless matches in the engine's Experiment (bot specs below)
-./qc.sh arena evolved random 4 25x25 # the same on another board size (rows x columns)
+./qc.sh arena quark random 4 25x25   # the same on another board size (rows x columns)
 ./qc.sh replay quark random 2        # record games -> out/replay.html, a viewer with play/pause, speed, scrubbing
 ./qc.sh train                        # train the models in training.txt -> params/<name>.txt
 ./qc.sh league league.txt 2          # every bot plays every other twice, swapping sides
                                      #   -> results/league.md and out/league.html (all games, highscores)
+./qc.sh stats league.txt 10          # many games: tops every pairing up to 10, logged in out/stats/games.tsv
+                                     #   -> ratings with error bars in results/stats.md, charts in out/stats.html
+./qc.sh stats league.txt 10 8 4      #   the same with 8 threads and 4 random opening plies (always distinct games)
+./qc.sh snapshot QuarkBot            # freeze the working tree's QuarkBot as Bots/QuarkBot-<commit>[-wip<time>].jar
+./qc.sh snapshot QuarkBot 239fe55    #   or the one from any commit, to keep old versions in the field
 ./qc.sh tune 150 4                   # evolve the scoring weights once -> out/tune-params.txt
 ./qc.sh census 6x7x4-nobomb 10       # distinct positions per ply; checked against the known Connect-4 counts
 ./qc.sh tree 5,6,5 2 6 3             # board, per-column scores, best line, game tree -> out/tree.svg
 ./qc.sh jar QuarkBot                 # package one bot for upload -> qc-starter/build/libs/QuarkBot.jar
 ./qc.sh check qc-starter/build/libs/QuarkBot.jar
-                                     # pre-upload check: manifest, engine bundled, forbidden packages,
-                                     #   and one game with the JAR loaded on its own
-./qc.sh arena jar:qc-starter/build/libs/EvolvedBot.jar ch.cern.quantumconnect.bots.LinearBot 10
+                                     # pre-upload check: manifest, engine bundled, one class of ours,
+                                     #   forbidden packages, and one game with the JAR loaded on its own
+./qc.sh arena jar:qc-starter/build/libs/QuarkBot.jar ch.cern.quantumconnect.bots.LinearBot 10
                                      # against the engine's own bots
-./qc.sh conformance 300              # replay engine games on our Board: same boards, same winners
+./qc.sh conformance 300              # replay engine games on our model: same boards, same winners
 ./qc.sh conformance 40 25x25         #   on another board size
-./qc.sh watch quark:params/tl-d5-s6.txt quark:params/es-d3-s1.txt
+./qc.sh watch quark:params/tl-d5-s6.txt quark:params/tl-d4-s5.txt
                                      # one game in the engine's window, as qc-starter shows it
                                      #   (on WSL: sudo apt install libxi6 libxtst6 fontconfig)
 ```
@@ -195,13 +204,15 @@ the starter's Gradle wrapper downloads Gradle and logback (into `~/.gradle`).
 
 **Bot specs** (used by `arena`, `replay` and `league.txt`):
 - `random`: a random legal column, never bombs.
-- A bot name: `quark`, `evolved`, ... (the class `ch.qc.meelik.bots.<Name>Bot`), optionally with
+- A bot name: `quark`, ... (the class `ch.qc.meelik.bots.<Name>Bot`), optionally with
   `@<ms>` (time budget per move), `/<depth>` (fixed search depth), or `:<params file>`
   (evaluation weights), e.g. `quark@10`, `quark/2`, `quark:params/evolved-d4.txt`.
 - `tuned`: the latest `out/tune-params.txt`.
 - A fully qualified class name: any other bot compiled in this repo.
 - `jar:<path>`: a packaged bot JAR, loaded in its own class loader, so two versions of `QuarkBot`
   can play each other.
+- In `league.txt` only: a directory ending in `/`. Every params file in it joins as a model, and
+  every bot JAR in it as `jar:`.
 
 **The replay viewer:** the bots don't run in the browser. Java plays the games (the same code as
 `arena`), records every move, and writes them into a self-contained HTML page that only plays them
@@ -215,6 +226,28 @@ The league's page, `out/league.html`, holds every game of the round robin, with 
   bot, so you can see which method wins and not only which model.
 - **All matches:** a crosstable with one chip per game (W, ½, L for the row bot; first as X, then
   as O). Click a chip to watch that game; click a bot to list only its games.
+
+**Statistics over many games** (`./qc.sh stats`): the league above ranks one round robin; this
+tool keeps playing and pools everything it ever played.
+- **Every game is logged** in `out/stats/games.tsv`, one line each. A run only tops each pairing up to
+  the games asked for, so `./qc.sh stats league.txt 20` after a run at 10 plays 10 more per pairing,
+  and a new bot plays only its own pairings. Ctrl-C keeps every finished game.
+- **Bots are logged by fingerprint,** a hash of their class, JAR or params file and spec options.
+  Change QuarkBot's code and its old games stop counting for it; they stay in the log. To keep a
+  version in the field, `./qc.sh snapshot QuarkBot` first. That puts a JAR in `Bots/`, which
+  `league.txt` enters. `./qc.sh snapshot QuarkBot <commit>` builds the bot from any commit, also
+  from the older `src/bot/` layout, against today's engine. Snapshots are for local games, not for
+  upload: they don't bundle the engine.
+- **The rating** is an Elo difference to `quark` (QuarkBot as shipped), fitted to all games at once,
+  so a bot gets credit for beating strong bots and not only many. Its 95% interval comes from
+  refitting on resampled games. While two bots' intervals overlap a lot, play more games.
+- **`out/stats.html`** has the ratings with intervals, wins/draws/losses, a head-to-head grid (hover
+  a cell for the record, a ± interval and the chance that the row bot is stronger), game lengths,
+  and each game's slowest answer against the 100 ms limit, with the late moves counted.
+- **Distinct games:** a deterministic bot (fixed depth, no clock) repeats the same game, and copies
+  prove nothing. The page counts distinct games per pairing. The fourth argument plays that many
+  random opening plies first, the same opening with both colours. Games with and without openings
+  are kept apart.
 
 **Results so far** (laptop; Windows JDK 19 and our own referee, before the switch to the engine, unless noted):
 
@@ -248,6 +281,9 @@ The league's page, `out/league.html`, holds every game of the round robin, with 
     wins alone hides the difference, because both beat the weaker bots equally. That's why
     `results/league.md` also has a head-to-head table.
   - Tuned before the rules were checked against the engine (bombs ready from the first move).
+  - **Re-measured on the engine's rules** (2026-11-03, JDK 25, 200 games, QuarkBot against
+    `params/handwritten.txt`): **57 wins, 107 draws, 36 losses**, a 55% score. That is smaller than
+    the 65% above, but clear of chance (about 2 standard deviations), so QuarkBot ships these weights.
 - **Models from `training.txt`** (engine rules, JDK 25), 30–60 generations each: 55–60% against
   the defaults when tuned from the defaults (`es-*`), 59–65% when started from `evolved-d4` (`tl-*`).
 - **League** of 14 bots, 2 games per pair (182 games, 91 s), see `results/league.md`:
@@ -255,9 +291,12 @@ The league's page, `out/league.html`, holds every game of the round robin, with 
     finished above the hand-written `quark`, which came 12th.
   - Not a strict ladder: `es-d3-s1` lost 0–2 to the winner but beat `tl-d4-s4` 2–0.
   - `tl-d4-s5` lost no game (9 W, 17 D).
+  - Pruned 2026-11-04: the `es-*` models and `tl-d4-s4`, which `results/stats.md` (34 games each)
+    put within noise of `quark`. They are in git history; `params/` keeps `evolved-d4`, `tl-d4-s5`,
+    `tl-d5-s6` and `handwritten`.
 - **In the engine's own `Experiment`:** EvolvedBot against QuarkBot 3 W, 3 D,
   0 L; it won every game against the engine's `LinearBot` and `SpecialMoveBot`. No timeouts.
-  `./qc.sh conformance`: 300 engine games replayed on our `Board` (28,098 moves, 2,449
+  `./qc.sh conformance`: 300 engine games replayed on our model (28,098 moves, 2,449
   bombs) with identical boards and winners.
 - **Timing:** the worst move was 42 ms when games ran one at a time, but up to 66–79 ms when
   several ran in parallel. The 100 ms limit has less margin than it looks if the arena machine is
@@ -269,15 +308,15 @@ The local arena plays in the engine's own `Experiment`, so local results follow 
 
 - **Git.** Each variant gets its own branch, and `main` always holds a bot that is safe to upload.
   `out/` is ignored and rebuilt by `./qc.sh build`.
-- **Each solution method is its own bot class** in `qc-starter/src/main/java/ch/qc/meelik/bots/`,
-  extending the shared `Engine`, and its own JAR. `./qc.sh build` packages every bot. See
-  [docs/roadmap.md](docs/roadmap.md) for the methods, their branches, and the hooks a bot can use.
+- **Each solution method is its own self-contained bot class** in
+  `qc-starter/src/main/java/ch/qc/meelik/bots/`, and its own JAR. `./qc.sh build` packages every
+  bot. See [docs/roadmap.md](docs/roadmap.md) for the methods and their branches.
 - **A model** (a set of tuned weights) is a file in `params/`. To add one, add a recipe line to
   `training.txt` and run `./qc.sh train`. It trains only the recipes that have no file yet and
   writes `params/<name>.txt`, with its `#` provenance lines, and `params/<name>.log`. Commit both.
   Recipes can start from another model, which is transfer learning. Try a model with
-  `quark:params/<file>`. To ship it, write the numbers into a bot class as `EvolvedBot` does,
-  because a bot can't read files at runtime.
+  `quark:params/<file>`. To ship it, write the numbers into `QuarkBot.EVOLVED_LINE_WEIGHTS` and
+  `EVOLVED_BOMB_READY_BONUS`, because a bot can't read files at runtime.
 - **Compare in the league.** `./qc.sh league league.txt 2` plays every pair twice with sides
   swapped, ranked by wins and then draws as the real tournament is. It enters every model in
   `params/` automatically. Commit `results/league.md` along with the change that moved the
@@ -289,10 +328,10 @@ The local arena plays in the engine's own `Experiment`, so local results follow 
 
 Both use the same search. They differ only in how a position is scored.
 
-1. **Simple (`QuarkBot`, shipping):** hand-written line weights, the same in every direction
-   (`16, 64, 256, 1024, 8192`). Always keep this version uploaded.
+1. **Simple:** hand-written line weights, the same in every direction (`16, 64, 256, 1024,
+   8192`). QuarkBot shipped with these until 2026-11-03; they are now `params/handwritten.txt`.
 2. **Complex: a learned score, in two steps.**
-   - **a. Evolved weights (`EvolvedBot`, made with `./qc.sh tune`; 65% against QuarkBot, see the results above).** There are 16 parameters: line weights for each
+   - **a. Evolved weights (in `QuarkBot` since 2026-11-03, made with `./qc.sh tune`; see the results above).** There are 16 parameters: line weights for each
      direction (horizontal, vertical, diagonal) and quark count, plus a bonus for having the bomb ready
      while the opponent doesn't. They are evolved by self-play: each generation tries small random
      changes in opposite directions against each other, from random openings and with both colours,
@@ -367,7 +406,7 @@ the stack bitboard and the `position + mask` key all still work. What changes:
 ### Rule questions, answered by the engine
 
 The slides left these open. The engine's `Experiment` (core-2.0) answers them, and
-`./qc.sh conformance` checks that our `Board` agrees:
+`./qc.sh conformance` checks that our model (in `QuarkBot`) agrees:
 
 1. **When is the bomb ready?** After 10 of your own turns, then every 10th turn. Skipped turns
    count. A bomb asked for on cooldown is a plain drop.

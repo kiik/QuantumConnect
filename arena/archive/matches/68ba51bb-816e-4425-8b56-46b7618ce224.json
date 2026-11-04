@@ -1,0 +1,19 @@
+{
+ "match_id": "68ba51bb-816e-4425-8b56-46b7618ce224",
+ "first": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "True Random Bot",
+  "bot_id": "e720c76c-8cef-49c1-b9b4-96ae5f9f66cb",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 108,
+ "moves": "f14 s19 f14 s16 f14 s15 f14 s27 f15 s24 f15 s14 f16 s28 f16 s25 f26 s10 f16 s18 f15 s18 f19b s28 f10 s4 f10 s25 f25 s12 f10 s15 f16 s21 f16 s16 f15 s24 f14 s27 f26 s19 f3 s20 f20b s25 f26 s17 f24 s5 f27 s8 f9 s22 f14 s5 f15 s24 f16 s25 f14 s7 f14 s8 f13 s16 f14 s14 f28 s18 f24b s17 f10 s7 f10 s10 f23 s16 f23 s23 f26 s3 f4 s13 f26 s26 f25 s0 f17 s9 f17 s26 f24 s23 f17 s5 f17 s14 f23 s21 f19 s16 f19 s26 f18 s18 f18 s19 f19",
+ "fetched_at": "2026-11-04T18:20:35"
+}

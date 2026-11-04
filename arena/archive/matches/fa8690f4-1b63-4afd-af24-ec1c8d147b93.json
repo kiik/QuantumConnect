@@ -1,0 +1,19 @@
+{
+ "match_id": "fa8690f4-1b63-4afd-af24-ec1c8d147b93",
+ "first": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "SPMoveDestroyer3",
+  "bot_id": "c90e4fc4-6371-46d9-9228-b815d26f8468",
+  "team": "KolmApelsini"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 138,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s15 f15 s15 f15 s15 f15 s15 f14 s15 f15b s14 f15 s14 f15 s14 f15 s14 f15 s15 f14 s13 f15 s13 f16 s13 f13 s13 f13 s13 f12b s13 f16 s13 f14 s13 f19 s13 f13 s16 f16 s16 f11 s16 f16 s16 f13 s16 f16 s12 f11 s17 f13b s17 f16 s17 f13 s17 f17 s17 f17 s17 f17 s11 f13 s13 f14 s11 f16 s11 f11 s11 f11 s11 f11 s18 f11 s18 f17 s17 f17 s18 f18b s18 f11 s10 f10 s10 f10 s10 f10 s10 f10 s10 f16 s16 f10 s19 f19 s19 f10 s19 f14 s14 f13 s19 f19 s19 f10 s19 f10 s10 f13 s19 f19 s9 f9 s9b f12 s12 f12 s12 f12b s13 f12 s12 f12 s12 f12",
+ "fetched_at": "2026-11-04T18:20:43"
+}

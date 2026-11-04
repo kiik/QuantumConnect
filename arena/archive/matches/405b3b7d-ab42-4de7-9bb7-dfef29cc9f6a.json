@@ -1,0 +1,19 @@
+{
+ "match_id": "405b3b7d-ab42-4de7-9bb7-dfef29cc9f6a",
+ "first": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "Back To Basics",
+  "bot_id": "97a33ebe-8f3d-4cd0-bfe3-f663375381be",
+  "team": "Shalomtehnikud"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 10,
+ "moves": "f14 s0 f14 s1 f14 s2 f14 s3 f14 s4 f14",
+ "fetched_at": "2026-11-04T18:20:54"
+}

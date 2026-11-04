@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuantumConnect Stats</title>
+<!-- Template for ./qc.sh stats (Stats.java), which replaces the DATA placeholder below with the numbers. -->
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --text: #0b0b0b; --text-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --win: #2a78d6; --draw: #b5b3ab; --loss: #e34948; --mid: #f0efec; --critical: #d03b3b;
+    --box: rgba(42,120,214,0.22); --ink-on-fill: #ffffff; --ink-on-draw: #0b0b0b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --win: #3987e5; --draw: #6b6a64; --loss: #e66767; --mid: #383835; --critical: #d03b3b;
+      --box: rgba(57,135,229,0.30); --ink-on-fill: #ffffff; --ink-on-draw: #ffffff;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --win: #3987e5; --draw: #6b6a64; --loss: #e66767; --mid: #383835; --critical: #d03b3b;
+    --box: rgba(57,135,229,0.30); --ink-on-fill: #ffffff; --ink-on-draw: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 20px 16px 4px; max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 0 0 2px; }
+  main { display: grid; gap: 16px; padding: 12px 16px 32px; max-width: 1180px; margin: 0 auto; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-width: 0; }
+  .hint, .muted { color: var(--text-2); }
+  .hint { font-size: 13px; margin: 0 0 12px; }
+  .note { font-size: 13px; color: var(--text-2); border-left: 3px solid var(--axis); padding: 2px 0 2px 10px; margin: 8px 0 0; }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+  .tile .label { color: var(--text-2); font-size: 13px; }
+  .tile .value { font-size: 28px; font-weight: 600; margin: 2px 0; }
+  .tile .sub { color: var(--text-2); font-size: 12px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .scroll { overflow-x: auto; }
+  svg { display: block; font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; }
+  svg text { fill: var(--text); }
+  svg .tick { fill: var(--muted); font-variant-numeric: tabular-nums; }
+  svg .value { fill: var(--text-2); font-variant-numeric: tabular-nums; }
+  svg .hit { fill: transparent; }
+  svg .hit:hover { fill: var(--grid); fill-opacity: 0.5; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13px; }
+  th, td { padding: 5px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--text-2); font-weight: 500; position: sticky; top: 0; background: var(--surface); }
+  td.text, th.text { text-align: left; }
+  code { font-size: 12px; }
+  #tip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15); border-radius: 8px; padding: 8px 10px; font-size: 13px; max-width: 320px; display: none; }
+  #tip b { font-weight: 600; }
+  #tip .muted { font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>QuantumConnect stats</h1>
+  <div class="muted" id="summary"></div>
+</header>
+<main>
+  <section class="tiles" id="tiles"></section>
+
+  <section class="card">
+    <h2>Rating</h2>
+    <p class="hint" id="rating-hint"></p>
+    <div id="rating"></div>
+  </section>
+
+  <section class="card">
+    <h2>Results</h2>
+    <p class="hint">Each bot's games as wins, draws and losses, with its score (a draw is half a point).</p>
+    <div class="legend"><span><i class="swatch" style="background:var(--win)"></i>Win</span><span><i class="swatch" style="background:var(--draw)"></i>Draw</span><span><i class="swatch" style="background:var(--loss)"></i>Loss</span></div>
+    <div id="results"></div>
+  </section>
+
+  <section class="card">
+    <h2>Head to head</h2>
+    <p class="hint">The row bot's score against the column bot, in %. Blue: the row bot is ahead; red: behind. Columns are numbered as the rows.</p>
+    <div class="scroll" id="matrix"></div>
+    <div id="matrix-note"></div>
+  </section>
+
+  <div class="two">
+    <section class="card">
+      <h2>Game length</h2>
+      <p class="hint">Plies per game (both players' turns): the box spans the middle half, the bar marks the median, the whiskers the shortest and longest.</p>
+      <div id="length"></div>
+    </section>
+    <section class="card">
+      <h2>Slowest move per game</h2>
+      <p class="hint" id="time-hint"></p>
+      <div id="time"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>All numbers</h2>
+    <p class="hint">Hover a bot for its spec. The fingerprint identifies this exact version in out/stats/games.tsv.</p>
+    <div class="scroll"><table id="table"></table></div>
+  </section>
+</main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const DATA = /*DATA*/null;
+
+// ------------------------------------------------------------------ helpers
+
+const NS = 'http://www.w3.org/2000/svg';
+const ROW = 28, BAR = 14;
+
+function svgEl(tag, attributes, parent) {
+  const element = document.createElementNS(NS, tag);
+  for (const [name, value] of Object.entries(attributes || {})) element.setAttribute(name, value);
+  if (parent) parent.appendChild(element);
+  return element;
+}
+
+function text(parent, x, y, content, attributes) {
+  const element = svgEl('text', Object.assign({ x, y }, attributes || {}), parent);
+  element.textContent = content;
+  return element;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+const percent = v => v == null ? '–' : Math.round(100 * v) + '%';
+const signed = v => v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(Math.round(v));
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+/** Round tick values covering lo..hi. */
+function niceTicks(lo, hi, count) {
+  const rough = (hi - lo) / count, magnitude = Math.pow(10, Math.floor(Math.log10(rough))), error = rough / magnitude;
+  const step = (error >= 7.07 ? 10 : error >= 3.16 ? 5 : error >= 1.41 ? 2 : 1) * magnitude;
+  const ticks = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step / 1e6; v += step) ticks.push(Math.round(v * 1e6) / 1e6);
+  return ticks;
+}
+
+// ------------------------------------------------------------------ tooltip
+
+const tip = document.getElementById('tip');
+function hover(element, html) {
+  element.addEventListener('mousemove', event => {
+    tip.innerHTML = html;
+    tip.style.display = 'block';
+    const x = Math.min(event.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+    const y = event.clientY + 14 + tip.offsetHeight > window.innerHeight ? event.clientY - tip.offsetHeight - 10 : event.clientY + 14;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  });
+  element.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+}
+
+function botTip(bot) {
+  return `<b>${escapeHtml(bot.label)}</b> <span class="muted">${escapeHtml(bot.approach)}</span><br>`
+    + `Elo ${signed(bot.elo)} <span class="muted">(95%: ${signed(bot.lo)} to ${signed(bot.hi)})</span><br>`
+    + `${bot.w} W · ${bot.d} D · ${bot.l} L of ${bot.games} · score ${percent(bot.score)}<br>`
+    + `<span class="muted">as X ${percent(bot.scoreX)}, as O ${percent(bot.scoreO)}</span>`;
+}
+
+// ------------------------------------------------------------------ rows of bots: the shared scaffold
+
+/**
+ * One row per bot, labels on the left, a value axis along the bottom. Returns the svg, the
+ * x scale and the plot's left edge; draw(row, bot, y) adds each row's marks. Each row has a
+ * full-width hover band, so the tooltip doesn't need the mark itself to be hit.
+ */
+function rowChart(container, domain, options) {
+  container.innerHTML = '';
+  const bots = DATA.bots, width = Math.max(320, container.clientWidth);
+  const labelWidth = Math.min(180, 16 + 7 * Math.max(...bots.map(b => b.label.length))), rightWidth = options.rightWidth || 48;
+  const left = labelWidth, right = width - rightWidth, top = options.top || 6, height = top + bots.length * ROW + 24;
+  const svg = svgEl('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': options.label }, container);
+  const x = v => left + (v - domain[0]) / (domain[1] - domain[0]) * (right - left);
+
+  for (const tick of options.ticks) {
+    svgEl('line', { x1: x(tick), x2: x(tick), y1: top, y2: top + bots.length * ROW, stroke: css('--grid'), 'stroke-width': 1 }, svg);
+    text(svg, x(tick), height - 6, options.tickFormat(tick), { class: 'tick', 'text-anchor': 'middle' });
+  }
+  bots.forEach((bot, row) => {
+    const y = top + row * ROW + ROW / 2;
+    const band = svgEl('rect', { class: 'hit', x: 0, y: y - ROW / 2, width, height: ROW, rx: 4 }, svg);
+    hover(band, options.tip ? options.tip(bot) : botTip(bot));
+    const label = bot.label.length > 24 ? bot.label.slice(0, 23) + '…' : bot.label;
+    text(svg, labelWidth - 10, y + 4, label, { 'text-anchor': 'end', 'pointer-events': 'none' });
+    const marks = svgEl('g', { 'pointer-events': 'none' }, svg);
+    options.draw(marks, bot, y, x);
+  });
+  return { svg, x, top, bottom: top + bots.length * ROW };
+}
+
+// ------------------------------------------------------------------ the charts
+
+function renderSummary() {
+  const d = DATA;
+  document.getElementById('summary').textContent =
+    `${d.bots.length} bots · ${d.games} games on ${d.size} · ${d.openingPlies} random opening plies · generated ${d.generated}`;
+  const slowest = d.bots.reduce((a, b) => (b.worstMs && (!a.worstMs || b.worstMs[4] > a.worstMs[4]) ? b : a));
+  const late = d.bots.reduce((sum, b) => sum + b.late, 0), skipped = d.bots.reduce((sum, b) => sum + b.skipped, 0);
+  const lateBots = d.bots.filter(b => b.late).map(b => b.label);
+  const tiles = [
+    ['Games', d.games.toLocaleString(), `${d.distinct.toLocaleString()} distinct (${percent(d.distinct / d.games)})`],
+    ['Bots', d.bots.length, `Elo 0 = ${d.anchor}`],
+    ['First mover’s score', percent(d.firstMoverScore), 'over all games'],
+    ['Slowest move', slowest.worstMs ? slowest.worstMs[4].toFixed(0) + ' ms' : '–', `${slowest.label}; limit ${d.limitMs} ms`],
+    ['Late moves', late, late ? `over ${d.limitMs} ms: ${lateBots.slice(0, 3).join(', ')}${lateBots.length > 3 ? ', …' : ''}` : 'every answer in time'],
+    ['Skipped turns', skipped, skipped ? 'a late or illegal column' : 'none'],
+  ];
+  document.getElementById('tiles').innerHTML = tiles.map(([label, value, sub]) =>
+    `<div class="card tile"><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${escapeHtml(sub)}</div></div>`).join('');
+}
+
+function renderRating() {
+  const rated = DATA.bots.filter(b => b.elo != null);
+  let lo = Math.min(0, ...rated.map(b => b.lo ?? b.elo)), hi = Math.max(0, ...rated.map(b => b.hi ?? b.elo));
+  const pad = (hi - lo) * 0.05 || 50;
+  lo -= pad; hi += pad;
+  document.getElementById('rating-hint').textContent =
+    `Elo difference to ${DATA.anchor} (0), fitted to all games at once. The whiskers are 95% intervals from ${DATA.resamples} resamples of the games: where two bots' intervals overlap a lot, more games are needed to tell them apart. 400 Elo ≈ 10:1 odds.`;
+  const chart = rowChart(document.getElementById('rating'), [lo, hi], {
+    label: 'Elo rating per bot with 95% intervals', ticks: niceTicks(lo, hi, 6), tickFormat: signed, rightWidth: 56,
+    draw(g, bot, y, x) {
+      if (bot.elo == null) return;
+      if (bot.lo != null) svgEl('line', { x1: x(bot.lo), x2: x(bot.hi), y1: y, y2: y, stroke: css('--win'), 'stroke-width': 2, 'stroke-linecap': 'round' }, g);
+      svgEl('circle', { cx: x(bot.elo), cy: y, r: 5, fill: css('--win'), stroke: css('--surface'), 'stroke-width': 2 }, g);
+      text(g, rightEdge(g), y + 4, signed(bot.elo), { class: 'value', 'text-anchor': 'end' });
+    },
+  });
+  svgEl('line', { x1: chart.x(0), x2: chart.x(0), y1: chart.top, y2: chart.bottom, stroke: css('--axis'), 'stroke-width': 1 }, chart.svg);
+}
+
+/** The right edge of a row chart's svg, for the value column. */
+function rightEdge(g) {
+  return Number(g.ownerSVGElement.getAttribute('width')) - 4;
+}
+
+function renderResults() {
+  rowChart(document.getElementById('results'), [0, 1], {
+    label: 'Wins, draws and losses per bot', ticks: [0, 0.25, 0.5, 0.75, 1], tickFormat: v => Math.round(v * 100) + '%',
+    draw(g, bot, y, x) {
+      if (!bot.games) return;
+      const parts = [['w', '--win', '--ink-on-fill'], ['d', '--draw', '--ink-on-draw'], ['l', '--loss', '--ink-on-fill']];
+      let start = 0;
+      parts.forEach(([key, fill, ink], index) => {
+        const share = bot[key] / bot.games;
+        if (share <= 0) return;
+        const x0 = x(start) + (start > 0 ? 1 : 0), x1 = x(start + share) - (start + share < 1 ? 1 : 0);
+        start += share;
+        if (x1 - x0 < 0.5) return;
+        svgEl('rect', { x: x0, y: y - BAR / 2, width: x1 - x0, height: BAR, rx: 2, fill: css(fill) }, g);
+        if (x1 - x0 > 26) text(g, (x0 + x1) / 2, y + 4, bot[key], { 'text-anchor': 'middle', style: `fill:${css(ink)};font-size:11px`, class: 'value' });
+      });
+      text(g, rightEdge(g), y + 4, percent(bot.score), { class: 'value', 'text-anchor': 'end' });
+    },
+  });
+}
+
+/** Diverging colour for a score: gray at 50%, blue toward 100%, red toward 0%. */
+function scoreColour(score) {
+  const mix = (a, b, t) => {
+    const pa = a.match(/\w\w/g).map(h => parseInt(h, 16)), pb = b.match(/\w\w/g).map(h => parseInt(h, 16));
+    return '#' + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  };
+  const t = Math.min(1, Math.abs(score - 0.5) * 2);
+  return { fill: mix(css('--mid'), css(score >= 0.5 ? '--win' : '--loss'), Math.pow(t, 0.8)), strong: t > 0.55 };
+}
+
+function renderMatrix() {
+  const container = document.getElementById('matrix'), bots = DATA.bots, n = bots.length;
+  container.innerHTML = '';
+  const labelWidth = Math.min(200, 40 + 7 * Math.max(...bots.map(b => b.label.length)));
+  const cell = Math.max(26, Math.min(48, Math.floor((container.clientWidth - labelWidth) / n)));
+  const top = 22, width = labelWidth + n * cell + 2, height = top + n * cell + 2;
+  const svg = svgEl('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': 'Head-to-head scores' }, container);
+  for (let c = 0; c < n; c++) text(svg, labelWidth + c * cell + cell / 2, top - 8, c + 1, { class: 'tick', 'text-anchor': 'middle' });
+  let repeated = 0;
+  bots.forEach((rowBot, r) => {
+    const label = rowBot.label.length > 22 ? rowBot.label.slice(0, 21) + '…' : rowBot.label;
+    text(svg, 8, top + r * cell + cell / 2 + 4, `${r + 1}`, { class: 'tick' });
+    text(svg, labelWidth - 8, top + r * cell + cell / 2 + 4, label, { 'text-anchor': 'end' });
+    bots.forEach((columnBot, c) => {
+      const pair = DATA.pairs[r][c], x = labelWidth + c * cell, y = top + r * cell;
+      if (!pair) {
+        if (r === c) svgEl('rect', { x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 3, fill: css('--grid'), 'fill-opacity': 0.5 }, svg);
+        return;
+      }
+      const played = pair.w + pair.d + pair.l, colour = scoreColour(pair.score);
+      if (r < c && pair.distinct < played) repeated++;
+      const rect = svgEl('rect', { x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 3, fill: colour.fill }, svg);
+      if (cell >= 30) text(svg, x + cell / 2, y + cell / 2 + 4, Math.round(pair.score * 100),
+        { 'text-anchor': 'middle', 'pointer-events': 'none', style: `font-size:11px;fill:${colour.strong ? '#ffffff' : css('--text')}` });
+      hover(rect, `<b>${escapeHtml(rowBot.label)}</b> vs <b>${escapeHtml(columnBot.label)}</b><br>`
+        + `${pair.w} W · ${pair.d} D · ${pair.l} L of ${played}<br>`
+        + `score ${percent(pair.score)} ± ${Math.round(pair.ci * 100)} <span class="muted">(95%)</span><br>`
+        + `chance ${escapeHtml(rowBot.label)} is stronger: ${percent(pair.los)}<br>`
+        + `<span class="muted">${pair.distinct} distinct game${pair.distinct === 1 ? '' : 's'} of ${played}</span>`);
+    });
+  });
+  const pairs = n * (n - 1) / 2;
+  document.getElementById('matrix-note').innerHTML = repeated && DATA.distinct < DATA.games
+    ? `<p class="note">${repeated} of ${pairs} pairings repeated a game move for move, so their games are not independent: ${DATA.distinct} distinct of ${DATA.games}. `
+      + `Random opening plies make every game different, e.g. <code>./qc.sh stats league.txt 10 8 4</code>.</p>` : '';
+}
+
+/** A box plot per bot of a five-number summary [min, q1, median, q3, max]. */
+function renderBoxes(id, key, unit, limit) {
+  const values = DATA.bots.filter(b => b[key]).map(b => b[key][4]);
+  const hi = Math.max(limit ? limit * 1.08 : 0, ...values) || 1;
+  const chart = rowChart(document.getElementById(id), [0, hi], {
+    label: id, ticks: niceTicks(0, hi, 5), tickFormat: v => v, top: limit ? 18 : 6,
+    tip: bot => bot[key] ? `<b>${escapeHtml(bot.label)}</b><br>median ${bot[key][2]} ${unit}<br>`
+      + `<span class="muted">middle half ${bot[key][1]}–${bot[key][3]}, range ${bot[key][0]}–${bot[key][4]}</span>` : escapeHtml(bot.label),
+    draw(g, bot, y, x) {
+      const s = bot[key];
+      if (!s) return;
+      svgEl('line', { x1: x(s[0]), x2: x(s[4]), y1: y, y2: y, stroke: css('--win'), 'stroke-width': 1 }, g);
+      svgEl('rect', { x: x(s[1]), y: y - BAR / 2, width: Math.max(2, x(s[3]) - x(s[1])), height: BAR, rx: 3, fill: css('--box') }, g);
+      svgEl('line', { x1: x(s[2]), x2: x(s[2]), y1: y - BAR / 2, y2: y + BAR / 2, stroke: css('--win'), 'stroke-width': 2.5, 'stroke-linecap': 'round' }, g);
+      text(g, rightEdge(g), y + 4, Math.round(s[2]), { class: 'value', 'text-anchor': 'end' });
+    },
+  });
+  if (limit) {
+    svgEl('line', { x1: chart.x(limit), x2: chart.x(limit), y1: chart.top - 4, y2: chart.bottom, stroke: css('--critical'), 'stroke-width': 1.5 }, chart.svg);
+    text(chart.svg, chart.x(limit) - 4, 12, `${limit} ${unit} limit`, { 'text-anchor': 'end', style: `fill:${css('--critical')};font-size:11px` });
+  }
+}
+
+function renderTable() {
+  const columns = [
+    ['#', (b, i) => i + 1], ['Bot', b => escapeHtml(b.label), 'text'], ['Approach', b => escapeHtml(b.approach), 'text'],
+    ['Elo', b => signed(b.elo)], ['95%', b => b.lo == null ? '–' : `${signed(b.lo)} to ${signed(b.hi)}`],
+    ['Games', b => b.games], ['W', b => b.w], ['D', b => b.d], ['L', b => b.l], ['Score', b => percent(b.score)],
+    ['As X', b => percent(b.scoreX)], ['As O', b => percent(b.scoreO)], ['Median plies', b => b.plies ? b.plies[2] : '–'],
+    ['Avg ms', b => b.avgMs == null ? '–' : b.avgMs.toFixed(1)], ['Worst ms', b => b.worstMs ? b.worstMs[4].toFixed(1) : '–'],
+    ['Late', b => b.late], ['Skipped', b => b.skipped], ['Bombs/game', b => b.bombs == null ? '–' : b.bombs.toFixed(1)], ['Fingerprint', b => `<code>${b.print}</code>`, 'text'],
+  ];
+  document.getElementById('table').innerHTML =
+    `<thead><tr>${columns.map(([name, , type]) => `<th class="${type || ''}">${name}</th>`).join('')}</tr></thead><tbody>`
+    + DATA.bots.map((bot, i) => `<tr title="${escapeHtml(bot.spec)}">${columns.map(([, value, type]) => `<td class="${type || ''}">${value(bot, i)}</td>`).join('')}</tr>`).join('')
+    + '</tbody>';
+}
+
+function render() {
+  renderRating();
+  renderResults();
+  renderMatrix();
+  renderBoxes('length', 'plies', 'plies', 0);
+  document.getElementById('time-hint').textContent =
+    `Each game's slowest answer, in ms. A column over ${DATA.limitMs} ms skips the turn, a bomb answer over it cancels the bomb. Games run in parallel here, so this runs higher than one game at a time.`;
+  renderBoxes('time', 'worstMs', 'ms', DATA.limitMs);
+}
+
+renderSummary();
+renderTable();
+render();
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+</script>
+</body>
+</html>

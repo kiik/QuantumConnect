@@ -1,0 +1,19 @@
+{
+ "match_id": "1d1ef5c7-e222-4384-a8af-104e6e485d2b",
+ "first": {
+  "bot": "QuarkBot-04-1713",
+  "bot_id": "75cd62ef-8202-431b-9941-011adf306e78",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "True Random Bot",
+  "bot_id": "e720c76c-8cef-49c1-b9b4-96ae5f9f66cb",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 189,
+ "moves": "f15 s23 f20 s28 f15 s29 f20 s18 f18 s23 f23 s19 f19 s23 f18 s14 f14 s29 f18 s20 f19 s29 f19 s11 f22b s20 f18 s19 f18 s18 f19 s3 f18 s25 f19 s29 f19 s28 f29 s6 f7 s7 f19 s25 f18 s2 f24b s3 f16 s2 f18 s24 f18 s2 f18 s18 f6 s29 f24 s19 f19 s29 f21 s9 f21 s24 f19 s13 f18b s18 f23 s28 f16 s9 f22 s12 f10 s16 f20 s2 f15 s29 f16 s5 f22 s23 f14 s12 f18b s18 f13 s28 f15 s16 f16 s24 f15 s15 f14 s6 f15 s3 f14 s1 f4 s8 f28 s12 f18b s18 f14 s14 f11 s12 f12 s26 f16 s10 f14 s14 f15 s4 f16 s13 f14 s2 f2 s2 f14 s12 f11b s11 f14 s16 f14 s12 f14 s14 f15 s1 f16 s24 f19 s0 f15 s27 f25 s6 f13 s11 f18b s18 f15 s15 f13 s15 f19 s7 f16 s20 f19 s11 f20 s11 f11 s12 f11 s12 f19 s0 f4b s24 f13 s1 f16 s8 f18 s0 f22 s13 f13 s8 f13 s2 f13 s10 f13 s6 f15 s5b",
+ "fetched_at": "2026-11-04T18:20:27"
+}

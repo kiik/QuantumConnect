@@ -1,0 +1,19 @@
+{
+ "match_id": "9a7098ef-9c95-4408-857d-3e8a750e31c2",
+ "first": {
+  "bot": "SPMoveDestroyer3",
+  "bot_id": "c90e4fc4-6371-46d9-9228-b815d26f8468",
+  "team": "KolmApelsini"
+ },
+ "second": {
+  "bot": "QuarkBot-04-1713",
+  "bot_id": "75cd62ef-8202-431b-9941-011adf306e78",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 147,
+ "moves": "f14 s17 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f13 s11 f13 s20 f13 s13 f13 s13 f13 s13 f13 s13 f16 s22 f16 s16 f17 s16 f16 s16 f16 s16b f15 s16 f15 s19 f15 s16 f15 s15 f16 s16 f12 s12 f12 s16 f12 s16 f12 s12 f12 s12b f12 s16 f16 s12 f13 s12 f12 s13 f13 s15 f13 s13 f12 s12 f14 s14 f17 s18 f21 s13 f12 s13 f11 s11b f11 s14 f12 s9 f17 s18 f17 s9 f11 s10 f11 s10 f18 s7 f8 s9 f18 s8 f18 s10b f11 s9 f11 s11 f18 s10 f10 s11 f11 s12 f12 s18 f11 s11 f11 s11 f18 s9 f10 s10b f10 s9 f9 s18 f11 s18 f11 s18 f11 s18 f18 s11 f10 s10 f10 s10 f19 s17 f17 s17",
+ "fetched_at": "2026-11-04T18:20:09"
+}

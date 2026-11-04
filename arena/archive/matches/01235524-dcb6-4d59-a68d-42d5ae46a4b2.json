@@ -1,0 +1,19 @@
+{
+ "match_id": "01235524-dcb6-4d59-a68d-42d5ae46a4b2",
+ "first": {
+  "bot": "QuarkBot-04-1713",
+  "bot_id": "75cd62ef-8202-431b-9941-011adf306e78",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "lalalalalabotfixed",
+  "bot_id": "d8234a73-da2d-4664-9009-121163c79efd",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 448,
+ "moves": "f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f11 s11 f11 s13 f13 s11 f13 s13 f13 s13 f13 s11 f11 s11 f13 s13 f13 s11 f13 s11 f11 s13 f13b s13 f11 s11 f13 s11 f10 s11 f11 s9 f13 s9 f13 s8 f19 s9 f9 s9 f8 s8 f10 s10 f14b s14 f9 s10 f15 s14 f9 s15 f9 s9 f13 s8 f7 s19 f19 s8 f10 s10 f13 s10 f14b s13 f15 s5 f10 s10 f19 s10 f10 s15 f10 s10 f19 s19 f19 s8 f9 s9 f9 s9 f13b s13 f8 s19 f21 s18 f21 s19 f21 s21 f21 s21 f21 s21 f19 s21 f21 s19 f19 s21 f13b s13 f21 s24 f15 s15 f24 s24 f24 s19 f24 s24 f24 s24 f24 s24 f24 s21 f8 s8 f13b s13 f19 s14 f21 s19 f15 s24 f24 s24 f5 s5 f4 s5 f4 s4 f5 s4 f4 s5 f13b s13 f4 s4 f5 s5 f5 s5 f4 s4 f5 s9 f4 s10 f13 s14 f10 s14 f14 s14 f14b s14 f13 s13 f15 s13 f15 s15 f16 s26 f15 s25 f27 s25 f9 s13 f25 s26 f7 s7 f6b s5 f3 s26 f3 s26 f26 s26 f26 s26 f5 s21 f26 s26 f26 s24 f4 s4 f5 s5 f6b s2 f5 s5 f8 s4 f5 s26 f5 s20 f4 s8 f26 s26 f4 s26 f3 s3 f8 s8 f8b s8 f9 s8 f9 s6 f16 s6 f3 s3 f3 s3 f16 s16 f17 s17 f17 s17 f17 s16 f17 s16 f18b s18 f17 s20 f16 s17 f6 s6 f17 s6 f17 s14 f14 s14 f19 s20 f16 s14 f14 s8 f7b s6 f19 s6 f16 s6 f6 s16 f16 s7 f6 s6 f6 s8 f3 s3 f3 s19 f16 s14 f7b s20 f6 s6 f8 s20 f20 s20 f16 s6 f8 s20 f6 s8 f14 s14 f6 s16 f20 s20 f14b s13 f13 s14 f17 s15 f17 s17 f9 s17 f8 s14 f20 s20 f7 s20 f6 s20 f6 s6 f20 s17 f15b s17 f15 s23 f17 s23 f3 s3 f3 s23 f23 s25 f25 s25 f23 s23 f23 s25 f25 s23 f23 s23 f23 s23 f23b s23 f16 s16 f25 s25 f25 s25 f25 s15 f14 s14 f17 s23 f25 s25 f24 s24 f24 s3 f27 s27 f28 s2 f27 s27 f7b s8 f2 s27 f2 s2 f6 s2 f2 s2 f8 s6 f8 s6 f0 s2 f0 s0 f2 s2 f2 s2 f23 s27 f2 s0 f27 s27 f27 s18 f18 s28 f27 s27 f27 s1 f1 s1 f1b s1 f2 s2 f1 s2 f7 s0 f1 s1 f1 s0 f0 s0 f0 s0 f28 s28 f7 s0 f7",
+ "fetched_at": "2026-11-04T18:20:14"
+}

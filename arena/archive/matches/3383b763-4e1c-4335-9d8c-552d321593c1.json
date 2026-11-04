@@ -1,0 +1,19 @@
+{
+ "match_id": "3383b763-4e1c-4335-9d8c-552d321593c1",
+ "first": {
+  "bot": "Savi12 - \"The King\"",
+  "bot_id": "62a9b7e3-5438-440d-a145-fce6e8e123ca",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "Testing_v2",
+  "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+  "team": "LinMacWin"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 7,
+ "moves": "f14 f15 f13 f14 f16 f12 s17 f11",
+ "fetched_at": "2026-11-04T18:21:09"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "96635562-d83b-40e5-9050-af0ac3598443",
+ "first": {
+  "bot": "Back To Basics",
+  "bot_id": "97a33ebe-8f3d-4cd0-bfe3-f663375381be",
+  "team": "Shalomtehnikud"
+ },
+ "second": {
+  "bot": "Savi12 - \"The King\"",
+  "bot_id": "62a9b7e3-5438-440d-a145-fce6e8e123ca",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 13,
+ "moves": "f0 s2 f1 s2 f3 s3 f4 s4 f5 s5 f6 s1 f7 s6",
+ "fetched_at": "2026-11-04T18:21:13"
+}

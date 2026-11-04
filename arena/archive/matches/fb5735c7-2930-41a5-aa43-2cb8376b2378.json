@@ -1,0 +1,19 @@
+{
+ "match_id": "fb5735c7-2930-41a5-aa43-2cb8376b2378",
+ "first": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "FunkyMelodyBot",
+  "bot_id": "3d4fadab-4e04-46b6-bf9a-a447d6dc9146",
+  "team": "FunkyMelody"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 34,
+ "moves": "f14 s25 f14 s9 f9 s2 f9 s11 f9 s10 f8 s28 f8 s9 f10 s0 f11 s3 f10 s18 f8 s21 f11 s19 f10 s5 f11 s17 f20 s17 f8 s13 f8 s12 f8",
+ "fetched_at": "2026-11-04T18:20:55"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "62c6a6a6-1bd5-4055-9ae4-c775344c170b",
+ "first": {
+  "bot": "Savi12 - \"The King\"",
+  "bot_id": "62a9b7e3-5438-440d-a145-fce6e8e123ca",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "King beater",
+  "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 240,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f12 s13 f12 s13 f12 s13 f12 s13 f13 s13b f13 s12 f13 s12 f12 s13 f14 s14 f12 s13 f12 s13 f13 s12 f12 s12 f12 s12 f13 s11b f10 s14 f14 s13 f14 s12 f13 s18 f14 s18 f12 s18 f18 s18 f18 s18 f18 s18 f8 s18 f7 s18 f9 s8b f18 s19 f8 s19 f7 s9 f20 s9 f9 s8 f7 s9 f18 s9 f9 s9 f7 s9 f7 s9 f9 s8 f19 s7 f20 s19 f19 s19 f19 s20 f20 s20 f20 s20 f20 s19 f19 s7 f9 s7 f7 s7 f20 s8 f8 s8 f20 s6b f20 s17 f17 s17 f17 s20 f17 s17 f17 s17 f22 s22 f22 s21 f21 s21 f17 s21 f21 s22 f17 s21 f19 s21 f17 s21 f22 s21 f21 s21 f17 s17 f17 s13 f19 s19 f19 s21 f9 s22 f22 s7 f7 s7 f17 s7 f13 s7 f7 s9 f15 s21 f21 f12 s22 f22 s22 f19 s22 f15 s20 f20 s18 f18 s22 f20 s19 f15 s22 f22 s15 f15 s8 f15 s8 f15 s8 f15 s8 f8 s15 f15 s8 f7 s15 f15 s15 f9 s15 f15 s21 f7 s5 f8 s8 f10 s4 f8 s4 f3 s4 f4 s4 f9 s4 f24 s4 f4 s4 f4 s4 f6 s6 f4 s3 f5 s5 f3 s5 f5 s5 f5 s6 f6b s23 f16 s23b",
+ "fetched_at": "2026-11-04T18:20:42"
+}

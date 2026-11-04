@@ -1,0 +1,19 @@
+{
+ "match_id": "95f3e324-c93c-4d30-9fb8-82e24652258d",
+ "first": {
+  "bot": "True Random Bot",
+  "bot_id": "e720c76c-8cef-49c1-b9b4-96ae5f9f66cb",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "second": {
+  "bot": "lalalalalabotfixed",
+  "bot_id": "d8234a73-da2d-4664-9009-121163c79efd",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 147,
+ "moves": "f3 s9 f7 s9 f19 s5 f8 s8 f24 s7 f25 s5 f16 s3 f20 s21 f10 s10 f0 s15 f3 s9 f12 s12 f23 s9 f24 s8 f26 s27 f2 s9 f9 s2 f3 s7 f25 s8 f14 s10 f5 s12 f17 s10 f0 s7 f10 s10 f12 s5 f21 s7 f23 s7 f7 s8 f12 s8 f8 s13 f1 s13 f18 s13 f13 s14 f3 s15 f12 s16 f17 s14 f16 s15 f26 s27 f19 s20 f26 s5 f19 s15 f8 s16 f18 s16 f16 s7 f16 s19 f19 s14 f12 s12 f19 s19 f19 s9 f27 s5 f0 s5 f2 s5 f5 s3 f15 s3 f27 s3 f5 s3 f14 s0 f28 s0 f12 s0 f13 s0 f19 s0 f0 s0 f10 s10 f1 s12 f3 s1 f8 s9 f13 s15 f14 s15 f19 s9 f7 s9 f5 s8 f12 s7 f9 s7 f21 s22b",
+ "fetched_at": "2026-11-04T18:21:28"
+}
