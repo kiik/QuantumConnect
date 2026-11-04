@@ -4,13 +4,18 @@ import ch.cern.quantumconnect.core.Algorithm;
 import ch.cern.quantumconnect.core.QuantumField;
 import ch.qc.meelik.bots.QuarkBot;
 import ch.qc.meelik.bots.QuarkV2Bot;
+import ch.qc.meelik.bots.SerenaBot;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +54,22 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>Usage: Tune [generations=40] [depth=4] [pairs=16] [openings=8] [threads=cores] [seed=1]
  * [out=out/tune-params.txt] [start=defaults] [bot=quark] [field=none] [field threads=6].
  * {@code ./qc.sh train} runs the recipes in training.txt.
+ *
+ * <h2>Island evolution of SerenaBot ({@code --islands N})</h2>
+ * A genetic algorithm on SerenaBot's genome: its 16 evaluation parameters (log line weights and
+ * bomb bonus, as above) and one structural gene, the transposition table's size in bits. N islands
+ * each grow a population from Serena's constants with their own seed. Each generation, every genome
+ * plays the untouched SerenaBot from fresh random openings with both colours, on the tournament's
+ * 15x30 board at the real time limit (or at a fixed depth). Its fitness is that score minus a size
+ * penalty per MB of table, so that memory grows only where it wins games. The best quarter of an
+ * island survives; the rest are crossovers of its better half, mutated. Every K generations each
+ * island's best is copied into the next island (a ring), replacing its worst. Each island's
+ * generation is a row of results/islands.tsv; the best genome of the last generation goes to the
+ * output file, which Arena plays as "serena:&lt;file&gt;".
+ *
+ * <p>Usage: Tune --islands 4 [--migrate 3] [--generations 6] [--population 6] [--openings 3]
+ * [--size 15x30] [--depth 0 = real time] [--penalty 0.002 per MB] [--threads cores-2] [--seed 1]
+ * [--out out/serena-islands.txt]
  */
 public final class Tune {
     static final Path OUTPUT = Path.of("out/tune-params.txt");
@@ -63,6 +84,10 @@ public final class Tune {
     static final AtomicLong SKIPPED_TURNS = new AtomicLong();
 
     public static void main(String[] args) throws Exception {
+        if (args.length > 0 && args[0].startsWith("--")) {
+            islands(args);
+            return;
+        }
         int generations = intArg(args, 0, 40), pairs = intArg(args, 2, 16), openingsPerPair = intArg(args, 3, 8);
         int threads = intArg(args, 4, Runtime.getRuntime().availableProcessors()), seed = intArg(args, 5, 1);
         searchDepth = intArg(args, 1, 4);
@@ -272,6 +297,200 @@ public final class Tune {
             openings.add(opening);
         }
         return openings;
+    }
+
+    // ------------------------------------------------------------------ island evolution of SerenaBot
+
+    static final Path ISLAND_ROWS = Path.of("results/islands.tsv");
+    static final int GENES = 17, TABLE_GENE = 16, MIN_TABLE_BITS = 14, MAX_TABLE_BITS = 21;
+    static final double MUTATION = 0.15, TABLE_MUTATION = 0.25;
+
+    static void islands(String[] args) throws Exception {
+        Map<String, String> options = new HashMap<>();
+        for (int i = 0; i + 1 < args.length; i += 2) options.put(args[i].substring(2), args[i + 1]);
+        int islandCount = Integer.parseInt(options.getOrDefault("islands", "4"));
+        int migrateEvery = Integer.parseInt(options.getOrDefault("migrate", "3"));
+        int generations = Integer.parseInt(options.getOrDefault("generations", "6"));
+        int population = Integer.parseInt(options.getOrDefault("population", "6"));
+        int openingCount = Integer.parseInt(options.getOrDefault("openings", "3"));
+        int depth = Integer.parseInt(options.getOrDefault("depth", "0"));
+        int seed = Integer.parseInt(options.getOrDefault("seed", "1"));
+        int threads = Integer.parseInt(options.getOrDefault("threads", String.valueOf(Math.max(1, Runtime.getRuntime().availableProcessors() - 2))));
+        double penalty = Double.parseDouble(options.getOrDefault("penalty", "0.002"));
+        int[] size = Tools.size(options.getOrDefault("size", "15x30"));
+        Path output = Path.of(options.getOrDefault("out", "out/serena-islands.txt"));
+        String recipe = String.format("%d islands, migrate every %d, %d generations x %d genomes, %d openings x 2 colours, %dx%d, %s, penalty %s/MB, seed %d",
+                islandCount, migrateEvery, generations, population, openingCount, size[0], size[1],
+                depth > 0 ? "depth " + depth : "real time", penalty, seed);
+        String run = LocalDateTime.now().withNano(0).toString();
+        System.out.printf("island evolution of SerenaBot: %s; %d threads -> %s, %s%n", recipe, threads, output, ISLAND_ROWS);
+        appendRow("# " + run + " Tune " + String.join(" ", args) + ": " + recipe + "; fitness = score vs SerenaBot - penalty x table MB");
+
+        double[] defaults = serenaGenome();
+        Random[] randoms = new Random[islandCount];
+        List<List<double[]>> islands = new ArrayList<>();
+        for (int island = 0; island < islandCount; island++) {
+            randoms[island] = new Random(1000L * seed + island);
+            List<double[]> members = new ArrayList<>();
+            members.add(defaults.clone());
+            while (members.size() < population) members.add(mutate(defaults, randoms[island]));
+            islands.add(members);
+        }
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        double[][] fitness = new double[islandCount][];
+        for (int generation = 1; generation <= generations; generation++) {
+            long started = System.nanoTime();
+            List<List<Future<Double>>> scores = new ArrayList<>();
+            for (int island = 0; island < islandCount; island++) {
+                List<int[]> openings = openingsOn(randoms[island], openingCount, size[1]);
+                List<Future<Double>> islandScores = new ArrayList<>();
+                for (double[] genome : islands.get(island)) islandScores.add(pool.submit(() -> serenaScore(genome, openings, depth, size)));
+                scores.add(islandScores);
+            }
+            for (int island = 0; island < islandCount; island++) {
+                List<double[]> members = islands.get(island);
+                fitness[island] = new double[population];
+                double mean = 0;
+                for (int m = 0; m < population; m++) {
+                    fitness[island][m] = scores.get(island).get(m).get() - penalty * tableMegabytes(members.get(m));
+                    mean += fitness[island][m] / population;
+                }
+                sortByFitness(members, fitness[island]);
+                double[] leader = members.get(0);
+                appendRow(String.format("%s\t%d\t%d\t%.4f\t%.4f\t%.4f\t%d\t%.1f", run, island, generation, fitness[island][0], mean,
+                        fitness[island][0] + penalty * tableMegabytes(leader), tableBits(leader), (System.nanoTime() - started) / 1e9));
+            }
+            boolean migrating = generation % migrateEvery == 0 && islandCount > 1;
+            System.out.printf("gen %2d  best per island", generation);
+            for (double[] islandFitness : fitness) System.out.printf(" %.3f", islandFitness[0]);
+            System.out.printf("%s  %.1f s%n", migrating && generation < generations ? "  (migrating)" : "", (System.nanoTime() - started) / 1e9);
+            if (generation == generations) break;
+
+            List<List<double[]>> next = new ArrayList<>();
+            for (int island = 0; island < islandCount; island++) next.add(breed(islands.get(island), randoms[island]));
+            if (migrating)
+                for (int island = 0; island < islandCount; island++)
+                    next.get((island + 1) % islandCount).set(population - 1, islands.get(island).get(0).clone());
+            islands = next;
+        }
+        pool.shutdown();
+
+        int bestIsland = 0;
+        for (int island = 1; island < islandCount; island++) if (fitness[island][0] > fitness[bestIsland][0]) bestIsland = island;
+        double[] best = islands.get(bestIsland).get(0);
+        String weights = describe(Arrays.copyOf(best, TABLE_GENE));
+        save(output, best, String.format("Tune --islands, %s: fitness %.3f (island %d, last generation), table %d bits%n# %s",
+                recipe, fitness[bestIsland][0], bestIsland, tableBits(best), weights));
+        System.out.printf("best: fitness %.3f, table %d bits, %s -> %s%n", fitness[bestIsland][0], tableBits(best), weights, output);
+    }
+
+    /** The next population: the best quarter as is, the rest crossovers of two of the better half, mutated. */
+    static List<double[]> breed(List<double[]> sorted, Random random) {
+        int elite = Math.max(1, sorted.size() / 4), parents = Math.max(1, sorted.size() / 2);
+        List<double[]> next = new ArrayList<>(sorted.subList(0, elite));
+        while (next.size() < sorted.size()) {
+            double[] mother = sorted.get(random.nextInt(parents)), father = sorted.get(random.nextInt(parents));
+            double[] child = new double[GENES];
+            for (int i = 0; i < GENES; i++) child[i] = random.nextBoolean() ? mother[i] : father[i];
+            next.add(mutate(child, random));
+        }
+        return next;
+    }
+
+    /** Gaussian steps on the log weights; now and then one step up or down in table size. */
+    static double[] mutate(double[] genome, Random random) {
+        double[] child = genome.clone();
+        for (int i = 0; i < TABLE_GENE; i++) child[i] += MUTATION * random.nextGaussian();
+        if (random.nextDouble() < TABLE_MUTATION)
+            child[TABLE_GENE] = Math.max(MIN_TABLE_BITS, Math.min(MAX_TABLE_BITS, child[TABLE_GENE] + (random.nextBoolean() ? 1 : -1)));
+        return child;
+    }
+
+    /** Sorts the members, and their fitness alongside, best first. */
+    static void sortByFitness(List<double[]> members, double[] fitness) {
+        Integer[] order = new Integer[members.size()];
+        for (int i = 0; i < order.length; i++) order[i] = i;
+        Arrays.sort(order, Comparator.comparingDouble(i -> -fitness[i]));
+        List<double[]> sorted = new ArrayList<>();
+        double[] sortedFitness = new double[fitness.length];
+        for (int i = 0; i < order.length; i++) {
+            sorted.add(members.get(order[i]));
+            sortedFitness[i] = fitness[order[i]];
+        }
+        members.clear();
+        members.addAll(sorted);
+        System.arraycopy(sortedFitness, 0, fitness, 0, fitness.length);
+    }
+
+    /** Score of the genome against the untouched SerenaBot, each opening played with both colours. */
+    static double serenaScore(double[] genome, List<int[]> openings, int depth, int[] size) {
+        double total = 0;
+        for (int[] opening : openings)
+            for (int tunedSeat = 0; tunedSeat < 2; tunedSeat++) {
+                Algorithm tuned = new Opening(serena(genome, depth), opening), reference = new Opening(serena(null, depth), opening);
+                int winner = Arena.play(tunedSeat == 0 ? tuned : reference, tunedSeat == 0 ? reference : tuned, null, size[0], size[1]).winner();
+                total += winner == tunedSeat ? 1 : winner < 0 ? 0.5 : 0;
+            }
+        return total / (2 * openings.size());
+    }
+
+    /** SerenaBot with the genome (its constants if null), at a fixed depth, or at its time budget if depth is 0. */
+    static SerenaBot serena(double[] genome, int depth) {
+        SerenaBot bot = new SerenaBot();
+        if (genome != null) applySerena(bot, genome);
+        if (depth > 0) {
+            bot.maxDepth = depth;
+            bot.budgetNanos = Long.MAX_VALUE / 4;
+        }
+        return bot;
+    }
+
+    /** SerenaBot's own genome: its 16 parameters in QuarkBot's layout, then its table size in bits. */
+    static double[] serenaGenome() {
+        SerenaBot bot = new SerenaBot();
+        QuarkBot shown = new QuarkBot();
+        for (int d = 0; d < 3; d++) System.arraycopy(bot.lineWeight[d], 0, shown.lineWeight[d], 0, shown.lineWeight[d].length);
+        shown.bombReadyBonus = bot.bombReadyBonus;
+        double[] genome = Arrays.copyOf(Tools.parameters(shown), GENES);
+        genome[TABLE_GENE] = SerenaBot.TABLE_BITS;
+        return genome;
+    }
+
+    static void applySerena(SerenaBot bot, double[] genome) {
+        QuarkBot weights = new QuarkBot();
+        Tools.applyParameters(weights, Arrays.copyOf(genome, TABLE_GENE));
+        bot.lineWeight = new int[3][];
+        for (int d = 0; d < 3; d++) bot.lineWeight[d] = Arrays.copyOf(weights.lineWeight[d], SerenaBot.LINE_LENGTH + 1);
+        bot.bombReadyBonus = weights.bombReadyBonus;
+        if (genome.length > TABLE_GENE) bot.resizeTable(tableBits(genome));
+    }
+
+    static int tableBits(double[] genome) {
+        return (int) Math.round(genome[TABLE_GENE]);
+    }
+
+    /** The transposition table's memory: two longs per entry. */
+    static double tableMegabytes(double[] genome) {
+        return 16.0 * (1L << tableBits(genome)) / (1 << 20);
+    }
+
+    /** Random plain drops on a board of the given width. */
+    static List<int[]> openingsOn(Random random, int count, int columns) {
+        List<int[]> openings = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            int[] opening = new int[OPENING_PLIES];
+            for (int ply = 0; ply < OPENING_PLIES; ply++) opening[ply] = QuarkBot.action(random.nextInt(columns), false);
+            openings.add(opening);
+        }
+        return openings;
+    }
+
+    /** Appends a line to results/islands.tsv, writing the header first if the file is new. */
+    static void appendRow(String line) throws Exception {
+        Files.createDirectories(ISLAND_ROWS.toAbsolutePath().getParent());
+        if (!Files.exists(ISLAND_ROWS))
+            Files.writeString(ISLAND_ROWS, "run\tisland\tgeneration\tbest_fitness\tmean_fitness\tbest_score\tbest_table_bits\tseconds\n");
+        Files.writeString(ISLAND_ROWS, line + "\n", StandardOpenOption.APPEND);
     }
 
     // ------------------------------------------------------------------ vectors and files
