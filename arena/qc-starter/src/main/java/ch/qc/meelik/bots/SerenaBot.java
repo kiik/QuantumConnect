@@ -16,9 +16,11 @@ import java.util.Random;
  * the game, plus a book of lessons learned from its own lost games.
  *
  * <h2>The game</h2>
- * Quarks drop into columns and stack from the bottom. Six in a row, horizontally, vertically or
- * diagonally, wins. Instead of a plain drop a player may bomb: the quark drops and the 3x3 cells
- * around it, itself included, are cleared, and the quarks above fall down. A player may bomb once
+ * Quarks drop into columns and stack from the bottom. {@link #LINE_LENGTH} in a row (six so far),
+ * horizontally, vertically or diagonally, wins; on a board narrower or lower than that, the lines
+ * in that direction simply do not exist. Instead of a plain drop a player may bomb: the quark drops
+ * and the 3x3 cells around it, itself included, are cleared, and the quarks above fall down. A
+ * player may bomb once
  * every {@link #BOMB_COOLDOWN} of their own turns, the first time after {@link #FIRST_BOMB_WAIT}.
  * After every turn, a line anywhere on the board wins for the player who just moved, whoever's line
  * it is.
@@ -28,13 +30,14 @@ import java.util.Random;
  * bottom. Player 0 is always this bot. A move, called an <i>action</i>, packs the column and the bomb
  * decision: {@code action = 2 * column + (bomb ? 1 : 0)}.
  *
- * <p>A <i>line</i> is any run of six cells. For every line the board keeps how many quarks each
- * player has in it, and updates the counts quark by quark. Everything else follows from the counts:
+ * <p>A <i>line</i> is any run of {@link #LINE_LENGTH} cells. For every line the board keeps how many
+ * quarks each player has in it, and updates the counts quark by quark. Everything else follows from
+ * the counts:
  * <ul>
- *   <li>the win test: a count reaching six;
+ *   <li>the win test: a count reaching LINE_LENGTH;
  *   <li>the evaluation: a line open to one player only is worth a weight to that player;
  *   <li>the threats: empty cells that would complete a line;
- *   <li>the fours: empty cells of lines four quarks short of nothing but two (a drop there makes a threat).
+ *   <li>the fours: empty cells of open lines two quarks short (four of six), where a drop makes a threat.
  * </ul>
  * A bomb is carried out as single-quark removals and additions, so it needs no bookkeeping of its own.
  *
@@ -48,8 +51,8 @@ import java.util.Random;
  * they force. So a threat, block, double-threat combination is seen however deep it starts.
  *
  * <h2>The clock</h2>
- * The arena skips a turn answered after 100 ms, and its machine stalls where a laptop does not: a
- * cold JVM on the first turns, a shared CPU later. So the search keeps well inside the limit, thinks
+ * The arena skips a turn answered after its limit ({@link #budgetNanos} keeps to about 80% of it),
+ * and its machine stalls where a laptop does not: a cold JVM on the first turns, a shared CPU later. So the search keeps well inside the limit, thinks
  * a quarter as long on the first turns ({@link #COLD_TURNS}), and watches the move history: an answer
  * of ours missing from it came too late, and halves this match's budget; each answer placed gives a
  * little back ({@link #noteLostTurns}).
@@ -65,8 +68,9 @@ import java.util.Random;
  * <h2>The pattern table (on by default)</h2>
  * The line weights see only how many quarks a line holds, and only in a line one player owns. The
  * pattern table values each line by its exact contents instead: each of its six cells empty, own or
- * the opponent's, 3^6 = 729 patterns per direction class ({@link #usePatterns}). A line's pattern is
- * kept up to date like its counts, so the evaluation stays one table lookup per changed line. The
+ * the opponent's, 3^6 = 729 patterns per direction class ({@link #usePatterns}). It, the network
+ * and the loss book were trained with six in a row and play only at {@link #TRAINED_LINE_LENGTH}.
+ * A line's pattern is kept up to date like its counts, so the evaluation stays one table lookup per changed line. The
  * table never refers to a cell or to the board's size, so one table plays on any board. It starts
  * from the line weights and is trained offline (tools/qc-net, {@code qcpatterns}) on archived and
  * self-play positions of any size, then embedded as base64. Without a table the line weights play.
@@ -86,8 +90,18 @@ public class SerenaBot implements Algorithm {
     // ------------------------------------------------------------------ rules
 
     public static final int EMPTY = -1;
-    /** Quarks in a row that win. */
+    /**
+     * Quarks in a row that win, at least 3. The organisers announce it for each tournament and the
+     * engine keeps it to itself, so it is set here; everything else follows from it. The board size
+     * is read from the arena's field.
+     */
     public static final int LINE_LENGTH = 6;
+    /**
+     * The line length the line weights, the pattern table, the network and the loss book were
+     * trained for. At any other, the pattern table, the network and the book stay off and the line
+     * weights are stretched to the new length ({@link #lineWeightsFor}).
+     */
+    static final int TRAINED_LINE_LENGTH = 6;
     /** Own turns from one bomb to the next. */
     public static final int BOMB_COOLDOWN = 10;
     /** Own turns before the first bomb. */
@@ -99,16 +113,33 @@ public class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ evaluation
 
-    /** Value of a line holding 0..6 quarks of one player and none of the other, per direction class, evolved by self-play. */
+    /**
+     * Value of a line of {@link #TRAINED_LINE_LENGTH} cells holding 0..6 quarks of one player and none
+     * of the other, per direction class, evolved by self-play.
+     */
     static final int[][] LINE_WEIGHT = {
             {0, 41, 131, 241, 540, 6367, 0},
             {0, 17, 75, 204, 658, 8300, 0},
             {0, 15, 105, 261, 615, 7863, 0}};
     /** Bonus for having the bomb ready while the opponent hasn't. */
     static final int BOMB_READY_BONUS = 20;
-    /** This bot's weights and bonus: the constants above, unless a tuning tool sets others. */
-    public int[][] lineWeight = LINE_WEIGHT;
+    /** This bot's weights (0..LINE_LENGTH quarks) and bonus: the constants above, unless a tuning tool sets others. */
+    public int[][] lineWeight = lineWeightsFor(LINE_LENGTH);
     public int bombReadyBonus = BOMB_READY_BONUS;
+
+    /**
+     * The trained weights for lines of another length, counted from the full end: a line one quark
+     * short of complete takes the trained weight of a line one short (five quarks of six), two short
+     * the weight of two short, and so on down. Counts with no trained match take the one-quark weight;
+     * an empty or complete line is worth nothing. For the trained length these are the trained weights.
+     */
+    static int[][] lineWeightsFor(int lineLength) {
+        int[][] weights = new int[LINE_WEIGHT.length][lineLength + 1];
+        for (int d = 0; d < weights.length; d++)
+            for (int quarks = 1; quarks <= lineLength; quarks++)
+                weights[d][quarks] = LINE_WEIGHT[d][Math.max(1, quarks + TRAINED_LINE_LENGTH - lineLength)];
+        return weights;
+    }
 
     // ------------------------------------------------------------------ search constants
 
@@ -117,7 +148,11 @@ public class SerenaBot implements Algorithm {
     public static final int ME = 0, OPPONENT = 1;
     public static final int MAX_PLY = 64;
     public static final int NO_ACTION = -1;
-    /** After this much thinking in one match, think an eighth as long per move (a match allows 30 s). */
+    /**
+     * After this much thinking in one match, think an eighth as long per move (a match allows 30 s).
+     * It does not depend on the per-move limit: on 15x30 the 225 turns of ours that fill the board
+     * stay under it up to a budget of 88 ms; past it, the rest of the match fits in the 30 s.
+     */
     static final long MATCH_TIME_GUARD_NANOS = 20_000_000_000L;
     /** Our first turns run on a cold JVM, classes still loading and nothing compiled: they think a quarter as long. */
     static final int COLD_TURNS = 2;
@@ -160,8 +195,9 @@ public class SerenaBot implements Algorithm {
     /** Lines a cell would complete for a player, at {@code player * cellCount + cell}. */
     int[] threatCount;
     /**
-     * Open lines a drop at a cell would turn into a threat: lines holding four quarks of a player and
-     * none of the other, counted at both their empty cells, at {@code player * cellCount + cell}.
+     * Open lines a drop at a cell would turn into a threat: lines two quarks short, holding
+     * LINE_LENGTH - 2 quarks of a player and none of the other ("fours" when six win), counted at both
+     * their empty cells, at {@code player * cellCount + cell}.
      */
     int[] fourCount;
     public int sideToMove;
@@ -187,6 +223,11 @@ public class SerenaBot implements Algorithm {
     final int[][] actionLists = new int[MAX_PLY][], undoStates = new int[MAX_PLY][];
     /** How often each action of each player caused a cut-off, weighted by depth. */
     int[][] historyScore;
+    /**
+     * Thinking time per move: about 80% of the announced per-move limit (40 ms at 50 ms), leaving
+     * room for reading the field and for a stalling machine. The cold turns, the match guard and the
+     * late-answer cuts all scale from it.
+     */
     public long budgetNanos = 40_000_000L;
     /** Deepest iteration of the search; a tuning tool may fix it. */
     public int maxDepth = MAX_PLY - 2;
@@ -291,8 +332,8 @@ public class SerenaBot implements Algorithm {
         threatCount = new int[2 * cellCount];
         fourCount = new int[2 * cellCount];
         fallingQuarks = new int[rows];
-        networkOn = withNetwork && loadNetwork();
-        patternsOn = withPatterns && loadPatterns();
+        networkOn = withNetwork && LINE_LENGTH == TRAINED_LINE_LENGTH && loadNetwork();
+        patternsOn = withPatterns && LINE_LENGTH == TRAINED_LINE_LENGTH && loadPatterns();
         stateSize = owner.length + columnHeight.length + lineQuarks.length + linePattern.length + threatCount.length + fourCount.length + 9 + (networkOn ? 2 * hidden : 0);
         clear();
 
@@ -727,8 +768,13 @@ public class SerenaBot implements Algorithm {
     int[] bookActions = new int[0];
     int bookRows = -1, bookColumns = -1;
 
-    /** The booked action for a position, or NO_ACTION. */
+    /**
+     * The booked action for a position, or NO_ACTION. Entries carry their board size, so a key is
+     * looked up only among its own size's; the book holds no line length, so it is used only at the
+     * one it was learned at.
+     */
     public int bookAction(long key) {
+        if (LINE_LENGTH != TRAINED_LINE_LENGTH) return NO_ACTION;
         if (bookRows != rows || bookColumns != columns) loadBook();
         int at = Arrays.binarySearch(bookKeys, key);
         return at >= 0 ? bookActions[at] : NO_ACTION;
@@ -842,11 +888,14 @@ public class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ the pattern table
 
-    /** Evaluate lines by their patterns where a table is embedded. Off: the line weights play. */
+    /** Evaluate lines by their patterns where a table is embedded and LINE_LENGTH is the trained one. Off: the line weights play. */
     public static boolean usePatterns = true;
     /** This bot's copy of {@link #usePatterns}, taken when it is made and read when a board is set up. */
     public boolean withPatterns = usePatterns;
-    /** Patterns of a six-cell line. */
+    /**
+     * Patterns of a line of the trained length, 3^6. The table is used only at that length; at others
+     * {@link #linePattern} is still kept (3^LINE_LENGTH, wrapping harmlessly past 20) but never read.
+     */
     public static final int PATTERNS = 729;
     public boolean patternsOn;
     /** The value of each pattern per direction class, from player 0's point of view, at {@code direction * PATTERNS + pattern}. */
@@ -883,7 +932,7 @@ public class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ the network
 
-    /** Evaluate with the network where its board size matches. Off: the line weights play. */
+    /** Evaluate with the network where its board size and LINE_LENGTH match its training. Off: the line weights play. */
     public static boolean useNetwork = false;
     /** This bot's copy of {@link #useNetwork}, taken when it is made and read when a board is set up. */
     public boolean withNetwork = useNetwork;
