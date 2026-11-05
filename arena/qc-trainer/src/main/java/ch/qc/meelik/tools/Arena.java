@@ -330,7 +330,9 @@ public final class Arena {
 
     /**
      * SerenaBot's tuning fields from a spec's {@code #name=value,...}: {@code bomb} (bombBonusPercent),
-     * {@code bombLine} (bombLineQuarks), {@code forcing} (forcingPlies), {@code reach} (dropReach),
+     * {@code bombLine} (bombLineQuarks), {@code bombHold} (bombHoldPercent, 0: the flat bomb bonus only),
+     * {@code holdThreat}, {@code holdFour}, {@code holdCap} (bombHoldThreat, bombHoldFour, bombHoldCap),
+     * {@code forcing} (forcingPlies), {@code reach} (dropReach),
      * {@code variety} (varietyNoise), {@code varietyQuarks}, {@code refined} (refinedSearch, 0 or 1:
      * 0 plays the plain alpha-beta search), {@code lmr} (lateMoveReductions, 0 or 1),
      * {@code bombHorizon} (0 to 3); for ThreatBot also {@code threat} (threatPlies).
@@ -342,6 +344,10 @@ public final class Arena {
             switch (name) {
                 case "bomb" -> bot.bombBonusPercent = value;
                 case "bombLine" -> bot.bombLineQuarks = value;
+                case "bombHold" -> bot.bombHoldPercent = value;
+                case "holdThreat" -> bot.bombHoldThreat = value;
+                case "holdFour" -> bot.bombHoldFour = value;
+                case "holdCap" -> bot.bombHoldCap = value;
                 case "forcing" -> bot.forcingPlies = value;
                 case "reach" -> bot.dropReach = value;
                 case "variety" -> bot.varietyNoise = value;

@@ -37,7 +37,9 @@ import java.util.Random;
  *   <li>the win test: a count reaching LINE_LENGTH;
  *   <li>the evaluation: a line open to one player only is worth a weight to that player;
  *   <li>the threats: empty cells that would complete a line;
- *   <li>the fours: empty cells of open lines two quarks short (four of six), where a drop makes a threat.
+ *   <li>the fours: empty cells of open lines two quarks short (four of six), where a drop makes a threat;
+ *   <li>the value of holding the bomb: each player's open threat and four lines, their danger, which
+ *       the other's bomb answers ({@link #bombHoldValue}).
  * </ul>
  * A bomb is carried out as single-quark removals and additions, so it needs no bookkeeping of its own.
  *
@@ -213,10 +215,17 @@ public class SerenaBot implements Algorithm {
     int[] fourCount;
     /**
      * Full lines a cell plugs: lines holding LINE_LENGTH - 1 quarks of a player ("fives" when six
-     * win) and, in this cell, one of the other's, at {@code player * cellCount + cell}. A blast that drops the player's quark into the
-     * cell completes such a line ({@link #blastFormsLine}).
+     * win) and, in this cell, one of the other's, at {@code player * cellCount + cell}. A blast that
+     * drops the player's quark into the cell completes such a line ({@link #blastFormsLine}).
      */
     int[] pluggedFives;
+    /**
+     * Open lines of each player one quark short (threat lines) and two quarks short (four lines):
+     * lines holding LINE_LENGTH - 1 or LINE_LENGTH - 2 of the player's quarks ("fives" and "fours"
+     * when six win) and none of the other's, each counted once. They measure a player's attacking
+     * potential, for {@link #bombHoldValue}.
+     */
+    final int[] threatLines = new int[2], fourLines = new int[2];
     public int sideToMove;
     int quarkCount;
     /** Pattern of each line: the sum over its cells of 0 (empty), 1 (player 0) or 2 (player 1) times 3^place. */
@@ -385,7 +394,7 @@ public class SerenaBot implements Algorithm {
         networkOn = withNetwork && LINE_LENGTH == TRAINED_LINE_LENGTH && loadNetwork();
         patternsOn = withPatterns && LINE_LENGTH == TRAINED_LINE_LENGTH && loadPatterns();
         stateSize = owner.length + columnHeight.length + lineQuarks.length + linePattern.length + threatCount.length + fourCount.length
-                + pluggedFives.length + 9 + (networkOn ? 2 * hidden : 0);
+                + pluggedFives.length + STATE_SCALARS + (networkOn ? 2 * hidden : 0);
         clear();
 
         for (int ply = 0; ply < MAX_PLY; ply++) {
@@ -697,6 +706,7 @@ public class SerenaBot implements Algorithm {
     private void adjustThreat(int line, int gap, int delta) {
         int player = threatenedBy(line);
         if (player < 0) return;
+        threatLines[player] += delta;
         if (gap == FIND_GAP) gap = emptyCellOf(line);
         int count = threatCount[player * cellCount + gap] += delta;
         if (networkOn && count == (delta > 0 ? 1 : 0)) { // the cell became or stopped being a threat
@@ -708,7 +718,7 @@ public class SerenaBot implements Algorithm {
     private static final int NO_CELL = -1;
 
     /**
-     * If the line holds four quarks of one player and none of the other, adds delta to the four count
+     * If the line holds LINE_LENGTH - 2 quarks of one player and none of the other, adds delta to the four count
      * of its empty cells. The cell given counts as empty though its quark is still on the board.
      */
     private void adjustFours(int line, int alsoEmpty, int delta) {
@@ -716,6 +726,7 @@ public class SerenaBot implements Algorithm {
         if (quarks0 == LINE_LENGTH - 2 && quarks1 == 0) player = 0;
         else if (quarks1 == LINE_LENGTH - 2 && quarks0 == 0) player = 1;
         else return;
+        fourLines[player] += delta;
         for (int cell : cellsOfLine[line])
             if (owner[cell] == EMPTY || cell == alsoEmpty) fourCount[player * cellCount + cell] += delta;
     }
@@ -748,6 +759,7 @@ public class SerenaBot implements Algorithm {
         Arrays.fill(fourCount, 0);
         Arrays.fill(pluggedFives, 0);
         completedLines[0] = completedLines[1] = 0;
+        threatLines[0] = threatLines[1] = fourLines[0] = fourLines[1] = 0;
         bombCooldown[0] = bombCooldown[1] = FIRST_BOMB_WAIT;
         sideToMove = quarkCount = 0;
         boardHash = 0;
@@ -766,6 +778,9 @@ public class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ saving and restoring (to undo a bomb)
 
+    /** Single values in a saved state after the arrays: line counts, cooldowns, side, quarks, score, hash, threat and four lines. */
+    static final int STATE_SCALARS = 13;
+
     public void saveState(int[] state) {
         int at = copyInto(state, 0, owner);
         at = copyInto(state, at, columnHeight);
@@ -783,7 +798,11 @@ public class SerenaBot implements Algorithm {
         state[at + 6] = staticScore;
         state[at + 7] = (int) boardHash;
         state[at + 8] = (int) (boardHash >>> 32);
-        if (networkOn) for (int i = 0; i < 2 * hidden; i++) state[at + 9 + i] = accumulator[i];
+        state[at + 9] = threatLines[0];
+        state[at + 10] = threatLines[1];
+        state[at + 11] = fourLines[0];
+        state[at + 12] = fourLines[1];
+        if (networkOn) for (int i = 0; i < 2 * hidden; i++) state[at + STATE_SCALARS + i] = accumulator[i];
     }
 
     public void restoreState(int[] state) {
@@ -802,7 +821,11 @@ public class SerenaBot implements Algorithm {
         quarkCount = state[at + 5];
         staticScore = state[at + 6];
         boardHash = state[at + 7] & 0xffffffffL | (long) state[at + 8] << 32;
-        if (networkOn) for (int i = 0; i < 2 * hidden; i++) accumulator[i] = (short) state[at + 9 + i];
+        threatLines[0] = state[at + 9];
+        threatLines[1] = state[at + 10];
+        fourLines[0] = state[at + 11];
+        fourLines[1] = state[at + 12];
+        if (networkOn) for (int i = 0; i < 2 * hidden; i++) accumulator[i] = (short) state[at + STATE_SCALARS + i];
     }
 
     private static int copyInto(int[] state, int at, int[] part) {
@@ -935,9 +958,48 @@ public class SerenaBot implements Algorithm {
         int score;
         if (networkOn) score = networkScore();
         else score = (sideToMove == 0 ? staticScore : -staticScore)
-                + bombReadyBonus * bombBonusPercent / 100 * (isBombReady(sideToMove) - isBombReady(1 - sideToMove)) + tempo;
+                + bombReadyBonus * bombBonusPercent / 100 * (isBombReady(sideToMove) - isBombReady(1 - sideToMove)) + tempo
+                + bombHoldValue();
         if (varietyNoise > 0 && quarkCount < varietyQuarks) score += varietyNoise();
         return score;
+    }
+
+    // ------------------------------------------------------------------ the value of holding the bomb
+
+    /*
+     * A bomb is the only answer to a double threat: two cells that each complete a line, of which a
+     * drop blocks one. So a bomb in hand is worth most when the opponent can make threats, and nearly
+     * nothing on a quiet board. The flat readiness bonus above cannot tell the two apart, and the
+     * search spends the bomb as soon as it has one; strong opponents hold theirs and win with it.
+     *
+     * The shaped value counts a player's attacking potential, their "danger": their open threat
+     * lines (LINE_LENGTH - 1 quarks) and four lines (LINE_LENGTH - 2), both kept up to date by the incremental
+     * updates. Each player's bomb is worth their readiness times the other's danger. A bomb one turn
+     * away is almost as good as one in hand, so readiness falls off over the last turns of the
+     * cooldown ({@link #BOMB_READINESS}). Spending the bomb then costs what it was worth, unless the
+     * blast takes the danger with it.
+     */
+
+    /** Percent of the shaped bomb value the evaluation counts; 0 counts only the flat readiness bonus. */
+    public int bombHoldPercent = 100;
+    /** Danger of one open threat line and one open four line of a player. */
+    public int bombHoldThreat = 600, bombHoldFour = 200;
+    /** The most danger counted for one player. */
+    public int bombHoldCap = 4000;
+    /** How ready a bomb is, in quarters, by its cooldown: in hand, one turn away, two, three, later. */
+    static final int[] BOMB_READINESS = {4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0};
+
+    /** The shaped bomb value for the side to move: its bomb against the other's danger, minus the other way round. */
+    int bombHoldValue() {
+        if (bombHoldPercent == 0) return 0;
+        int mover = sideToMove, other = 1 - mover;
+        int value = BOMB_READINESS[bombCooldown[mover]] * danger(other) - BOMB_READINESS[bombCooldown[other]] * danger(mover);
+        return value / 4 * bombHoldPercent / 100;
+    }
+
+    /** A player's attacking potential: their open threat and four lines, weighted, at most {@link #bombHoldCap}. */
+    int danger(int player) {
+        return Math.min(bombHoldCap, threatLines[player] * bombHoldThreat + fourLines[player] * bombHoldFour);
     }
 
     // ------------------------------------------------------------------ variety
