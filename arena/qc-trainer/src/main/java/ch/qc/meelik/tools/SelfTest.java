@@ -2,6 +2,7 @@ package ch.qc.meelik.tools;
 
 import ch.cern.quantumconnect.core.SpaceOwnership;
 import ch.qc.meelik.bots.QuarkBot;
+import ch.qc.meelik.bots.SerenaBot;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -16,7 +17,9 @@ import java.util.Random;
  *       included;
  *   <li>with the transposition table and the forced-move rules (threats tracked), exact solves of
  *       small boards equal plain solves without either;
- *   <li>search speed on the real board (a measurement, not a check).
+ *   <li>search speed on the real board (a measurement, not a check);
+ *   <li>SerenaBot: a bomb's predicted line ({@code blastFormsLine}) equals the bomb played;
+ *   <li>SerenaBot: the threat analysis's wins, losses and ruled-out drops equal the replies played out.
  * </ol>
  *
  * <p>Usage: SelfTest, or SelfTest speed to measure only the speed, in a fresh JVM.
@@ -37,6 +40,8 @@ public final class SelfTest {
         tableSolvesMatchPlainSolves(random, "4x5x4-nobomb", 200);
         tableSolvesMatchPlainSolves(random, "5x5x4-nobomb", 60);
         measureSpeed(random);
+        serenaBombLinesMatchBlasts(random);
+        serenaThreatsMatchReplies(random);
         System.out.println(failures == 0 ? "ALL PASSED" : failures + " FAILURE(S)");
     }
 
@@ -185,6 +190,106 @@ public final class SelfTest {
             else losses++;
         }
         System.out.printf("4. table + forced-move solves == plain solves on %s: %d wins, %d draws, %d losses for the side to move%n", geometry, wins, draws, losses);
+    }
+
+    // ------------------------------------------------------------------ 6. SerenaBot: bombs that form a line
+
+    /** A random legal action of SerenaBot's side to move, bombs half the time when allowed; NO_ACTION on a full board. */
+    static int randomSerenaAction(SerenaBot board, Random random) {
+        boolean anyLegal = false;
+        for (int column = 0; column < board.columns; column++) anyLegal |= board.isLegal(SerenaBot.action(column, false));
+        if (!anyLegal) return SerenaBot.NO_ACTION;
+        int action;
+        do action = SerenaBot.action(random.nextInt(board.columns), random.nextInt(4) == 0); while (!board.isLegal(action));
+        return action;
+    }
+
+    /** Random SerenaBot games on both board sizes: each position, every bomb's predicted line against the bomb played. */
+    static void serenaBombLinesMatchBlasts(Random random) {
+        int checked = 0, lines = 0;
+        for (int game = 0; game < 120; game++) {
+            SerenaBot board = game % 2 == 0 ? new SerenaBot(8, 12) : new SerenaBot(15, 30);
+            int[] saved = new int[board.stateSize];
+            for (int ply = 0; ply < 300 && !board.hasLine(); ply++) {
+                for (int column = 0; column < board.columns; column++) {
+                    if (!board.isLegal(SerenaBot.action(column, false))) continue;
+                    boolean predicted = board.blastFormsLine(column);
+                    board.saveState(saved);
+                    board.play(SerenaBot.action(column, true));
+                    boolean formed = board.hasLine();
+                    board.restoreState(saved);
+                    check(predicted == formed, board.rows + "x" + board.columns + " bomb in column " + column + ": predicted line " + predicted + ", played " + formed);
+                    checked++;
+                    if (formed) lines++;
+                }
+                int action = randomSerenaAction(board, random);
+                if (action == SerenaBot.NO_ACTION) break;
+                board.play(action);
+            }
+        }
+        System.out.printf("6. SerenaBot bomb lines == bombs played: %d bombs checked, %d of them form a line%n", checked, lines);
+    }
+
+    // ------------------------------------------------------------------ 7. SerenaBot: the threat analysis
+
+    /** Whether the side to move has an action after which a line stands (it wins at once). */
+    static boolean winsAtOnce(SerenaBot board) {
+        int[] saved = new int[board.stateSize];
+        for (int action = 0; action < 2 * board.columns; action++) {
+            if (!board.isLegal(action)) continue;
+            board.saveState(saved);
+            board.play(action);
+            boolean line = board.hasLine();
+            board.restoreState(saved);
+            if (line) return true;
+        }
+        return false;
+    }
+
+    /** Whether this action of the side to move loses at once: it forms no line and the opponent then wins at once. */
+    static boolean losesAtOnce(SerenaBot board, int action) {
+        int[] saved = new int[board.stateSize];
+        board.saveState(saved);
+        board.play(action);
+        boolean loses = !board.hasLine() && winsAtOnce(board);
+        board.restoreState(saved);
+        return loses;
+    }
+
+    /**
+     * Random SerenaBot games with random bomb cooldowns: each claim of the threat analysis against the
+     * replies played out. A win must be there at once; at a loss every action must lose at once; and
+     * any drop the analysis rules out must lose at once.
+     */
+    static void serenaThreatsMatchReplies(Random random) {
+        int positions = 0, wins = 0, losses = 0, forced = 0;
+        for (int game = 0; game < 160; game++) {
+            SerenaBot board = game % 4 == 3 ? new SerenaBot(15, 30) : new SerenaBot(8, 12);
+            for (int ply = 0; ply < 300 && !board.hasLine(); ply++) {
+                for (int player = 0; player < 2; player++) board.bombCooldown[player] = random.nextInt(3);
+                int verdict = board.threatAnalysis(1);
+                positions++;
+                if (verdict == SerenaBot.WIN - 2) {
+                    wins++;
+                    check(winsAtOnce(board), "threat analysis: a win that is not there");
+                } else if (verdict == 3 - SerenaBot.WIN) {
+                    losses++;
+                    for (int action = 0; action < 2 * board.columns; action++)
+                        if (board.isLegal(action)) check(losesAtOnce(board, action), "threat analysis: a loss, but action " + action + " holds");
+                } else if (board.forcedAnswers != SerenaBot.NOT_FORCED) {
+                    forced++;
+                    for (int column = 0; column < board.columns; column++) {
+                        int drop = SerenaBot.action(column, false);
+                        if (board.isLegal(drop) && !SerenaBot.allowsDrop(board.forcedAnswers, column))
+                            check(losesAtOnce(board, drop), "threat analysis: ruled out the drop in column " + column + ", which holds");
+                    }
+                }
+                int action = randomSerenaAction(board, random);
+                if (action == SerenaBot.NO_ACTION) break;
+                board.play(action);
+            }
+        }
+        System.out.printf("7. SerenaBot threat analysis == replies: %d positions, %d wins, %d losses, %d with forced answers%n", positions, wins, losses, forced);
     }
 
     // ------------------------------------------------------------------ 5. speed

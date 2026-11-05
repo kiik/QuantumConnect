@@ -332,8 +332,8 @@ public final class Arena {
      * SerenaBot's tuning fields from a spec's {@code #name=value,...}: {@code bomb} (bombBonusPercent),
      * {@code bombLine} (bombLineQuarks), {@code forcing} (forcingPlies), {@code reach} (dropReach),
      * {@code variety} (varietyNoise), {@code varietyQuarks}, {@code refined} (refinedSearch, 0 or 1:
-     * 0 plays the plain alpha-beta search), {@code lmr} (lateMoveReductions, 0 or 1);
-     * for ThreatBot also {@code threat} (threatPlies).
+     * 0 plays the plain alpha-beta search), {@code lmr} (lateMoveReductions, 0 or 1),
+     * {@code bombHorizon} (0 to 3); for ThreatBot also {@code threat} (threatPlies).
      */
     static void applySettings(SerenaBot bot, String settings) {
         for (String setting : settings.split(",")) {
@@ -346,6 +346,7 @@ public final class Arena {
                 case "reach" -> bot.dropReach = value;
                 case "variety" -> bot.varietyNoise = value;
                 case "varietyQuarks" -> bot.varietyQuarks = value;
+                case "bombHorizon" -> bot.bombHorizon = value;
                 case "threat" -> ((ThreatBot) bot).threatPlies = value;
                 case "refined" -> bot.refinedSearch = value != 0;
                 case "lmr" -> bot.lateMoveReductions = value != 0;
