@@ -331,8 +331,9 @@ public final class Arena {
     /**
      * SerenaBot's tuning fields from a spec's {@code #name=value,...}: {@code bomb} (bombBonusPercent),
      * {@code bombLine} (bombLineQuarks), {@code forcing} (forcingPlies), {@code reach} (dropReach),
-     * {@code variety} (varietyNoise), {@code varietyQuarks};
-     * for ThreatBot also {@code threat} (threatPlies) and {@code refined} (refinedSearch, 0 or 1).
+     * {@code variety} (varietyNoise), {@code varietyQuarks}, {@code refined} (refinedSearch, 0 or 1:
+     * 0 plays the plain alpha-beta search), {@code lmr} (lateMoveReductions, 0 or 1);
+     * for ThreatBot also {@code threat} (threatPlies).
      */
     static void applySettings(SerenaBot bot, String settings) {
         for (String setting : settings.split(",")) {
@@ -346,7 +347,8 @@ public final class Arena {
                 case "variety" -> bot.varietyNoise = value;
                 case "varietyQuarks" -> bot.varietyQuarks = value;
                 case "threat" -> ((ThreatBot) bot).threatPlies = value;
-                case "refined" -> ((ThreatBot) bot).refinedSearch = value != 0;
+                case "refined" -> bot.refinedSearch = value != 0;
+                case "lmr" -> bot.lateMoveReductions = value != 0;
                 default -> throw new IllegalArgumentException("unknown SerenaBot setting " + name);
             }
         }

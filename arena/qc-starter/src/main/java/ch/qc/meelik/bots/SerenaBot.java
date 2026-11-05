@@ -50,6 +50,14 @@ import java.util.Random;
  * forcing moves ({@link #forcingPlies}): drops that make a threat to complete at once, and the blocks
  * they force. So a threat, block, double-threat combination is seen however deep it starts.
  *
+ * <p>The refinements of game engines make the search reach about one ply further in the same time
+ * ({@link #refinedSearch}): principal variation search (after the first move of a node, the others
+ * only ask "is it better?" with a null window, and are searched in full only when it is), late move
+ * reductions (quiet moves late in the order are searched shallower first, in full only if they then
+ * look better), and two killer moves per ply. A root move found better in an unfinished iteration is
+ * played. Bombs keep their place by history: ordered after the drops, they cost twice the nodes, as
+ * a blast is often the move that refutes.
+ *
  * <h2>The clock</h2>
  * The arena skips a turn answered after its limit ({@link #budgetNanos} keeps to about 80% of it),
  * and its machine stalls where a laptop does not: a cold JVM on the first turns, a shared CPU later. So the search keeps well inside the limit, thinks
@@ -255,6 +263,24 @@ public class SerenaBot implements Algorithm {
      * bomb is kept for defence and for strokes, not spent on small gains.
      */
     public int bombLineQuarks = 0;
+    /**
+     * The search refinements of {@link #negamax} (on by default): principal variation search, late
+     * move reductions ({@link #lateMoveReductions}), killer moves, and the previous iteration's best
+     * move first at the root, played if an unfinished iteration finds none better. Off: plain
+     * alpha-beta with the table and history ordering.
+     */
+    public boolean refinedSearch = true;
+    /** Late move reductions, part of the refined search; off, the refined search reduces nothing. */
+    public boolean lateMoveReductions = true;
+    /** Two killer moves per ply: drops that caused a cut-off at that ply in a sibling position. */
+    final int[][] killerActions = new int[MAX_PLY][2];
+    /** Scratch space for {@link #orderedLegalActions}: the sort priority of each action in the list. */
+    long[] actionPriority;
+    /**
+     * The best root action of the iteration under way, once one has been searched in full, and the
+     * best of the last finished iteration, which the refined search tries first at the root.
+     */
+    int rootBestAction, previousBestAction = NO_ACTION;
     long deadlineNanos;
     public long nodesSearched;
     boolean outOfTime;
@@ -342,6 +368,7 @@ public class SerenaBot implements Algorithm {
             undoStates[ply] = null;
         }
         historyScore = new int[2][2 * columns];
+        actionPriority = new long[2 * columns];
         Arrays.fill(tableKey, 0);
     }
 
@@ -835,13 +862,22 @@ public class SerenaBot implements Algorithm {
         nodesSearched = 0;
         depthReached = 0;
         for (int[] scores : historyScore) for (int a = 0; a < scores.length; a++) scores[a] >>= 2; // age old knowledge
+        for (int[] killers : killerActions) killers[0] = killers[1] = NO_ACTION;
 
         int best = firstLegalDrop();
+        previousBestAction = NO_ACTION;
         for (int depth = 1; depth <= maxDepth; depth++) {
+            rootBestAction = NO_ACTION;
             int score = negamax(depth, -WIN - 1, WIN + 1, 0);
-            if (outOfTime) break;
+            if (outOfTime) {
+                // The unfinished iteration searched the previous best first: a root move that beat it in full is better still.
+                if (refinedSearch && rootBestAction != NO_ACTION) best = rootBestAction;
+                break;
+            }
             int fromTable = tableAction(positionKey());
-            if (fromTable != NO_ACTION) best = fromTable;
+            if (refinedSearch && rootBestAction != NO_ACTION) best = rootBestAction; // even if the root's table slot was taken since
+            else if (fromTable != NO_ACTION) best = fromTable;
+            previousBestAction = best;
             lastScore = score;
             depthReached = depth;
             if (Math.abs(score) > WIN - MAX_PLY) break; // a forced result: deeper search can't change it
@@ -1117,30 +1153,44 @@ public class SerenaBot implements Algorithm {
             }
         }
 
+        if (ply == 0 && refinedSearch && previousBestAction != NO_ACTION) tableAction = previousBestAction;
         int[] actions = actionLists[ply];
-        int actionCount = orderedLegalActions(actions, tableAction, forced);
+        int actionCount = orderedLegalActions(actions, tableAction, forced, ply);
         int originalAlpha = alpha, bestScore = -WIN - 1, bestAction = NO_ACTION;
         for (int i = 0; i < actionCount; i++) {
-            int action = actions[i], score;
-            if (isBomb(action)) { // a blast rearranges several columns: save the whole state
+            int action = actions[i], score, column = columnOf(action), previousCooldown = 0;
+            boolean bomb = isBomb(action);
+            int reduction = refinedSearch ? lateMoveReduction(i, depth, action, tableAction, forced, ply) : 0;
+            if (bomb) { // a blast rearranges several columns: save the whole state
                 if (undoStates[ply] == null) undoStates[ply] = new int[stateSize];
                 saveState(undoStates[ply]);
                 play(action);
-                score = -negamax(depth - 1, -beta, -alpha, ply + 1);
-                restoreState(undoStates[ply]);
-            } else {
-                int column = columnOf(action), previousCooldown = drop(column);
-                score = -negamax(depth - 1, -beta, -alpha, ply + 1);
-                undoDrop(column, previousCooldown);
+            } else previousCooldown = drop(column);
+
+            if (i == 0 || !refinedSearch) score = -negamax(depth - 1, -beta, -alpha, ply + 1);
+            else { // principal variation search: is this move better than the best so far?
+                score = -negamax(depth - 1 - reduction, -alpha - 1, -alpha, ply + 1);
+                if (score > alpha && reduction > 0) score = -negamax(depth - 1, -alpha - 1, -alpha, ply + 1);
+                if (score > alpha && score < beta) score = -negamax(depth - 1, -beta, -alpha, ply + 1); // yes: by how much?
             }
+
+            if (bomb) restoreState(undoStates[ply]);
+            else undoDrop(column, previousCooldown);
             if (outOfTime) return 0;
             if (score > bestScore) {
                 bestScore = score;
                 bestAction = action;
             }
-            if (score > alpha) alpha = score;
+            if (score > alpha) {
+                alpha = score;
+                if (ply == 0) rootBestAction = action;
+            }
             if (alpha >= beta) {
                 historyScore[mover][action] += depth * depth;
+                if (!bomb && killerActions[ply][0] != action) {
+                    killerActions[ply][1] = killerActions[ply][0];
+                    killerActions[ply][0] = action;
+                }
                 break;
             }
         }
@@ -1207,8 +1257,28 @@ public class SerenaBot implements Algorithm {
     /** {@link #orderedLegalActions}'s {@code forced}: any drop may be played, none (bombs only), or only the column given. */
     static final int NOT_FORCED = -1, BOMBS_ONLY = -2;
 
-    /** Fills {@code actions} with the legal actions, best guess first, and returns how many there are. */
-    int orderedLegalActions(int[] actions, int preferred, int forced) {
+    /** Moves before this one in a node's order are searched in full; later quiet moves may be reduced. */
+    static final int FIRST_LATE_MOVE = 3, FIRST_VERY_LATE_MOVE = 8;
+
+    /**
+     * Late move reductions: with the best guesses first, a move far down the order rarely turns out
+     * best, so it is first searched one ply shallower, two if very late, and in full only if it then
+     * looks better than the best so far. Not reduced: forced answers, the table's move, the killers,
+     * and drops that make a threat to complete at once. Returns the plies to reduce by.
+     */
+    int lateMoveReduction(int index, int depth, int action, int tableAction, int forced, int ply) {
+        if (!lateMoveReductions || index < FIRST_LATE_MOVE || depth < 3 || forced != NOT_FORCED || action == tableAction) return 0;
+        if (action == killerActions[ply][0] || action == killerActions[ply][1]) return 0;
+        if (!isBomb(action) && makesThreat(sideToMove, columnOf(action))) return 0;
+        return index >= FIRST_VERY_LATE_MOVE && depth >= 4 ? 2 : 1;
+    }
+
+    /**
+     * Fills {@code actions} with the legal actions, best guess first, and returns how many there are.
+     * The guesses: the table's move, then (refined search) this ply's killer moves, then the others
+     * by their history, drops and bombs alike: a blast is often the move that refutes.
+     */
+    int orderedLegalActions(int[] actions, int preferred, int forced, int ply) {
         boolean mayBomb = bombCooldown[sideToMove] == 0;
         markColumnsNearQuarks();
         int count = 0;
@@ -1225,13 +1295,24 @@ public class SerenaBot implements Algorithm {
             }
         }
         int[] history = historyScore[sideToMove];
+        int firstKiller = refinedSearch ? killerActions[ply][0] : NO_ACTION, secondKiller = refinedSearch ? killerActions[ply][1] : NO_ACTION;
+        for (int i = 0; i < count; i++) {
+            int action = actions[i];
+            if (action == preferred) actionPriority[i] = Long.MAX_VALUE;
+            else if (action == firstKiller) actionPriority[i] = Long.MAX_VALUE - 1;
+            else if (action == secondKiller) actionPriority[i] = Long.MAX_VALUE - 2;
+            else actionPriority[i] = history[action];
+        }
         for (int i = 1; i < count; i++) { // insertion sort: stable, so ties stay centre-out
-            int action = actions[i], priority = action == preferred ? Integer.MAX_VALUE : history[action], j = i - 1;
-            while (j >= 0 && (actions[j] == preferred ? Integer.MAX_VALUE : history[actions[j]]) < priority) {
+            int action = actions[i], j = i - 1;
+            long priority = actionPriority[i];
+            while (j >= 0 && actionPriority[j] < priority) {
                 actions[j + 1] = actions[j];
+                actionPriority[j + 1] = actionPriority[j];
                 j--;
             }
             actions[j + 1] = action;
+            actionPriority[j + 1] = priority;
         }
         return count;
     }
