@@ -55,7 +55,7 @@ the drop.
    game with the JAR loaded on its own.
 3. Add it to `league.txt` by short name (`<name>` resolves to `ch.qc.meelik.bots.<Name>Bot`), then
    run `./qc.sh stats league.txt 20` (ratings with error bars against everything in the field,
-   including teammates' JARs and old snapshots in `Bots/`) or `./qc.sh arena <name> quark 40`.
+   including teammates' JARs and old snapshots in `jars/`) or `./qc.sh arena <name> quark 40`.
    Before changing a bot that is in the field, `./qc.sh snapshot <Name>Bot` keeps its current
    version playing as a JAR.
 4. Merge when `./qc.sh test` passes and the league shows an improvement over QuarkBot. A method

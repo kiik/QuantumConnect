@@ -32,5 +32,5 @@
 <path class="a" d="M670,74 V158"/><path class="a" d="M590,187 H552"/><path class="a" d="M360,187 H322"/>
 <path class="a" d="M110,187 H90 V76"/>
 <text class="s" x="455" y="236">rows in revisions.tsv, gates.tsv</text>
-<text class="s" x="215" y="236">uploads.jsonl, Bots/ snapshot</text>
+<text class="s" x="215" y="236">uploads.jsonl, jars/ snapshot</text>
 </svg>

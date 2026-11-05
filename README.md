@@ -1,6 +1,6 @@
 # QuantumConnect
 
-Meelik's try. Rules sources: the [info-session slides](<Data/QuantumConnect - Particle Collision Challenge v2.pdf>)
+Meelik's try. Rules sources: the [info-session slides](data/quantumconnect-particle-collision-challenge-v2.pdf)
 and the engine itself (`qc-starter/libs/core-2.0-SNAPSHOT.jar`), whose `Experiment` decides every
 detail the slides leave open. Where they differ, this README follows the engine.
 
@@ -142,8 +142,8 @@ the table and the commands below are relative to it: `cd arena` first, or call `
 | [qc-trainer/src/main/resources/replay.html](arena/qc-trainer/src/main/resources/replay.html) | The replay viewer template. `./qc.sh replay` and `./qc.sh league` write the recorded games into it. |
 | [training.txt](arena/training.txt) | The model recipes. `./qc.sh train` trains every recipe that isn't in `params/` yet. |
 | [params/](arena/params/) | The trained models: evaluation weights, one file per model, versioned, with the training log beside each. Each file starts with `#` lines saying how it was made. |
-| [league.txt](arena/league.txt) | The entrants of the local league and of `./qc.sh stats`. The line `params/` enters every model, the line `Bots/` every bot JAR in it. |
-| [Bots/](arena/Bots/) | Bot JARs from outside the build: teammates' bots (also when mailed as `.jar.zip`) and snapshots of our own older versions (`./qc.sh snapshot`). |
+| [league.txt](arena/league.txt) | The entrants of the local league and of `./qc.sh stats`. The line `params/` enters every model, the line `jars/` every bot JAR in it. |
+| [jars/](arena/jars/) | Bot JARs from outside the build: teammates' bots (a `.jar.zip` from mail is renamed to `.jar`) and snapshots of our own older versions (`./qc.sh snapshot`). |
 | [results/league.md](arena/results/league.md) | Latest league standings, committed so everyone sees them. `results/stats.md` is the same for `./qc.sh stats`. |
 | [qc.sh](arena/qc.sh) | Builds the bots and runs the tools. Needs a JDK 25: `JAVA_HOME`, then `javac` on PATH, then `~/.local/share/jdks/jdk-*`. |
 
@@ -180,9 +180,9 @@ the table and the commands below are relative to it: `cd arena` first, or call `
 ./qc.sh stats league.txt 10          # many games: tops every pairing up to 10, logged in out/stats/games.tsv
                                      #   -> ratings with error bars in results/stats.md, charts in out/stats.html
 ./qc.sh stats league.txt 10 8 4      #   the same with 8 threads and 4 random opening plies (always distinct games)
-./qc.sh snapshot QuarkBot            # freeze the working tree's QuarkBot as Bots/QuarkBot-<commit>[-wip<time>].jar
+./qc.sh snapshot QuarkBot            # freeze the working tree's QuarkBot as jars/QuarkBot-<commit>[-wip<time>].jar
 ./qc.sh snapshot QuarkBot 239fe55    #   or the one from any commit, to keep old versions in the field
-./qc.sh tank                         # SerenaBot revision: archive, learn, build, check, gate -> Bots/Tank-DD-HHMM.jar
+./qc.sh tank                         # SerenaBot revision: archive, learn, build, check, gate -> jars/Tank-DD-HHMM.jar
 ./qc.sh tune 150 4                   # evolve the scoring weights once -> out/tune-params.txt
 ./qc.sh census 6x7x4-nobomb 10       # distinct positions per ply; checked against the known Connect-4 counts
 ./qc.sh tree 5,6,5 2 6 3             # board, per-column scores, best line, game tree -> out/tree.svg
@@ -235,7 +235,7 @@ tool keeps playing and pools everything it ever played.
   and a new bot plays only its own pairings. Ctrl-C keeps every finished game.
 - **Bots are logged by fingerprint,** a hash of their class, JAR or params file and spec options.
   Change QuarkBot's code and its old games stop counting for it; they stay in the log. To keep a
-  version in the field, `./qc.sh snapshot QuarkBot` first. That puts a JAR in `Bots/`, which
+  version in the field, `./qc.sh snapshot QuarkBot` first. That puts a JAR in `jars/`, which
   `league.txt` enters. `./qc.sh snapshot QuarkBot <commit>` builds the bot from any commit, also
   from the older `src/bot/` layout, against today's engine. Snapshots are for local games, not for
   upload: they don't bundle the engine.
@@ -421,3 +421,9 @@ The slides left these open. The engine's `Experiment` (core-2.0) answers them, a
 
 Still open: whether the server treats a full column as a skipped turn, as the engine does, or as
 a loss, as the starter README says, and whether it enforces a 30 s match limit.
+
+## License
+
+An educational project. Our code is under the [MIT License](LICENSE). The starter project, the
+engine library, the challenge slides, the archived site data and other teams' JARs remain their
+owners'; the LICENSE file lists them.

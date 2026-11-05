@@ -29,7 +29,7 @@ class UploadTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         root = Path(self.temp.name)
         self.arena = root / "arena"
-        (self.arena / "Bots").mkdir(parents=True)
+        (self.arena / "jars").mkdir(parents=True)
         (self.arena / "params" / "serena").mkdir(parents=True)
         self.environment = mock.patch.dict(os.environ, {"QC_ARENA": str(self.arena),
                                                         "QC_ARCHIVE": str(self.arena / "archive")})
@@ -63,7 +63,7 @@ class UploadTest(unittest.TestCase):
             tsv.write_text("# revisions of SerenaBot, written by ./qc.sh tank\n" + HEADER)
         with tsv.open("a") as rows:
             rows.write(f"{name}\tabc123\t40\t{games}\t{score}\t30\t900\t60\n")
-        (self.arena / "Bots" / f"{name}.jar").write_bytes(b"jar " + name.encode())
+        (self.arena / "jars" / f"{name}.jar").write_bytes(b"jar " + name.encode())
 
     # -- guarded upload --------------------------------------------------------------------------
 
@@ -84,7 +84,7 @@ class UploadTest(unittest.TestCase):
         jar.write_bytes(b"jar")
         result = upload.guarded_upload(None, jar, "Tank-04-1800", "Tank-04-1800", "mcp")
         self.assertEqual(self.uploaded, ["Tank-04-1800"])
-        self.assertEqual((self.arena / "Bots" / "Tank-04-1800.jar").read_bytes(), b"jar")
+        self.assertEqual((self.arena / "jars" / "Tank-04-1800.jar").read_bytes(), b"jar")
         logged = upload.past_uploads()
         self.assertEqual([(u["name"], u["source"]) for u in logged], [("Tank-04-1800", "mcp")])
         self.assertEqual(result["archived_matches"], 12)

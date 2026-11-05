@@ -7,7 +7,7 @@ the same guards:
     check     `./qc.sh check <jar>` passes (prints "ok"): the arena's own rules on the JAR
     archive   our matches and the top three's are archived before they are deleted
     log       one JSON line per upload in arena/archive/uploads.jsonl
-    snapshot  the JAR is kept as arena/Bots/<name>.jar, to replay against later
+    snapshot  the JAR is kept as arena/jars/<name>.jar, to replay against later
 
 The autopilot reads the leaderboard and arena/params/serena/revisions.tsv (written by
 `./qc.sh tank`). When we are not first, it proposes the newest revision that won at least 60% of
@@ -88,7 +88,7 @@ def guarded_upload(site: client.Site, jar: Path, name: str, confirm: str, source
         raise client.SiteError(f"refused: ./qc.sh check failed:\n{check_output}")
     archived = archive.archive(site, ["ours", "top:3"])
     result = client.upload_bot(site, name, jar)
-    snapshot = arena_root() / "Bots" / f"{name}.jar"
+    snapshot = arena_root() / "jars" / f"{name}.jar"
     snapshot.parent.mkdir(parents=True, exist_ok=True)
     if jar.resolve() != snapshot.resolve():
         shutil.copyfile(jar, snapshot)
@@ -129,9 +129,9 @@ def read_revisions() -> list[dict]:
 
 
 def best_candidate(revisions: list[dict], uploaded: set[str]) -> dict | None:
-    """The newest revision that passed the gate, is not uploaded yet, and has its JAR in Bots/."""
+    """The newest revision that passed the gate, is not uploaded yet, and has its JAR in jars/."""
     for row in reversed(revisions):
-        jar = arena_root() / "Bots" / f"{row['name']}.jar"
+        jar = arena_root() / "jars" / f"{row['name']}.jar"
         if (row["gate_games"] >= GATE_MIN_GAMES and row["gate_score"] >= GATE_MIN_SCORE
                 and row["name"] not in uploaded and jar.is_file()):
             return {**row, "jar": str(jar)}

@@ -26,7 +26,7 @@ const TASKS = [
 - Check also prints "size: class=..KB book=.. params=.. heap=..MB jar=..KB" (heap of new SerenaBot(15,30) after one
   move); fail above 60 MB.
 - tank: qcsite archive; archive-losses for 'Tank-*' 'SerenaBot-*' 'QuarkBot-*' + top-3 names -> out/serena/losses.txt;
-  learn; build/test/check; short 15x30 gate vs the newest Bots/Tank-*.jar; copy to Bots/Tank-DD-HHMM.jar; append
+  learn; build/test/check; short 15x30 gate vs the newest jars/Tank-*.jar; copy to jars/Tank-DD-HHMM.jar; append
   arena/params/serena/revisions.tsv (name, git_rev, book_entries, gate_games, gate_score, class_kb, jar_kb, heap_mb);
   PRINT the upload command, don't run it. Add 'Tank-*' to qcsite's default loser patterns.`,
   },
@@ -34,7 +34,7 @@ const TASKS = [
     key: 'mcp-upload',
     prompt: `Task: upload via MCP + opt-in autopilot (tools/qc-site/qcsite/).
 - MCP tool upload_bot(jar_path, name, confirm): refuse unless name is Tank-DD-HHMM, confirm == name, ./qc.sh check
-  passes; archive first; log arena/archive/uploads.jsonl; snapshot to arena/Bots/<name>.jar.
+  passes; archive first; log arena/archive/uploads.jsonl; snapshot to arena/jars/<name>.jar.
 - qcsite autopilot: dry run by default; proposes an upload when our rank fell (or we're not first) and a candidate in
   arena/params/serena/revisions.tsv (columns as above) scored >= 60% over >= 20 gate games. Uploads only with --yes or
   QC_AUTOPILOT=1, max once per 30 min, not while the last upload's games are incomplete.

@@ -107,7 +107,7 @@ def upload_bot(jar_path: str, name: str, confirm: str) -> dict:
     """Uploads a bot JAR to the tournament: it REPLACES our ranked bot and deletes its matches.
     Only on the user's explicit go. Refused unless name is a Tank revision (Tank-DD-HHMM), confirm
     repeats name exactly, and ./qc.sh check passes. Archives our matches first, logs the upload in
-    arena/archive/uploads.jsonl and keeps the JAR as arena/Bots/<name>.jar."""
+    arena/archive/uploads.jsonl and keeps the JAR as arena/jars/<name>.jar."""
     return upload.guarded_upload(site(), Path(jar_path), name, confirm, "mcp")
 
 

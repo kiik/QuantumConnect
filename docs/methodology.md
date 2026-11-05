@@ -41,12 +41,12 @@ currently plays a 15×30 field, and the bot rebuilds its model to whatever size 
    without searching.
 4. **Tank revision.** Build, test and `./qc.sh check`, which scans the JAR for forbidden APIs and
    prints its sizes.
-5. **Gate.** The candidate plays the newest `Bots/Tank-*.jar` on 15×30 (10 games by default). The
+5. **Gate.** The candidate plays the newest `jars/Tank-*.jar` on 15×30 (10 games by default). The
    result is added to `arena/results/gates.tsv`, and the revision is added to
    `arena/params/serena/revisions.tsv`.
 6. **Upload.** The loop prints the upload command but never runs it. The MCP tool `upload_bot` uploads
    only a `Tank-DD-HHMM` name that is confirmed by repeating it exactly and that passes the check. It
-   archives first, then logs the upload to `arena/archive/uploads.jsonl` and keeps a copy in `Bots/`.
+   archives first, then logs the upload to `arena/archive/uploads.jsonl` and keeps a copy in `jars/`.
    `qcsite autopilot` proposes an upload only when we are not first. It picks a revision that scored
    at least 60% over at least 20 gate games, and it uploads only when given `--yes`.
 
