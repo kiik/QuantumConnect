@@ -47,6 +47,19 @@ import java.util.Random;
  * forcing moves ({@link #forcingPlies}): drops that make a threat to complete at once, and the blocks
  * they force. So a threat, block, double-threat combination is seen however deep it starts.
  *
+ * <h2>The threat-space search (on by default)</h2>
+ * The forcing moves above are drops only, and a bomb is searched only where the search is full
+ * width; most of our lost games end with the opponent's bomb. The threat-space search
+ * ({@link #threatSpaceSearch}, "victory by continuous forcing") proves wins: the attacker plays only
+ * moves that complete a line or make a threat, drops and bombs, and quiet drops after which its bomb
+ * would leave a line (a bomb threat, {@link #bombThreats}); the defender answers each with every
+ * defence it has: the drops that stop every immediate win and, with its bomb ready, every blast.
+ * The attacker wins when a line stands after its move, or when the defender has no defence. Before the
+ * alpha-beta search, a proven win of ours is played at once. After each depth the alpha-beta search
+ * completes, its best move is played on the board and the opponent's proven win looked for; a
+ * refuted move is left out and the depth searched again. The proofs have a node limit and a
+ * deadline, a share of the turn's budget ({@link #threatSharePercent}), so they never risk the clock.
+ *
  * <h2>The clock</h2>
  * The arena skips a turn answered after 100 ms, and its machine stalls where a laptop does not: a
  * cold JVM on the first turns, a shared CPU later. So the search keeps well inside the limit, thinks
@@ -298,6 +311,18 @@ public class SerenaBot implements Algorithm {
         }
         historyScore = new int[2][2 * columns];
         Arrays.fill(tableKey, 0);
+
+        for (int ply = 0; ply < MAX_PLY; ply++) {
+            proofActionLists[ply] = new int[2 * columns];
+            proofBombLists[ply] = new int[columns];
+            proofUndoStates[ply] = null;
+        }
+        checkedMoveUndo = null;
+        bombThreatColumns = new boolean[columns];
+        blastColumns = new int[3 * rows];
+        rootExcluded = new boolean[2 * columns];
+        rootChecked = new boolean[2 * columns];
+        Arrays.fill(proofMemoKey, 0);
     }
 
     /** The cells of the line starting at (column, height) in a direction, or null if it leaves the board. */
@@ -777,23 +802,67 @@ public class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ choosing an action
 
-    /** The best action for the side to move, by iterative deepening within the time budget. */
+    /**
+     * The best action for the side to move, by iterative deepening within the time budget. With the
+     * threat-space search on, a proven win is played at once, and after each completed depth the best
+     * move is checked against the opponent's proven wins; a refuted one is left out and the depth
+     * searched again. If time runs out before that search ends, the best move it finished is played.
+     */
     public int chooseAction(long budget) {
-        deadlineNanos = System.nanoTime() + budget;
+        long started = System.nanoTime();
+        deadlineNanos = started + budget;
         outOfTime = false;
         nodesSearched = 0;
         depthReached = 0;
+        threatNanosUsed = offenceNanosUsed = 0;
+        refutedMoves = checkedMoves = abortedProofs = 0;
         for (int[] scores : historyScore) for (int a = 0; a < scores.length; a++) scores[a] >>= 2; // age old knowledge
 
-        int best = firstLegalDrop();
+        threatAllowanceNanos = threatSpaceSearch ? budget * threatSharePercent / 100 : 0;
+        if (threatAllowanceNanos > 0) {
+            int provenWin = provenThreatWin(started + threatAllowanceNanos / 3);
+            threatNanosUsed = offenceNanosUsed = System.nanoTime() - started;
+            if (proofAborted) abortedProofs++;
+            if (provenWin != NO_ACTION) {
+                lastScore = WIN - proofLength;
+                depthReached = proofLength;
+                return provenWin;
+            }
+        }
+
+        Arrays.fill(rootExcluded, false);
+        Arrays.fill(rootChecked, false);
+        rootExclusions = 0;
+        int best = firstLegalDrop(), lastUnrefuted = NO_ACTION;
+        boolean bestRefuted = false;
         for (int depth = 1; depth <= maxDepth; depth++) {
+            rootBestAction = NO_ACTION;
             int score = negamax(depth, -WIN - 1, WIN + 1, 0);
             if (outOfTime) break;
-            int fromTable = tableAction(positionKey());
-            if (fromTable != NO_ACTION) best = fromTable;
+            int found = rootExclusions == 0 ? tableAction(positionKey()) : rootBestAction;
+            if (rootExclusions > 0 && (found == NO_ACTION || score < MAX_PLY - WIN)) { // every move left loses: all again, unchecked
+                Arrays.fill(rootExcluded, false);
+                rootExclusions = 0;
+                threatAllowanceNanos = 0;
+                bestRefuted = false;
+                depth--;
+                continue;
+            }
+            if (found != NO_ACTION) best = found;
+            bestRefuted = false;
             lastScore = score;
             depthReached = depth;
             if (Math.abs(score) > WIN - MAX_PLY) break; // a forced result: deeper search can't change it
+            if (threatAllowanceNanos > 0 && refutedByThreats(best)) {
+                bestRefuted = true;
+                depth--; // this depth again, without the refuted move
+                continue;
+            }
+            lastUnrefuted = best;
+        }
+        if (bestRefuted) { // the search without the refuted move did not finish: its best so far, or an earlier one
+            if (rootBestAction != NO_ACTION) best = rootBestAction;
+            else if (lastUnrefuted != NO_ACTION) best = lastUnrefuted;
         }
         return best;
     }
@@ -1052,12 +1121,14 @@ public class SerenaBot implements Algorithm {
         if (ply == MAX_PLY - 1) return evaluate();
         if (depth <= 0) return forcingLine(depth, alpha, beta, ply, forced);
 
+        // With root moves refuted, the root's table entry describes the whole move list: neither use nor store it.
+        boolean excluding = ply == 0 && rootExclusions > 0;
         long key = positionKey();
         int slot = tableSlot(key), tableAction = NO_ACTION;
         if (tableKey[slot] == key) {
             long entry = tableEntry[slot];
             tableAction = entryAction(entry);
-            if (entryDepth(entry) >= depth) {
+            if (entryDepth(entry) >= depth && !excluding) {
                 int score = scoreFromTable(entryScore(entry), ply), bound = entryBound(entry);
                 if (bound == EXACT || bound == LOWER_BOUND && score >= beta || bound == UPPER_BOUND && score <= alpha) return score;
             }
@@ -1068,6 +1139,7 @@ public class SerenaBot implements Algorithm {
         int originalAlpha = alpha, bestScore = -WIN - 1, bestAction = NO_ACTION;
         for (int i = 0; i < actionCount; i++) {
             int action = actions[i], score;
+            if (excluding && rootExcluded[action]) continue;
             if (isBomb(action)) { // a blast rearranges several columns: save the whole state
                 if (undoStates[ply] == null) undoStates[ply] = new int[stateSize];
                 saveState(undoStates[ply]);
@@ -1083,6 +1155,7 @@ public class SerenaBot implements Algorithm {
             if (score > bestScore) {
                 bestScore = score;
                 bestAction = action;
+                if (ply == 0) rootBestAction = action;
             }
             if (score > alpha) alpha = score;
             if (alpha >= beta) {
@@ -1091,6 +1164,7 @@ public class SerenaBot implements Algorithm {
             }
         }
 
+        if (excluding) return bestScore;
         int bound = bestScore <= originalAlpha ? UPPER_BOUND : bestScore >= beta ? LOWER_BOUND : EXACT;
         tableKey[slot] = key;
         tableEntry[slot] = packEntry(scoreToTable(bestScore, ply), depth, bound, bestAction);
@@ -1221,6 +1295,361 @@ public class SerenaBot implements Algorithm {
             }
         }
         return false;
+    }
+
+    // ------------------------------------------------------------------ threat-space search
+
+    /**
+     * Whether {@link #chooseAction} runs the threat-space search: a proven win of ours is played at
+     * once, and each move the alpha-beta search settles on is checked for a proven win it hands the
+     * opponent, bombs included; a refuted move is left out and the depth searched again.
+     */
+    public boolean threatSpaceSearch = true;
+    /** Percent of a move's budget the threat-space search may take, all its proofs together. */
+    public int threatSharePercent = 20;
+    /** Longest proof looked for, in plies, attacker and defender together. */
+    public int threatSearchPlies = 13;
+    /** Positions one proof may visit, besides its deadline. */
+    public int proofNodeLimit = 200_000;
+    /**
+     * Whether a quiet drop after which the attacker's bomb would leave a line counts as a threat (a
+     * bomb threat). Most of our lost games end with such a bomb of the opponent.
+     */
+    public boolean bombThreats = true;
+    /**
+     * For the reports, per move: time spent in the threat-space search, the part of it spent on our
+     * own proofs, moves it refuted, moves it checked, and proofs cut short by their node limit or deadline.
+     */
+    public long threatNanosUsed, offenceNanosUsed;
+    public int refutedMoves, checkedMoves, abortedProofs;
+    /** Length in plies of the last proof found. */
+    public int proofLength;
+
+    long threatAllowanceNanos, proofDeadlineNanos;
+    int proofNodes;
+    /** Set when a proof ran out of nodes or time: everything it then returns means "not proven". */
+    boolean proofAborted;
+    /** The attacking moves of each ply of a proof, and the state saved under each ply's bomb. */
+    final int[][] proofActionLists = new int[MAX_PLY][], proofUndoStates = new int[MAX_PLY][];
+    /** The attacker's winning blasts found at each ply of a proof. */
+    final int[][] proofBombLists = new int[MAX_PLY][];
+    /** Scratch for {@link #forcingAttacks}: columns where a drop makes a bomb threat. */
+    boolean[] bombThreatColumns;
+    /** Scratch for {@link #blastLeavesLine}: the three columns around a blast as it leaves them, the first one's index, their heights. */
+    int[] blastColumns;
+    int blastLeft;
+    final int[] blastHeight = new int[3];
+    /** The state saved under a root move while it is checked. */
+    int[] checkedMoveUndo;
+    /**
+     * Positions, defender to move, from which the attacker has no win within the stored number of
+     * plies. Such a fact belongs to the position, so the memory is kept from move to move.
+     */
+    static final int PROOF_MEMO_BITS = 14;
+    final long[] proofMemoKey = new long[1 << PROOF_MEMO_BITS];
+    final byte[] proofMemoPlies = new byte[1 << PROOF_MEMO_BITS];
+    /** Root moves refuted this turn (left out of the search), and root moves checked already. */
+    boolean[] rootExcluded, rootChecked;
+    int rootExclusions;
+    /** The best root move of the running iteration, among the moves searched to the end so far. */
+    int rootBestAction = NO_ACTION;
+
+    /**
+     * The first move of a threat-space win for the side to move, proven before the deadline, or
+     * NO_ACTION. The attacker plays only forcing moves ({@link #forcingAttacks}); the defender answers
+     * each with every defence it has. Shortest proofs are looked for first.
+     */
+    int provenThreatWin(long deadline) {
+        int attacker = sideToMove;
+        proofDeadlineNanos = deadline;
+        proofNodes = 0;
+        proofAborted = false;
+        int[] attacks = proofActionLists[0];
+        int attackCount = forcingAttacks(attacker, attacks, 0);
+        int longest = Math.min(threatSearchPlies, MAX_PLY - 4);
+        for (int plies = 1; plies <= longest && attackCount > 0; plies += 2)
+            for (int i = 0; i < attackCount; i++) {
+                if (attackWins(attacks[i], attacker, plies, 0)) {
+                    proofLength = plies;
+                    return attacks[i];
+                }
+                if (proofAborted) return NO_ACTION;
+            }
+        return NO_ACTION;
+    }
+
+    /**
+     * The attacker's forcing moves, the attacker to move: a drop or a blast that leaves a line (then
+     * the only move listed), drops that make a threat, blasts after which the attacker has a threat,
+     * and with {@link #bombThreats}, quiet drops after which a blast of the attacker would leave a
+     * line. Leaving out other moves only makes fewer proofs.
+     */
+    int forcingAttacks(int attacker, int[] actions, int ply) {
+        for (int column : columnsCentreOut)
+            if (completesLine(attacker, column)) {
+                actions[0] = action(column, false);
+                return 1;
+            }
+        int count = 0;
+        for (int column : columnsCentreOut) if (makesThreat(attacker, column)) actions[count++] = action(column, false);
+        if (bombCooldown[attacker] > 0) return count;
+
+        // Blasts. Without falling quarks a blast only removes quarks, which makes a threat only where it
+        // removes the one opponent quark of a line holding five of the attacker's.
+        Arrays.fill(bombThreatColumns, false);
+        int[] saved = proofUndoState(ply);
+        saveState(saved);
+        for (int column : columnsCentreOut) {
+            boolean dropsQuarks = blastDropsQuarks(column);
+            if (columnHeight[column] == rows || !dropsQuarks && !blastOpensFive(attacker, column)) continue;
+            if (proofOutOfBudget()) return count;
+            play(action(column, true));
+            boolean line = hasLine(), forcing = false;
+            if (!line)
+                for (int other = 0; other < columns; other++) {
+                    if (!completesLine(attacker, other)) continue;
+                    forcing = true;
+                    // A threat outside the blast's columns: a drop there now makes this blast leave a line.
+                    if (bombThreats && dropsQuarks && (other < column - 1 || other > column + 1)) bombThreatColumns[other] = true;
+                }
+            restoreState(saved);
+            if (line) {
+                actions[0] = action(column, true);
+                return 1;
+            }
+            if (forcing) actions[count++] = action(column, true);
+        }
+        if (!bombThreats) return count;
+
+        // Bomb threats. The new quark must lie on the blast's line: a drop beside a blast's columns is
+        // tried out, a drop farther away was marked above.
+        int[] bombs = proofBombLists[ply];
+        for (int column : columnsCentreOut) {
+            if (columnHeight[column] == rows || makesThreat(attacker, column)) continue;
+            boolean threatens = bombThreatColumns[column];
+            if (!threatens && besideFallingBlast(column)) {
+                int previousCooldown = drop(column);
+                threatens = winningBombs(attacker, bombs, column - 1, column + 1) > 0;
+                undoDrop(column, previousCooldown);
+            }
+            if (threatens) actions[count++] = action(column, false);
+        }
+        return count;
+    }
+
+    /** Whether a blast in this column would remove the one opponent quark of a line holding five of the attacker's. */
+    boolean blastOpensFive(int attacker, int column) {
+        int defender = 1 - attacker, height = columnHeight[column];
+        for (int c = Math.max(0, column - 1); c <= Math.min(columns - 1, column + 1); c++)
+            for (int h = Math.max(0, height - 1); h <= Math.min(height + 1, columnHeight[c] - 1); h++) {
+                if (owner[c * rows + h] != defender) continue;
+                for (int line : linesThroughCell[c * rows + h])
+                    if (lineQuarks[2 * line + attacker] == LINE_LENGTH - 1 && lineQuarks[2 * line + defender] == 1) return true;
+            }
+        return false;
+    }
+
+    /** Whether, after a drop in this column, a blast in it or beside it would make quarks fall. */
+    boolean besideFallingBlast(int dropColumn) {
+        for (int column = Math.max(0, dropColumn - 1); column <= Math.min(columns - 1, dropColumn + 1); column++) {
+            int height = columnHeight[column] + (column == dropColumn ? 1 : 0);
+            if (height >= rows) continue;
+            for (int side = column - 1; side <= column + 1; side += 2)
+                if (side >= 0 && side < columns && columnHeight[side] + (side == dropColumn ? 1 : 0) >= height + 3) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The columns, between from and to, where a blast of the attacker would leave a line on the
+     * board; the attacker need not be to move. Only blasts that make quarks fall can
+     * ({@link #blastDropsQuarks}), and {@link #blastLeavesLine} tells without playing them.
+     */
+    int winningBombs(int attacker, int[] found, int from, int to) {
+        if (bombCooldown[attacker] > 0) return 0;
+        int count = 0;
+        for (int column = Math.max(0, from); column <= Math.min(columns - 1, to); column++)
+            if (blastDropsQuarks(column) && blastLeavesLine(column)) found[count++] = column;
+        return count;
+    }
+
+    /**
+     * Whether a blast in this column (not full) would leave a line, worked out without playing it. A
+     * blast only removes quarks and lets the ones above fall, and the board held no line before, so
+     * a line after it holds a fallen quark: the runs through each fallen quark's new cell are counted
+     * on the three columns as the blast leaves them ({@link #blastColumns}), the board elsewhere.
+     */
+    boolean blastLeavesLine(int column) {
+        int landing = columnHeight[column], firstBlasted = Math.max(0, landing - 1), lastBlasted = landing + 1;
+        blastLeft = column - 1;
+        for (int i = 0; i < 3; i++) {
+            int c = column - 1 + i;
+            blastHeight[i] = 0;
+            if (c < 0 || c >= columns) continue;
+            for (int height = 0; height < columnHeight[c]; height++) // the dropped quark itself is blasted too
+                if (height < firstBlasted || height > lastBlasted) blastColumns[i * rows + blastHeight[i]++] = owner[c * rows + height];
+        }
+        for (int i = 0; i < 3; i += 2) // only the neighbours have quarks above the blast
+            for (int height = firstBlasted; height < blastHeight[i]; height++) {
+                int c = column - 1 + i, player = blastColumns[i * rows + height];
+                for (int[] direction : DIRECTIONS) {
+                    int run = 1;
+                    for (int step = 1; step < LINE_LENGTH && ownerAfterBlast(c + step * direction[0], height + step * direction[1]) == player; step++) run++;
+                    for (int step = 1; step < LINE_LENGTH && ownerAfterBlast(c - step * direction[0], height - step * direction[1]) == player; step++) run++;
+                    if (run >= LINE_LENGTH) return true;
+                }
+            }
+        return false;
+    }
+
+    /** Owner of a cell after the blast {@link #blastLeavesLine} works out; EMPTY off the board. */
+    private int ownerAfterBlast(int column, int height) {
+        if (column < 0 || column >= columns || height < 0 || height >= rows) return EMPTY;
+        int i = column - blastLeft;
+        if (i >= 0 && i < 3) return height < blastHeight[i] ? blastColumns[i * rows + height] : EMPTY;
+        return owner[column * rows + height];
+    }
+
+    /**
+     * Whether a bomb in this column would make quarks fall: the blast clears the rows from one below
+     * to one above the landing cell, so a neighbouring column must reach three above it.
+     */
+    boolean blastDropsQuarks(int column) {
+        int height = columnHeight[column];
+        if (height == rows) return false;
+        return column > 0 && columnHeight[column - 1] >= height + 3 || column < columns - 1 && columnHeight[column + 1] >= height + 3;
+    }
+
+    /** Plays a forcing move of the attacker and asks whether every defence then loses within {@code plies}. */
+    boolean attackWins(int action, int attacker, int plies, int ply) {
+        if (proofOutOfBudget()) return false;
+        int column = columnOf(action), previousCooldown = 0;
+        boolean bomb = isBomb(action);
+        if (bomb) {
+            saveState(proofUndoState(ply));
+            play(action);
+        } else previousCooldown = drop(column);
+        boolean wins = hasLine() || everyDefenceFails(attacker, plies - 1, ply + 1); // any line wins for its mover
+        if (bomb) restoreState(proofUndoStates[ply]);
+        else undoDrop(column, previousCooldown);
+        return wins;
+    }
+
+    /**
+     * The defender is to move. It wins first if it can complete a line. The attacker's immediate wins
+     * are its threats and, with {@link #bombThreats}, its winning blasts. A drop stops a threat only
+     * on it, and a winning blast only within one column of it (elsewhere the cells of the blast's
+     * line stay as they are), so the defences are the drops that stop every immediate win, and with
+     * the defender's bomb ready, every blast. Without any defence the defender has lost.
+     */
+    boolean everyDefenceFails(int attacker, int plies, int ply) {
+        int defender = 1 - attacker, threats = 0, threatColumn = NO_ACTION;
+        for (int column = 0; column < columns; column++) {
+            if (completesLine(defender, column)) return false;
+            if (completesLine(attacker, column)) {
+                threats++;
+                threatColumn = column;
+            }
+        }
+        boolean mayBomb = bombCooldown[defender] == 0;
+        if (threats >= 2 && !mayBomb) return true;
+        int firstStop = threats == 1 ? threatColumn : 0, lastStop = threats == 1 ? threatColumn : columns - 1;
+        if (threats >= 2) lastStop = -1; // no drop stops two threats
+        int bombCount = 0;
+        if (bombThreats && threats < 2) {
+            int[] bombs = proofBombLists[ply];
+            bombCount = winningBombs(attacker, bombs, 0, columns - 1);
+            for (int i = 0; i < bombCount; i++) {
+                firstStop = Math.max(firstStop, bombs[i] - 1);
+                lastStop = Math.min(lastStop, bombs[i] + 1);
+            }
+        }
+        if (threats == 0 && bombCount == 0) return false; // the attacker's move forced nothing
+        if (firstStop > lastStop && !mayBomb) return true;
+        if (plies <= 0) return false;
+        long key = positionKey();
+        int slot = (int) key & proofMemoKey.length - 1;
+        if (proofMemoKey[slot] == key && proofMemoPlies[slot] >= plies) return false;
+
+        boolean everyFails = true;
+        for (int column = firstStop; column <= lastStop && everyFails; column++)
+            if (columnHeight[column] < rows && !attackerWinsAfterDefence(action(column, false), attacker, plies, ply)) everyFails = false;
+        if (everyFails && mayBomb)
+            for (int column : columnsCentreOut) {
+                if (columnHeight[column] == rows || !blastHitsQuark(column)) continue; // a blast hitting nothing is a pass
+                if (!attackerWinsAfterDefence(action(column, true), attacker, plies, ply)) {
+                    everyFails = false;
+                    break;
+                }
+            }
+        if (proofAborted) return false;
+        if (!everyFails) {
+            proofMemoKey[slot] = key;
+            proofMemoPlies[slot] = (byte) plies;
+        }
+        return everyFails;
+    }
+
+    /** Plays a defence and asks whether the attacker still has a forcing move that wins within {@code plies - 1}. */
+    boolean attackerWinsAfterDefence(int defence, int attacker, int plies, int ply) {
+        if (proofOutOfBudget()) return false;
+        int column = columnOf(defence), previousCooldown = 0;
+        boolean bomb = isBomb(defence);
+        if (bomb) {
+            saveState(proofUndoState(ply));
+            play(defence);
+        } else previousCooldown = drop(column);
+        boolean wins = false;
+        if (!hasLine()) { // a line after the defence wins for the defender
+            int[] attacks = proofActionLists[ply + 1];
+            int attackCount = forcingAttacks(attacker, attacks, ply + 1);
+            for (int i = 0; i < attackCount && !wins && !proofAborted; i++) wins = attackWins(attacks[i], attacker, plies - 1, ply + 1);
+        }
+        if (bomb) restoreState(proofUndoStates[ply]);
+        else undoDrop(column, previousCooldown);
+        return wins;
+    }
+
+    /** Counts a position of a proof; true once the proof is out of nodes or time. */
+    private boolean proofOutOfBudget() {
+        if (++proofNodes > proofNodeLimit || (proofNodes & 3) == 0 && System.nanoTime() > proofDeadlineNanos) proofAborted = true;
+        return proofAborted;
+    }
+
+    private int[] proofUndoState(int ply) {
+        if (proofUndoStates[ply] == null) proofUndoStates[ply] = new int[stateSize];
+        return proofUndoStates[ply];
+    }
+
+    int playableThreats(int player) {
+        int threats = 0;
+        for (int column = 0; column < columns; column++) if (completesLine(player, column)) threats++;
+        return threats;
+    }
+
+    /**
+     * Whether the opponent has a proven threat-space win after this root move, within what is left of
+     * this turn's threat-search time. A refuted move is left out of the search from then on; a move
+     * whose check ran out of time counts as safe. Each root move is checked once per turn.
+     */
+    boolean refutedByThreats(int action) {
+        if (rootChecked[action] || threatNanosUsed >= threatAllowanceNanos) return false;
+        rootChecked[action] = true;
+        long started = System.nanoTime();
+        if (checkedMoveUndo == null) checkedMoveUndo = new int[stateSize];
+        saveState(checkedMoveUndo);
+        play(action);
+        boolean refuted = !hasLine() && provenThreatWin(Math.min(deadlineNanos, started + threatAllowanceNanos - threatNanosUsed)) != NO_ACTION;
+        restoreState(checkedMoveUndo);
+        threatNanosUsed += System.nanoTime() - started;
+        checkedMoves++;
+        if (proofAborted) abortedProofs++;
+        if (refuted) {
+            rootExcluded[action] = true;
+            rootExclusions++;
+            refutedMoves++;
+        }
+        return refuted;
     }
 
     // ------------------------------------------------------------------ transposition table

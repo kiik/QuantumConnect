@@ -38,12 +38,15 @@ public class ThreatBot extends SerenaBot {
     /** Positions where the attacker has no win in the given number of plies or fewer. */
     final Map<Long, Integer> noWinWithin = new HashMap<>();
 
+    /** SerenaBot's own, time-capped threat-space search is off: this bot runs its own, unhurried one. */
     public ThreatBot() {
         super();
+        threatSpaceSearch = false;
     }
 
     public ThreatBot(int rows, int columns) {
         super(rows, columns);
+        threatSpaceSearch = false;
     }
 
     // ------------------------------------------------------------------ choosing an action
@@ -164,12 +167,6 @@ public class ThreatBot extends SerenaBot {
         }
         restoreState(saved);
         return wins;
-    }
-
-    int playableThreats(int player) {
-        int threats = 0;
-        for (int column = 0; column < columns; column++) if (completesLine(player, column)) threats++;
-        return threats;
     }
 
     // ------------------------------------------------------------------ the refined search
