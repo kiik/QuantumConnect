@@ -16,10 +16,8 @@ import java.util.Map;
  *       the defender answers each with every defence it has: the block, and with its bomb ready every
  *       blast. The attacker wins when it completes a line, or faces a defender without its bomb with
  *       two threats. Proven at the root, the bot plays the first move of the proof.
- *   <li><b>Principal variation search:</b> after the first move of a node, the others are searched
- *       with a null window, which only asks "is it better?", and re-searched only when it is.
- *   <li><b>Late move reductions:</b> quiet drops late in the move order are first searched two plies
- *       shallower, and in full only when they look better than the best so far.
+ *   <li><b>The refined search</b> (principal variation search, late move reductions, killer moves)
+ *       was first tried here and now lives in SerenaBot itself ({@link SerenaBot#refinedSearch}).
  * </ul>
  */
 public class ThreatBot extends SerenaBot {
@@ -27,8 +25,6 @@ public class ThreatBot extends SerenaBot {
     public int threatPlies = 21;
     /** Positions the threat-space search may visit per move, so a long proof doesn't stall the game. */
     public long threatNodeLimit = 3_000_000L;
-    /** Search refinements: principal variation search with late move reductions. */
-    public boolean refinedSearch = true;
     /** Moves won by the threat-space search, for the reports. */
     public int threatWins;
 
@@ -170,88 +166,5 @@ public class ThreatBot extends SerenaBot {
         int threats = 0;
         for (int column = 0; column < columns; column++) if (completesLine(player, column)) threats++;
         return threats;
-    }
-
-    // ------------------------------------------------------------------ the refined search
-
-    /** SerenaBot's negamax, with principal variation search and late move reductions. */
-    @Override
-    int negamax(int depth, int alpha, int beta, int ply) {
-        if (!refinedSearch) return super.negamax(depth, alpha, beta, ply);
-        if ((++nodesSearched & (CLOCK_CHECK_NODES - 1)) == 0 && System.nanoTime() > deadlineNanos) outOfTime = true;
-        if (outOfTime) return 0;
-
-        int mover = sideToMove;
-        if (hasLine()) return ply - WIN;
-        if (quarkCount == cellCount) return 0;
-
-        int forced = NOT_FORCED;
-        if (ply > 0) {
-            int opponentThreats = 0;
-            for (int column = 0; column < columns; column++) {
-                if (completesLine(mover, column)) return WIN - ply - 1;
-                if (completesLine(1 - mover, column)) {
-                    opponentThreats++;
-                    forced = column;
-                }
-            }
-            boolean mayBomb = bombCooldown[mover] == 0;
-            if (opponentThreats >= 2 && !mayBomb) return ply + 2 - WIN;
-            if (opponentThreats >= 2) forced = BOMBS_ONLY;
-            if (opponentThreats == 1 && !mayBomb && depth == 0) depth = 1;
-        }
-        if (ply == MAX_PLY - 1) return evaluate();
-        if (depth <= 0) return forcingLine(depth, alpha, beta, ply, forced);
-
-        long key = positionKey();
-        int slot = tableSlot(key), tableAction = NO_ACTION;
-        if (tableKey[slot] == key) {
-            long entry = tableEntry[slot];
-            tableAction = entryAction(entry);
-            if (entryDepth(entry) >= depth) {
-                int score = scoreFromTable(entryScore(entry), ply), bound = entryBound(entry);
-                if (bound == EXACT || bound == LOWER_BOUND && score >= beta || bound == UPPER_BOUND && score <= alpha) return score;
-            }
-        }
-
-        int[] actions = actionLists[ply];
-        int actionCount = orderedLegalActions(actions, tableAction, forced);
-        int originalAlpha = alpha, bestScore = -WIN - 1, bestAction = NO_ACTION;
-        for (int i = 0; i < actionCount; i++) {
-            int action = actions[i], score;
-            boolean bomb = isBomb(action);
-            int column = columnOf(action), previousCooldown = 0;
-            if (bomb) {
-                if (undoStates[ply] == null) undoStates[ply] = new int[stateSize];
-                saveState(undoStates[ply]);
-                play(action);
-            } else previousCooldown = drop(column);
-
-            if (i == 0) score = -negamax(depth - 1, -beta, -alpha, ply + 1);
-            else {
-                boolean reduce = i >= 3 && depth >= 3 && !bomb && forced == NOT_FORCED && action != tableAction;
-                score = -negamax(depth - 1 - (reduce ? 2 : 0), -alpha - 1, -alpha, ply + 1);
-                if (score > alpha && reduce) score = -negamax(depth - 1, -alpha - 1, -alpha, ply + 1);
-                if (score > alpha && score < beta) score = -negamax(depth - 1, -beta, -alpha, ply + 1);
-            }
-
-            if (bomb) restoreState(undoStates[ply]);
-            else undoDrop(column, previousCooldown);
-            if (outOfTime) return 0;
-            if (score > bestScore) {
-                bestScore = score;
-                bestAction = action;
-            }
-            if (score > alpha) alpha = score;
-            if (alpha >= beta) {
-                historyScore[mover][action] += depth * depth;
-                break;
-            }
-        }
-
-        int bound = bestScore <= originalAlpha ? UPPER_BOUND : bestScore >= beta ? LOWER_BOUND : EXACT;
-        tableKey[slot] = key;
-        tableEntry[slot] = packEntry(scoreToTable(bestScore, ply), depth, bound, bestAction);
-        return bestScore;
     }
 }
