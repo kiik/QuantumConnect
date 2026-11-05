@@ -1,0 +1,19 @@
+{
+ "match_id": "e1d3efd8-a981-40f9-9b2b-f0f1cd3df704",
+ "first": {
+  "bot": "back-to-safe",
+  "bot_id": "338037d5-cc64-41bd-89da-bd4590b40925",
+  "team": "KolmApelsini"
+ },
+ "second": {
+  "bot": "coffeeAt21",
+  "bot_id": "a6fc4b45-53d3-4ace-8db8-1f496a19c420",
+  "team": "coffee_break"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 197,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f13 s13 f13 s13b f14 s14 f14 s13 f14 s13 f14 s16 f14 s16 f14 s14 f13 s13 f13 s13 f13 s16 f13 s13b f13 s13 f16 s16 f16 s16 f16 s16 f16 s16 f12 s13 f12 s12 f12 s12 f12 s12 f12 s12 f12 s16 f12 s12 f18 s16 f18 s10 f18 s14 f18 s18 f18 s18 f18 s18 f18 s18 f10 s18 f10 s10 f10 s18 f10 s13 f10 s10 f10 s10 f19 s10 f19 s19b f19 s12 f19 s10 f19 s19 f19 s10 f19 s10 f10 s18 f19 s18 f18 s19 f19 s15 f19 s19 f9 s16 f9 s12 f9 s18 f9 s9 f9 s14 f9 s9 f9 s13 f9 s9 f20 s20b f19 s11 f11 s11 f11 s11 f11 s16 f19 s9 f19 s18 f19 s9 f19 s19 f20 s20 f20 s20b f20 s20 f20 s20 f20 s21 f20 s21 f20 s22 f20 s22 f20 s20 f8 s23 f23 s24 f8 s25 f26 s23 f8 s8 f8 s8 f8 s8 f8 s8 f21 s11 f11 s11 f11 s11 f15b s11 f14 s11 f14 s13",
+ "fetched_at": "2026-11-06T00:00:21"
+}

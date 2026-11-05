@@ -1,0 +1,19 @@
+{
+ "match_id": "4b69fc6e-43df-4235-b80b-9b0fcd7d3519",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "coffeeAt21",
+  "bot_id": "a6fc4b45-53d3-4ace-8db8-1f496a19c420",
+  "team": "coffee_break"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 6,
+ "moves": "f6 s14 s14 s14 s14 s14 s14",
+ "fetched_at": "2026-11-06T00:00:15"
+}

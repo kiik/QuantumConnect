@@ -1,0 +1,19 @@
+{
+ "match_id": "9432577d-d81d-4075-959b-87e1b915b360",
+ "first": {
+  "bot": "Testing_v2",
+  "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+  "team": "LinMacWin"
+ },
+ "second": {
+  "bot": "coffeeAt21",
+  "bot_id": "a6fc4b45-53d3-4ace-8db8-1f496a19c420",
+  "team": "coffee_break"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 5,
+ "moves": "s14 s14 s14 s14 s14 s14",
+ "fetched_at": "2026-11-06T00:00:17"
+}

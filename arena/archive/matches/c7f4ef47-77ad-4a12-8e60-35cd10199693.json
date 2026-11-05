@@ -1,0 +1,19 @@
+{
+ "match_id": "c7f4ef47-77ad-4a12-8e60-35cd10199693",
+ "first": {
+  "bot": "10101010",
+  "bot_id": "fd780349-0d78-4331-9315-a288b1a506d7",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 101,
+ "moves": "f14 f14 s12 s14 f14 f14 s12 s14 f12 f12 s14 s14 f14 f14 s14 s14 f14 f14 s14 s12 f14 f15 s14 s12 f12 f14 s15 s14 f12 f12 s15 s12 f15 f12 s15 s12 f15 f12 s12 s14 f14 f14 s17 s12 f12 f15 s15 s14 f15 f14 s15b s12 f14 f17 s16 s17 f17 f13 s13 s14 f15b f13 s15 s16 f15 f17 s14 s11b f12 f15 s15 s10 f14 f16 s14 s16 f16 f17 s16 s15 f16 f19 s13 s17 f17 f13 s13 s17 f17 f13 s8 s14 f17 f13 s14 s16 f12 f19 s15 s16 f20 f16 s7 s15 f20 f13 s17 s13 f7 f19 s20b s8 f19 f8 s14 s8 f17 f7 s7 s17 f8 f20 s19 s8 f20 f7 s7 s15 f15 f9 s8 s20 f7b f20 s20 s8 f7 f20 s12 s8 f12 f7 s8 s12 f7 f20 s20 s7 f8 f19 s12 s7 f19 f8 s12 s7 f8 f20 s12 s8 f16 f12 s9 s12 f19 f15 s19 s7 f7 f19 s20 s9 f19 f9 s9 s19 f13 f19 s8 s19 f13 f22 s20 s13 f16 f23 s13 s14 f14 f7 s22 s8 f12 f8 s6 s12 f16 f17 s18 s16 f24 f14 s21 s13 f23 f7 s21 s18 f22 f15 s15 s23b f23 f15b s12 s15 f16 f24 s24 s14b f14 f23 s14 s24 f6 f25 s24 s12 f24 f12 s9 s27 f24 f9 s20 s24 f24 f6 s27 s21 f19 f27 s24 s5 f15 f26 s11 s28 f24 f5 s24 s15 f17b f24 s16 s19 f15 f23 s23 s17 f4 f19 s17b s23 f23 f5 s15 s23 f19 f11 s23 s16 f15 f23 s16 s20 f20 f19 s20 s16 f24 f16 s5 s28 f24 f20 s16 s21 f13 f20 s13 s6 f13 f4 s19 s13 f25 f4 s13 s4 f23 f21 s23 s9 f3 f23 s4 s23 f21 f13 s21 s23 f28 f20 s20 s28 f27 f20 s27 s19 f28 f19 s21 s27 f27 f21 s20 s27 f27 f19 s11 s20 f11 f3 s3 s11 f11 f3 s11 s18 f11 f21 s11 s18 f18 f11 s11 s18 f20 f11 s18 s25 f18 f26 s26 s23 f25 f20 s25 s20 f10 f21 s9 s21 f10 f21 s4 s26 f25 f4 s5 s26 f5 f25 s21 s9 f21 f28 s25 s1 f28 f1 s6 s28 f4 f10 s4 s10 f27 f6 s27 s6b f10 f6 s3 s10 f3 f27 s27 s4 f10 f2 s2 s13b f16b f2b s10 f9 s10 f11 s11 f11 s17 f14 s15 f9 s29 f12 s10 f10 s13 f13 s14 f10 s16b",
+ "fetched_at": "2026-11-06T00:00:04"
+}

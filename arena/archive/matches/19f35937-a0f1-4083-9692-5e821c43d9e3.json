@@ -1,0 +1,19 @@
+{
+ "match_id": "19f35937-a0f1-4083-9692-5e821c43d9e3",
+ "first": {
+  "bot": "coffeeAt21",
+  "bot_id": "a6fc4b45-53d3-4ace-8db8-1f496a19c420",
+  "team": "coffee_break"
+ },
+ "second": {
+  "bot": "BotBot/user",
+  "bot_id": "bfb9ab89-ee8a-4c74-9a28-394bd3d0a089",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 328,
+ "moves": "f14 s15 f14 s14 f14 s15 f14 s14 f14 s15 f15 s15 f15 s15 f15 s14 f15 s14 f14 s15 f15 s14 f15 s14 f16b s15 f15 s10 f10 s18 f18 s18 f18 s18 f18 s18 f18 s18 f18 s18 f18 s15 f18 s10 f10 s10 f10 s10 f10 s10 f10 s10 f10 s10 f14 s10 f15 s14 f15 s14 f18 s17 f17 s17 f17b s18 f19 s19 f18 s17 f13 s13 f17 s13 f17 s13 f17 s17 f17 s17 f17 s13 f13 s13 f13 s13 f13 s13 f17 s17 f13 s13 f16 s13 f17 s16 f16 s22 f19 s19 f17 s17 f18 s22 f22 s22 f22 s22 f22 s22 f22 s22 f22 s22 f22 s22 f19b s19 f18 s18 f7 s21 f7 s7 f19 s19 f7 s19 f21 s19 f7 s21 f19 s19 f7 s19 f7 s7 f7 s19 f7 s19 f7 s19 f19 s7 f13b s13 f8 s8 f8 s8 f18 s4 f21 s21 f21 s21 f21 s21 f8 s8 f8 s8 f8 s8 f8 s8 f21 s26 f21 s25 f24 s24 f21 s21 f25 s24 f24 s24 f24 s24 f24 s24 f24 s24 f24 s24 f25 s25 f25 s29 f8 s25 f25 s25 f25 s25 f25 s8 f25 s13 f6 s6 f6 s6 f6 s9 f6 s9 f6 s6 f6 s9 f6 s9 f9 s6 f9 s9 f9 s9 f6 s9 f6 s7 f6 s9 f9 s2 f25 s2 f7 s8 f6 s24 f21 s2 f21 s22 f25 s2 f2 s2 f2 s2 f2 s2 f2 s4 f2 s4 f25 s4 f3b s4 f2 s2 f4 s4 f4 s4 f4 s4 f4 s4 f4 s7 f4 s4 f10 s2 f14 s2 f26 s26 f4 s14 f24 s28 f28 s26 f26 s26 f26b s25 f25 s26 f26 s26 f26 s26 f26 s26 f26 s2 f23 s5 f26 s5 f18 s3 f1 s1 f3 s3 f23b s28 f28 s28 f24 s24 f24 s25 f28 s22 f28 s28 f28 s28 f20 s20 f28 s5 f20 s5 f12b s16 f16",
+ "fetched_at": "2026-11-06T00:00:13"
+}

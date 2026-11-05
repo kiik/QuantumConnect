@@ -1,0 +1,19 @@
+{
+ "match_id": "4b5d0d0f-432d-4689-8dfb-13e6b48c9d5c",
+ "first": {
+  "bot": "10101010",
+  "bot_id": "fd780349-0d78-4331-9315-a288b1a506d7",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 386,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f15 s15 f15 s15 f15 s15 f15 s15b f15 s15 f15 s15 f15 s15 f14 s16 f16 s16 f15 s14 f15 s14 f15 s14 f16 s16 f16 s16 f12 s12 f13 s13 f11 s10 f11 s11 f11 s11 f11 s11 f11 s11 f11 s11 f11 s11 f11 s13 f16 s16 f16 s16 f13 s16 f12 s12 f12 s13 f13 s13 f13 s13b f10 s12 f10 s9 f10 s9 f12 s13 f12 s14 f14 s13 f13 s13 f13 s20 f9 s13 f9 s12b f14 s13 f13 s13 f13 s11 f16 s11 f13 s16 f16 s20 f9 s10 f9 s10 f9 s9 f9 s9 f9 s9 f20 s20 f20 s20 f20 s20 f20 s20 f20 s9 f20 s20 f20 s9 f9 s21 f19 s19 f21 s21 f20 s21 f21 s21 f21 s21 f21 s21 f21 s21 f21 s22 f22 s22 f22 s22 f22 s22 f22 s22 f22 s22 f21 s22 f21 s4 f6 s22 f22 s22 f6 s4 f4 s4 f4 s4 f4 s4 f4 s4 f4 s4 f4 s4 f6 s6 f6 s6 f6 s6 f6 s6 f6 s6 f6 s6 f6 s4 f2 s25 f24 s25 f25 s25 f25 s25 f2 s25 f25 s25 f25 s25 f25 s26 f2 s26 f2 s2 f2 s26 f2 s2 f2 s2 f2 s2 f25 s2 f25 s26 f26 s26 f26 s26 f2 s26 f3 s3 f3 s3 f2 s26 f26 s3 f3 s3 f3 s3 f3 s3 f3 s27 f27 s3 f24 s24 f7 s11 f11 s24 f24 s24 f27 s27 f3 s26 f28 s26 f26 s3 f25 s26 f1 s24 f23 s24 f24 s24 f5 s23 f28 s18 f19 s24 f24 s24 f24 s19 f29 s19 f29 s19 f24 s19 f19 s19 f19 s19 f29 s19 f29 s19 f29 s29 f19 s19 f28 s29 f29 s29 f0 s29 f29 s29 f29 s29 f29 s0 f0 s0 f0 s0 f0 s0 f0 s0 f0 s7 f7 s7 f0 s0 f0 s7 f7 s7 f28 s28 f28 s7 f28 s7 f7 s7 f7 s7 f7 s7 f0 s28 f28 s28 f1 s1 f1 s28 f28 s1 f1 s28 f28 s28 f5 s5 f5 s18 f18 s18 f18 s18 f18 s23 f23 s23 f23 s10b f10 s10 f10 s9 f10 s8 f8 s12 f12b s5 f8 s11 f8",
+ "fetched_at": "2026-11-05T23:59:59"
+}

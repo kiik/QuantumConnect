@@ -1,0 +1,19 @@
+{
+ "match_id": "50867277-7bba-402e-89d5-e6c6d11cde6f",
+ "first": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "second": {
+  "bot": "coffeeAt21",
+  "bot_id": "a6fc4b45-53d3-4ace-8db8-1f496a19c420",
+  "team": "coffee_break"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 63,
+ "moves": "f3 s14 f5 s14 f4 s6 f4 s6 f4 s4 f6 s4 f6 s4 f4 s6 f14 s6 f1 s6 f6 s4 f5 s5 f1 s4 f3 s6 f3 s6 f7 s4 f4 s6 f6 s14 f1 s14 f1 s1 f1 s14 f14 s14 f1 s14 f3 s3 f1 s14 f1 s3 f3 s14 f14 s4 f0 s2 f0 s2 f6 s3 f0 s0b",
+ "fetched_at": "2026-11-06T00:00:24"
+}

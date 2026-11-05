@@ -1,0 +1,19 @@
+{
+ "match_id": "890a5557-70b9-4529-aa31-db146a68b4ce",
+ "first": {
+  "bot": "FunkyMelodyBot4",
+  "bot_id": "44c1e6a0-0c29-455a-bd27-ebf26f33bcbb",
+  "team": "FunkyMelody"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 169,
+ "moves": "f8 s14 f8 s8 f9 s8 f9 s8 f9 s8 f8 s9 f8 s9 f8 s9 f8 s9 f9 s6 f8 s9b f9 s8 f8 s9 f8 s9 f8 s9 f8 s15 f8 s8 f21 s14 f21 s15 f21 s9 f9 s9b f9 s21 f22 s21 f22 s21 f22 s21 f21 s6 f22 s6 f21 s16 f13 s13 f16 s14 f21 s23b f22 s13 f14b s6 f6 s22 f21 s22 f21 s21 f21 s22 f21 s17 f18 s22 f22 s14 f18 s22b f22 s13 f14b s5 f18 s5 f4 s4 f5 s5 f18 s18 f19 s20 f19 s20 f19 s20 f19 s18 f19 s19 f16 s6 f20b s20 f19 s17b f18 s6 f18 s6 f18 s21 f18 s18 f18 s14 f18 s15 f18 s15 f15 s14 f14 s13 f12 s13 f16 s16 f16 s12 f16 s13 f13 s12 f18 s12 f18 s18 f18 s14 f23 s4 f4 s14 f23 s16 f23 s23 f20 s23 f24 s15 f15 s15 f24 s13 f13 s10 f10 s11 f11 s10 f11 s11 f10 s10",
+ "fetched_at": "2026-11-05T23:59:58"
+}

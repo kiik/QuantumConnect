@@ -1,0 +1,19 @@
+{
+ "match_id": "cc14c4e2-8128-43d3-8ef6-d6b073d5d6bc",
+ "first": {
+  "bot": "1104-1-1105-0-hotfix",
+  "bot_id": "c5a141f8-f8f3-4c77-a941-7c134d8b6b0f",
+  "team": "kristoma"
+ },
+ "second": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 433,
+ "moves": "f14 s12 f14 s14 f14 s14 f14 s14 f12 s14 f12 s12 f12 s12 f12 s12 f12 s12 f14 s14 f14 s12 f14 s12 f14 s12 f12 s14 f12 s14 f15 s15 f15 s15 f15 s15 f15 s11 f15 s15 f15 s16 f11 s18 f11 s18 f11 s11 f11 s11 f11 s16 f11 s16 f11 s18 f11 s11 f11 s20 f17b s18 f16 s18 f11 s21 f11 s21 f16 s19 f17 s19 f18 s15 f15 s20 f15 s9 f15 s17 f15 s22 f22b s20 f20 s9 f18 s9 f20 s20 f20 s18 f18 s18 f20 s8 f7 s21 f21 s8 f18 s19 f21 s21 f18 s21 f22 s22b f22b s19 f18 s8 f20 s18 f18 s20 f18 s22 f18 s22 f23 s22 f17 s17 f20 s17 f20 s8 f21b s19 f19 s7 f19 s10 f13 s7 f6 s19 f8 s6 f8 s10 f6 s6 f20 s7 f6 s7 f6 s7b f6 s7 f6 s20 f7 s6 f8 s8 f6 s8 f8 s8 f6 s8 f6 s9 f9 s7 f7 s9 f9 s10 f10 s9 f9 s19 f19 s19 f6 s6 f6 s9 f6 s9 f19 s9 f9 s7 f9 s23 f9 s22 f20 s19 f13 s22 f19 s22 f22 s20 f19 s22 f20 s22 f22 s22 f22 s22 f8 s8 f7 s23 f24 s23 f24 s23 f23 s23 f7 s7 f7 s8 f8 s7 f7 s8 f23 s13 f21 s21 f21 s21 f21 s6 f23 s23 f23 s23 f21 s21 f23 s23 f23 s21 f13 s21 f13 s22 f26 s22 f27 s21 f21 s21 f22 s22 f28 s25 f21 s26 f21 s21 f25 s25 f25 s26 f26 s26 f25 s25 f29 s25 f26b s24 f24 s24 f26 s10 f10 s10 f10 s10 f10 s13 f13 s13 f13 s13 f13 s10 f10 s24 f13 s29 f26 s26 f26 s26 f26 s26 f28 s28 f26 s26 f26 s29 f26 s29 f29 s28 f28 s28 f24 s24 f24 s24 f24 s24 f24 s17 f17 s17 f24 s24 f29 s29 f17 s17 f17 s17 f28 s17 f17 s17 f4 s4 f3 s2 f3 s3 f3 s4 f4 s3 f28 s28 f10 s10 f10 s28 f3 s3 f3 s28 f0 s3 f3 s3 f3 s3 f3 s4 f3 s28 f28 s4 f4 s4 f4 s4 f2 s0 f2 s2 f1 s2 f2 s28 f2 s2 f2 s4 f4 s4 f4 s2 f2 s2 f2 s4 f2 s2 f28 s29 f29 s29 f29 s29 f29 s0 f0 s29 f0 s0 f0 s0 f1 s1 f13b s12 f13 s13 f13 s12 f14 s14 f14 s13 f12 s29 s0 f0 s0 s0 s0 s0 s0 s5 f5 s1 f1 s1b f1 s0",
+ "fetched_at": "2026-11-06T00:00:01"
+}
