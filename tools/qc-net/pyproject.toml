@@ -1,12 +1,13 @@
 [project]
 name = "qcnet"
 version = "0.1.0"
-description = "Trains SerenaBot's small integer network from ./qc.sh dataset output"
+description = "Trains SerenaBot's small integer network and its pattern table from ./qc.sh dataset output"
 requires-python = ">=3.11"
-dependencies = ["numpy>=1.26"]
+dependencies = ["numpy>=1.26", "scipy>=1.11"]
 
 [project.scripts]
 qcnet = "qcnet.train:main"
+qcpatterns = "qcnet.patterns:main"
 
 [build-system]
 requires = ["hatchling"]

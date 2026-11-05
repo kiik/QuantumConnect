@@ -10,6 +10,7 @@ import ch.cern.quantumconnect.core.SpaceOwnership;
 import ch.qc.meelik.bots.QuarkBot;
 import ch.qc.meelik.bots.QuarkV2Bot;
 import ch.qc.meelik.bots.SerenaBot;
+import ch.qc.meelik.bots.ThreatBot;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -37,14 +38,22 @@ import java.util.jar.JarFile;
  *       move), {@code /<depth>} (fixed search depth) and {@code :<file>} (evaluation parameters from
  *       Tune), e.g. {@code quark@10}, {@code quark/2}, {@code quark:params/evolved-d4.txt}; the same
  *       options work for {@code quarkV2}; {@code serena+net} is SerenaBot evaluating with its network
- *       (it loads when the bot sets up the arena's board, for the size it was trained on);
+ *       (it loads when the bot sets up the arena's board, for the size it was trained on),
+ *       {@code serena+pat} with its pattern table (any board size), {@code serena+lines} with its
+ *       line weights; plain {@code serena} evaluates as the bot ships;
  *   <li>{@code tuned}: short for {@code quark:out/tune-params.txt};
  *   <li>{@code jar:<path>}: the bot in a packaged JAR (its Bot-Class), in its own class loader, so
  *       two versions of the same bot can play each other.
  * </ul>
  */
 public final class Arena {
-    static final long MOVE_LIMIT_NANOS = GameConstants.TIMEOUT_MS * 1_000_000L;
+    /**
+     * The server's limit per move: 50 ms since 2026-11-05, while the engine library still says
+     * {@link GameConstants#TIMEOUT_MS} (100 ms) and referees local games by it. Answers over this limit
+     * count as late moves; set another with {@code -Dqc.limitMs=}.
+     */
+    static final int MOVE_LIMIT_MS = Integer.getInteger("qc.limitMs", 50);
+    static final long MOVE_LIMIT_NANOS = MOVE_LIMIT_MS * 1_000_000L;
 
     /**
      * One game's outcome: winner (0 first mover, 1 second, -1 draw), turns, per-player statistics,
@@ -120,6 +129,8 @@ public final class Arena {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("interrupted", e);
+        } catch (RuntimeException e) {
+            return forfeit(turns, e);
         }
         int winner = experiment.getExperimentStatus() == ExperimentStatus.COLLAPSED ? seatOf(experiment.getCurrentPlayer()) : -1;
 
@@ -168,6 +179,27 @@ public final class Arena {
         StringJoiner moves = new StringJoiner(",");
         for (Move move : history) moves.add(move.column() + (move.isSpecialMove() ? "b" : ""));
         return new Result(winner, turns.size(), stats, moves.toString());
+    }
+
+    /**
+     * The engine's referee can throw after a late answer (it goes on with column -1). The game is then
+     * lost by the last player who answered late; any other failure is rethrown.
+     */
+    static Result forfeit(List<Turn> turns, RuntimeException failure) {
+        PlayerStats[] stats = {new PlayerStats(), new PlayerStats()};
+        int late = -1;
+        synchronized (turns) {
+            for (Turn turn : turns) {
+                PlayerStats mine = stats[turn.player];
+                mine.calls++;
+                mine.totalNanos += turn.columnNanos;
+                mine.maxNanos = Math.max(mine.maxNanos, Math.max(turn.columnNanos, turn.bombNanos));
+                if (Math.max(turn.columnNanos, turn.bombNanos) > MOVE_LIMIT_NANOS) { mine.lateMoves++; late = turn.player; }
+            }
+        }
+        if (late < 0) throw failure;
+        System.err.printf("the referee failed after a late answer of player %d (%s): player %d wins%n", late, failure, 1 - late);
+        return new Result(1 - late, turns.size(), stats, "");
     }
 
     static int seatOf(SpaceOwnership colour) {
@@ -258,9 +290,11 @@ public final class Arena {
         if (spec.equals("random")) return new RandomBot(seed);
         if (spec.equals("tuned")) spec = "quark:" + Tune.OUTPUT;
         if (spec.startsWith("jar:")) return fromJar(Path.of(spec.substring(4)));
+        String settings = spec.contains("#") ? spec.substring(spec.indexOf('#') + 1) : null; // SerenaBot fields, name=value,...
+        if (settings != null) spec = spec.substring(0, spec.indexOf('#'));
 
-        boolean network = spec.endsWith("+net");
-        if (network) spec = spec.substring(0, spec.length() - "+net".length());
+        String evaluation = spec.contains("+") ? spec.substring(spec.lastIndexOf('+') + 1) : null; // net, pat, lines; none: as shipped
+        if (evaluation != null) spec = spec.substring(0, spec.lastIndexOf('+'));
         String parameterFile = null;
         if (spec.contains(":")) {
             parameterFile = spec.substring(spec.indexOf(':') + 1);
@@ -285,8 +319,37 @@ public final class Arena {
             }
         }
         if (bot instanceof SerenaBot serena && parameterFile != null) Tune.applySerena(serena, Tune.load(Path.of(parameterFile)));
-        if (bot instanceof SerenaBot serena) serena.withNetwork = network;
+        if (bot instanceof SerenaBot serena && spec.contains("@")) serena.budgetNanos = Long.parseLong(spec.replaceAll(".*@(\\d+).*", "$1")) * 1_000_000L;
+        if (bot instanceof SerenaBot serena && evaluation != null) {
+            serena.withNetwork = evaluation.equals("net");
+            serena.withPatterns = evaluation.equals("pat");
+        }
+        if (bot instanceof SerenaBot serena && settings != null) applySettings(serena, settings);
         return bot;
+    }
+
+    /**
+     * SerenaBot's tuning fields from a spec's {@code #name=value,...}: {@code bomb} (bombBonusPercent),
+     * {@code bombLine} (bombLineQuarks), {@code forcing} (forcingPlies), {@code reach} (dropReach),
+     * {@code variety} (varietyNoise), {@code varietyQuarks};
+     * for ThreatBot also {@code threat} (threatPlies) and {@code refined} (refinedSearch, 0 or 1).
+     */
+    static void applySettings(SerenaBot bot, String settings) {
+        for (String setting : settings.split(",")) {
+            String name = setting.substring(0, setting.indexOf('='));
+            int value = Integer.parseInt(setting.substring(setting.indexOf('=') + 1));
+            switch (name) {
+                case "bomb" -> bot.bombBonusPercent = value;
+                case "bombLine" -> bot.bombLineQuarks = value;
+                case "forcing" -> bot.forcingPlies = value;
+                case "reach" -> bot.dropReach = value;
+                case "variety" -> bot.varietyNoise = value;
+                case "varietyQuarks" -> bot.varietyQuarks = value;
+                case "threat" -> ((ThreatBot) bot).threatPlies = value;
+                case "refined" -> ((ThreatBot) bot).refinedSearch = value != 0;
+                default -> throw new IllegalArgumentException("unknown SerenaBot setting " + name);
+            }
+        }
     }
 
     /** The class of a bot name: {@code quark} is {@code ch.qc.meelik.bots.QuarkBot}; a qualified name is itself. */

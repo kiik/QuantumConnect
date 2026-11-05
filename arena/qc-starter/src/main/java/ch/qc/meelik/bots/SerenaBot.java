@@ -33,7 +33,8 @@ import java.util.Random;
  * <ul>
  *   <li>the win test: a count reaching six;
  *   <li>the evaluation: a line open to one player only is worth a weight to that player;
- *   <li>the threats: empty cells that would complete a line.
+ *   <li>the threats: empty cells that would complete a line;
+ *   <li>the fours: empty cells of lines four quarks short of nothing but two (a drop there makes a threat).
  * </ul>
  * A bomb is carried out as single-quark removals and additions, so it needs no bookkeeping of its own.
  *
@@ -42,7 +43,16 @@ import java.util.Random;
  * transposition table reuses positions reached by other move orders, and moves are tried best guess
  * first: the table's move, then moves that caused cut-offs before, then centre columns. The threats
  * force moves: a side that can complete a line wins; one facing two threats without its bomb has
- * lost; one facing a single threat must block it or bomb.
+ * lost; one facing a single threat must block it or bomb. Past the depth, the search follows only
+ * forcing moves ({@link #forcingPlies}): drops that make a threat to complete at once, and the blocks
+ * they force. So a threat, block, double-threat combination is seen however deep it starts.
+ *
+ * <h2>The clock</h2>
+ * The arena skips a turn answered after 100 ms, and its machine stalls where a laptop does not: a
+ * cold JVM on the first turns, a shared CPU later. So the search keeps well inside the limit, thinks
+ * a quarter as long on the first turns ({@link #COLD_TURNS}), and watches the move history: an answer
+ * of ours missing from it came too late, and halves this match's budget; each answer placed gives a
+ * little back ({@link #noteLostTurns}).
  *
  * <h2>The network (off by default)</h2>
  * A small integer network can take over the evaluation ({@link #useNetwork}). Its inputs are 0/1
@@ -51,6 +61,15 @@ import java.util.Random;
  * sums the weight rows of the active features into an accumulator per player, kept up to date by
  * the two incremental updates as quarks come and go; a clipped ReLU and one output weight per hidden
  * unit give the score. The weights are trained offline (tools/qc-net) and embedded as base64.
+ *
+ * <h2>The pattern table (on by default)</h2>
+ * The line weights see only how many quarks a line holds, and only in a line one player owns. The
+ * pattern table values each line by its exact contents instead: each of its six cells empty, own or
+ * the opponent's, 3^6 = 729 patterns per direction class ({@link #usePatterns}). A line's pattern is
+ * kept up to date like its counts, so the evaluation stays one table lookup per changed line. The
+ * table never refers to a cell or to the board's size, so one table plays on any board. It starts
+ * from the line weights and is trained offline (tools/qc-net, {@code qcpatterns}) on archived and
+ * self-play positions of any size, then embedded as base64. Without a table the line weights play.
  *
  * <h2>The loss book</h2>
  * After each tournament round we replay every game we lost and search our moves before the loss
@@ -62,7 +81,7 @@ import java.util.Random;
  *
  * @author WilyQuarks
  */
-public final class SerenaBot implements Algorithm {
+public class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ rules
 
@@ -100,13 +119,29 @@ public final class SerenaBot implements Algorithm {
     public static final int NO_ACTION = -1;
     /** After this much thinking in one match, think an eighth as long per move (a match allows 30 s). */
     static final long MATCH_TIME_GUARD_NANOS = 20_000_000_000L;
+    /** Our first turns run on a cold JVM, classes still loading and nothing compiled: they think a quarter as long. */
+    static final int COLD_TURNS = 2;
+    /** The least a turn thinks after late answers, and what each answer placed gives back. */
+    static final long MIN_BUDGET_NANOS = 2_000_000L, RECOVERY_NANOS = 500_000L;
+    /**
+     * The search reads the clock once per this many nodes (a power of two). On a wide board a node
+     * with a bomb ready tries a blast in every column, each saving and restoring the whole state,
+     * so 1024 nodes could overrun the budget by 50 ms. A clock read costs about as much as 1% of a node.
+     */
+    static final int CLOCK_CHECK_NODES = 16;
 
     // ------------------------------------------------------------------ board geometry
 
     public int rows, columns;
     int cellCount, lineCount;
-    /** The cells of each line, the lines through each cell, and each line's direction class. */
+    /**
+     * The cells of each line, lowest first (leftmost first when level), the lines through each cell,
+     * and each line's direction class. Lowest first makes both diagonals read alike, so a diagonal and
+     * its mirror image have the same pattern.
+     */
     int[][] cellsOfLine, linesThroughCell;
+    /** The place value of each cell in each line through it, 3^(index in the line), parallel to linesThroughCell. */
+    int[][] placeInLine;
     int[] lineDirection;
     /** Columns ordered from the centre outwards. */
     int[] columnsCentreOut;
@@ -124,8 +159,15 @@ public final class SerenaBot implements Algorithm {
     int[] lineQuarks;
     /** Lines a cell would complete for a player, at {@code player * cellCount + cell}. */
     int[] threatCount;
+    /**
+     * Open lines a drop at a cell would turn into a threat: lines holding four quarks of a player and
+     * none of the other, counted at both their empty cells, at {@code player * cellCount + cell}.
+     */
+    int[] fourCount;
     public int sideToMove;
     int quarkCount;
+    /** Pattern of each line: the sum over its cells of 0 (empty), 1 (player 0) or 2 (player 1) times 3^place. */
+    int[] linePattern;
     /** Sum of the line values, from player 0's point of view. */
     int staticScore;
 
@@ -148,6 +190,26 @@ public final class SerenaBot implements Algorithm {
     public long budgetNanos = 40_000_000L;
     /** Deepest iteration of the search; a tuning tool may fix it. */
     public int maxDepth = MAX_PLY - 2;
+    /**
+     * Drops are searched only in columns at most this far from a column holding a quark (a forced
+     * block is always searched). On a 100-column board this keeps the search near the play.
+     */
+    public int dropReach = 2;
+    /** Per column: whether a drop there is within {@link #dropReach} of a quark; refilled at each node. */
+    boolean[] nearQuarks;
+    /**
+     * How many plies past the search depth forcing moves are still followed: drops that make a threat
+     * to complete at once, and the blocks they force. 0 ends the search at its depth.
+     */
+    public int forcingPlies = 8;
+    /** Percent of {@link #bombReadyBonus} the evaluation counts; 100 counts it as trained. */
+    public int bombBonusPercent = 100;
+    /**
+     * Which bombs the search tries. 0: every blast that hits a quark. Above 0: only blasts that hit
+     * or drop a quark of a line holding this many quarks of one player and none of the other, so the
+     * bomb is kept for defence and for strokes, not spent on small gains.
+     */
+    public int bombLineQuarks = 0;
     long deadlineNanos;
     public long nodesSearched;
     boolean outOfTime;
@@ -161,6 +223,11 @@ public final class SerenaBot implements Algorithm {
     int myCooldown = FIRST_BOMB_WAIT, opponentCooldown = FIRST_BOMB_WAIT;
     int myTurns;
     long timeUsedNanos;
+    /** Our answers so far that should be in the move history, and how many of them were not (too late). */
+    int answeredTurns;
+    public int lostTurns;
+    /** This match's budget per move: {@link #budgetNanos}, cut by late answers ({@link #noteLostTurns}). */
+    public long matchBudgetNanos;
     /** The player who moved first in this match: player 0 unless we are the second player. */
     public int firstMover = ME;
 
@@ -171,13 +238,14 @@ public final class SerenaBot implements Algorithm {
         this(8, 12);
     }
 
-    /** An empty board of the given size. */
+    /** An empty board of the given size. Sparring partners extend the bot but only add to its setup. */
+    @SuppressWarnings("this-escape")
     public SerenaBot(int rows, int columns) {
         setUp(rows, columns);
     }
 
     /** Builds an empty board of this size and sizes the search memory to it. */
-    private void setUp(int rows, int columns) {
+    public final void setUp(int rows, int columns) {
         this.rows = rows;
         this.columns = columns;
         cellCount = rows * columns;
@@ -189,6 +257,7 @@ public final class SerenaBot implements Algorithm {
                 for (int d = 0; d < DIRECTIONS.length; d++) {
                     int[] line = lineFrom(column, height, DIRECTIONS[d]);
                     if (line == null) continue;
+                    if (DIRECTIONS[d][1] < 0) reverse(line); // lowest first
                     lines.add(line);
                     directions.add(Math.min(d, DIAGONAL));
                 }
@@ -197,7 +266,13 @@ public final class SerenaBot implements Algorithm {
         lineDirection = new int[lineCount];
         for (int line = 0; line < lineCount; line++) lineDirection[line] = directions.get(line);
         linesThroughCell = invert(cellsOfLine, cellCount);
+        placeInLine = new int[cellCount][];
+        for (int cell = 0; cell < cellCount; cell++) {
+            placeInLine[cell] = new int[linesThroughCell[cell].length];
+            for (int k = 0; k < placeInLine[cell].length; k++) placeInLine[cell][k] = placeOf(cell, cellsOfLine[linesThroughCell[cell][k]]);
+        }
         columnsCentreOut = centreOut(columns);
+        nearQuarks = new boolean[columns];
 
         // A fixed seed: the loss book stores position hashes, so they must not change between runs.
         Random random = new Random(20261102L);
@@ -208,10 +283,13 @@ public final class SerenaBot implements Algorithm {
         owner = new int[cellCount];
         columnHeight = new int[columns];
         lineQuarks = new int[2 * lineCount];
+        linePattern = new int[lineCount];
         threatCount = new int[2 * cellCount];
+        fourCount = new int[2 * cellCount];
         fallingQuarks = new int[rows];
         networkOn = withNetwork && loadNetwork();
-        stateSize = owner.length + columnHeight.length + lineQuarks.length + threatCount.length + 9 + (networkOn ? 2 * hidden : 0);
+        patternsOn = withPatterns && loadPatterns();
+        stateSize = owner.length + columnHeight.length + lineQuarks.length + linePattern.length + threatCount.length + fourCount.length + 9 + (networkOn ? 2 * hidden : 0);
         clear();
 
         for (int ply = 0; ply < MAX_PLY; ply++) {
@@ -241,6 +319,21 @@ public final class SerenaBot implements Algorithm {
         for (int line = 0; line < cellsOfLine.length; line++)
             for (int cell : cellsOfLine[line]) linesThroughCell[cell][linesPerCell[cell]++] = line;
         return linesThroughCell;
+    }
+
+    private static void reverse(int[] cells) {
+        for (int i = 0, j = cells.length - 1; i < j; i++, j--) {
+            int swapped = cells[i];
+            cells[i] = cells[j];
+            cells[j] = swapped;
+        }
+    }
+
+    /** 3^i for the cell at index i of the line. */
+    private static int placeOf(int cell, int[] line) {
+        int place = 1;
+        for (int i = 0; line[i] != cell; i++) place *= 3;
+        return place;
     }
 
     /** The columns sorted by distance from the centre (insertion sort, so ties keep left before right). */
@@ -281,16 +374,38 @@ public final class SerenaBot implements Algorithm {
         if (grid.length != rows || grid[0].length != columns) setUp(grid.length, grid[0].length);
         load(grid, myColour);
         updateOpponentCooldown(field.getMoveHistory());
+        if (myTurns == 0) matchBudgetNanos = budgetNanos;
+        noteLostTurns(field.getMoveHistory());
         myTurns++;
         bombCooldown[ME] = myCooldown;
         bombCooldown[OPPONENT] = opponentCooldown;
 
         int booked = bookAction(positionKey());
         boolean bookPlayable = booked != NO_ACTION && isLegal(booked);
-        plannedAction = bookPlayable ? booked
-                : chooseAction(timeUsedNanos > MATCH_TIME_GUARD_NANOS ? budgetNanos / 8 : budgetNanos);
+        long budget = Math.min(matchBudgetNanos, timeUsedNanos > MATCH_TIME_GUARD_NANOS ? budgetNanos / 8 : budgetNanos);
+        if (myTurns <= COLD_TURNS) budget /= 4;
+        long setUpNanos = System.nanoTime() - started; // reading the field, and building the board on the first move
+        plannedAction = bookPlayable ? booked : chooseAction(Math.max(budget - setUpNanos, budget / 4));
         timeUsedNanos += System.nanoTime() - started;
+        answeredTurns++;
         return columnOf(plannedAction);
+    }
+
+    /**
+     * Counts our answers the arena did not place. However short our search, an answer can arrive late
+     * when the machine stalls; each late one halves this match's budget, and each placed one gives
+     * {@link #RECOVERY_NANOS} back, up to {@link #budgetNanos}.
+     */
+    void noteLostTurns(List<Move> history) {
+        int placed = 0;
+        for (Move move : history) if (move.player() == myColour) placed++;
+        if (placed < answeredTurns) {
+            lostTurns += answeredTurns - placed;
+            answeredTurns = placed;
+            matchBudgetNanos = Math.max(MIN_BUDGET_NANOS, matchBudgetNanos / 2);
+        } else {
+            matchBudgetNanos = Math.min(budgetNanos, matchBudgetNanos + RECOVERY_NANOS);
+        }
     }
 
     /** Whether this turn's quark is a bomb, as decided in {@link #accelerateQuark}. */
@@ -423,12 +538,17 @@ public final class SerenaBot implements Algorithm {
         quarkCount++;
         boardHash ^= zobristQuark[2 * cell + player];
         if (networkOn) addRows(quarkRows, (2 * cell + player) * 2 * hidden);
-        for (int line : linesThroughCell[cell]) {
+        int[] lines = linesThroughCell[cell], places = placeInLine[cell];
+        for (int k = 0; k < lines.length; k++) {
+            int line = lines[k];
             adjustThreat(line, cell, -1); // this cell was the line's gap
+            adjustFours(line, cell, -1); // ... or one of its two empty cells
             staticScore -= lineValue(line);
             if (++lineQuarks[2 * line + player] == LINE_LENGTH) completedLines[player]++;
+            linePattern[line] += (player + 1) * places[k];
             staticScore += lineValue(line);
             adjustThreat(line, FIND_GAP, +1);
+            adjustFours(line, NO_CELL, +1);
         }
     }
 
@@ -438,19 +558,25 @@ public final class SerenaBot implements Algorithm {
         quarkCount--;
         boardHash ^= zobristQuark[2 * cell + player];
         if (networkOn) subtractRows(quarkRows, (2 * cell + player) * 2 * hidden);
-        for (int line : linesThroughCell[cell]) {
+        int[] lines = linesThroughCell[cell], places = placeInLine[cell];
+        for (int k = 0; k < lines.length; k++) {
+            int line = lines[k];
             adjustThreat(line, FIND_GAP, -1);
+            adjustFours(line, NO_CELL, -1);
             staticScore -= lineValue(line);
             if (lineQuarks[2 * line + player]-- == LINE_LENGTH) completedLines[player]--;
+            linePattern[line] -= (player + 1) * places[k];
             staticScore += lineValue(line);
             adjustThreat(line, cell, +1); // this cell becomes the line's gap
+            adjustFours(line, cell, +1); // ... or one of its two empty cells
         }
         owner[cell] = EMPTY;
         return player;
     }
 
-    /** Value of a line from player 0's point of view: only a line open to one player counts. */
+    /** Value of a line from player 0's point of view: its pattern's, or with the line weights, only a line open to one player counts. */
     int lineValue(int line) {
+        if (patternsOn) return patternValue[lineDirection[line] * PATTERNS + linePattern[line]];
         int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1];
         int[] weights = lineWeight[lineDirection[line]];
         if (quarks1 == 0) return weights[quarks0];
@@ -480,6 +606,21 @@ public final class SerenaBot implements Algorithm {
         }
     }
 
+    private static final int NO_CELL = -1;
+
+    /**
+     * If the line holds four quarks of one player and none of the other, adds delta to the four count
+     * of its empty cells. The cell given counts as empty though its quark is still on the board.
+     */
+    private void adjustFours(int line, int alsoEmpty, int delta) {
+        int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1], player;
+        if (quarks0 == LINE_LENGTH - 2 && quarks1 == 0) player = 0;
+        else if (quarks1 == LINE_LENGTH - 2 && quarks0 == 0) player = 1;
+        else return;
+        for (int cell : cellsOfLine[line])
+            if (owner[cell] == EMPTY || cell == alsoEmpty) fourCount[player * cellCount + cell] += delta;
+    }
+
     /** The first empty cell of a line. */
     private int emptyCellOf(int line) {
         for (int cell : cellsOfLine[line]) if (owner[cell] == EMPTY) return cell;
@@ -493,7 +634,9 @@ public final class SerenaBot implements Algorithm {
         Arrays.fill(owner, EMPTY);
         Arrays.fill(columnHeight, 0);
         Arrays.fill(lineQuarks, 0);
+        Arrays.fill(linePattern, 0);
         Arrays.fill(threatCount, 0);
+        Arrays.fill(fourCount, 0);
         completedLines[0] = completedLines[1] = 0;
         bombCooldown[0] = bombCooldown[1] = FIRST_BOMB_WAIT;
         sideToMove = quarkCount = 0;
@@ -517,7 +660,9 @@ public final class SerenaBot implements Algorithm {
         int at = copyInto(state, 0, owner);
         at = copyInto(state, at, columnHeight);
         at = copyInto(state, at, lineQuarks);
+        at = copyInto(state, at, linePattern);
         at = copyInto(state, at, threatCount);
+        at = copyInto(state, at, fourCount);
         state[at] = completedLines[0];
         state[at + 1] = completedLines[1];
         state[at + 2] = bombCooldown[0];
@@ -534,7 +679,9 @@ public final class SerenaBot implements Algorithm {
         int at = copyFrom(state, 0, owner);
         at = copyFrom(state, at, columnHeight);
         at = copyFrom(state, at, lineQuarks);
+        at = copyFrom(state, at, linePattern);
         at = copyFrom(state, at, threatCount);
+        at = copyFrom(state, at, fourCount);
         completedLines[0] = state[at];
         completedLines[1] = state[at + 1];
         bombCooldown[0] = state[at + 2];
@@ -565,7 +712,8 @@ public final class SerenaBot implements Algorithm {
      */
     // LOSS BOOK BEGIN (generated by qc.sh learn)
     static final String[] LOSS_BOOK = {
-            "15x30 932b0e9364d6fe0c 18;15x30 92382d2081853b72 12;15x30 3d1c8eea0249f64f 26;15x30 3884c5e144be7c05 11;15x30 4421266e6206a710 12;15x30 e36afd9b38c0a153 14;15x30 7413ca505f75a080 5;15x30 1b239c79eae243af 13;15x30 0c9c0ff82d3b4c69 12;15x30 ce407cc4bc0bb54e 12;15x30 5a524f0c377d069e 11;15x30 24adcc89ea8396c6 2;15x30 73b66f65fd39ca77 2;15x30 e6b989518f1e743e 2;15x30 797a53d710f909fd 11;15x30 ccc5aa438dd1f6a6 11;15x30 f720a2910eecf2d9 11;15x30 4bdf36e477c5c089 15;15x30 34e4b228f1a7f79a 11;15x30 10484206bcd36e4a 8;15x30 78cebae845423dbc 15;15x30 fa5162239353f4e7 10;15x30 368a813bcf491982 1;15x30 805f44e1a039031d 20;15x30 15c078bd63e6fb19 17;15x30 1a26907beafff58b 17;15x30 8b920d506b2933a7 17;15x30 fa328e40b5dcc236 17;15x30 0cc9ee5c0e331e75 17;15x30 3796ccd014f04a99 17;15x30 0e08818d513da5c0 12;15x30 dd8965f7963022b9 11;15x30 5520b702e64c98e8 12;15x30 586c35e777a122bc 12;15x30 f0b11f8769eaa894 12;15x30 4a94ea8a168cb0f9 9b;15x30 786a03bbf68b126f 9b;15x30 2c451f03b44b58d5 9b;15x30 78c3a124fd2793e7 9b;15x30 011041f74c5be783 5;15x30 ce0554a97b050072 22;15x30 b51e2e57441e0577 9b;15x30 5708a12ed49e9267 12b;15x30 1a687bd0ff7a4d6a 12b;15x30 2b6cea86b7c54e68 12b;15x30 dc7b4c52f259b75b 11;15x30 a30e16801d5f2be6 11;15x30 d687323e2dcbc0ea 18;15x30 3397b98bcc4a8189 12;15x30 2482829221816e5d 21b;15x30 7f8c76e3b209f675 29;15x30 a95304f456a10b80 11;15x30 4b9de0477d974315 23;15x30 d3bd696ce15476e2 8;15x30 527c17bed4f1b349 7;15x30 4f07809c2071110c 7;15x30 d18019c2ba79594c 7;15x30 c1b9715e3e3cef71 1;15x30 2cbcc50822cf9f5f 4;15x30 a9adec14bad53fd2 4;15x30 8a5d04177527435a 10;15x30 d2c5538426401b51 10;15x30 d56ed27ded32ff94 18;15x30 3e47bb238001d260 3;15x30 6920751cd12c9972 9;15x30 b9c8e6cb108f0c98 10;15x30 48a1ada210707c63 10;15x30 b2390363237ff708 10;15x30 f7855c4cf43fc461 10;15x30 736fcebf5f64cafc 10;15x30 68d0f8a7c0eea675 4;15x30 9582c92cfc84f49c 3;15x30 74e29a4657058cac 18;15x30 87405f6517898d0c 3;15x30 3361e73adb8d6ff7 12;15x30 1d23ce6425714c39 26;15x30 6cebc2009d310cac 1;15x30 473e9e169f646fdf 2;15x30 980bb0ea879eb4f3 10;15x30 27830eeee972fc74 10;15x30 63049895dbeae80a 10;15x30 b7c56ae70017dc30 12;15x30 a44c5b4e7f560510 16;15x30 e344e11136eb070b 11;15x30 8ef9f92715a8a248 8b;15x30 a6d41f1d66fc6d45 10b;15x30 2f42ab1f70680d13 10b;15x30 a38787b2a4699a35 10b;15x30 a31b310bae1efd05 10b;15x30 4ffbc6ea7204986f 8;15x30 bc7e14be4f98257a 2;15x30 8c44dd088487cdc0 25;15x30 4c4efdb6d5417524 22;15x30 7ff1e4cbe06e2136 13;15x30 e68e57eb0c211583 22;15x30 fbcfdfee7ef4c572 19;15x30 215ddcc755d0dcee 26;15x30 7494c587b681284b 7;15x30 5bed41f61c976f88 29;15x30 ed6c9c98da2d01b6 29;15x30 74bdf351f1a4cc9a 29;15x30 fc419ee31c8a4ab1 25;15x30 7dff2a727cd3036f 25;15x30 0e607aa438a375c9 13;15x30 17cfd63022929fc5 13;15x30 43626b6791a90d44 13;15x30 857e9aba1cd20059 24;15x30 ae3e1494580c286f 13;15x30 400a03055084e09a 3b;15x30 e590a2aef7b19906 3b;15x30 e8efd1d1058299f1 3b;15x30 1d22176943b0cadb 3b;15x30 f10c7e9a9961693e 3b;15x30 3ac0e82399d2d61d 27b;15x30 088fe34b8cf8480b 18;15x30 18ad00213e90b824 18;15x30 fc5d9432ff3b5237 13;15x30 62da4cf187783d34 19;15x30 b56d8a41c09abc60 13;15x30 b0edf2eb29b2840a 19;15x30 c178ec713b87e0a5 13;15x30 a870645ed8f980a5 19;15x30 2837b1a629cebd49 19;15x30 9164d6eab6cb1fa3 19;15x30 775780d3aeb97075 7;15x30 ce80d0a400d38e52 21;15x30 2475474b3716e209 17;15x30 f917272ccfe85e4e 20;15x30 c62a3c95b0a6eda1 13;15x30 bbb9a94190822fb9 22;15x30 8ebc28913c0da43c 7;15x30 35ed60136d90db44 23;15x30 19fc126a936282fd 21;15x30 a2b8663341a762c9 23b;15x30 442992c1bf991813 23b;15x30 6f1a7822f11f3cf6 17;15x30 d43856861b83ba54 17;15x30 d3aa2eba62bdae74 17;15x30 da0062d2131a4bf8 10;15x30 bee1cbf897100357 13;15x30 a23571a471f471e0 23;15x30 f1fb10e728ac5ce0 25;15x30 f00913ca67e265cd 12;15x30 4d21ff2d3822f10a 18;15x30 6eb80342934d5299 8;15x30 677ce1e5e27dcbb4 8;15x30 60876d221d3a0374 18;15x30 86c0e08a81a0206b 6;15x30 1b6f81d8788f6204 26;15x30 1f77a64b13ed6889 6;15x30 e5167f910444869d 6;15x30 012b6008af2ce4f2 18;15x30 685712cede5efbbd 13;15x30 14bc2ab951bfefb2 18;15x30 b966368b018fe6de 15;15x30 eaacf2138e1aad10 19;15x30 f24f741bc61412a2 19;15x30 fca8cac212ef0e76 15;15x30 1d1ab7b822a47682 18;15x30 a9baa12596b0997c 20;15x30 a6d6ee0dfb2d7e56 20;15x30 367aaf9b1693b105 8;15x30 4192e4d657a46dc7 24;15x30 537ec2f0150245cf 2;15x30 b74636b7ba975981 12;15x30 48407d1667116577 12;15x30 778ac39a656a00bb 11;15x30 ea1758d4a2be319c 10;15x30 e098cd14e7f14457 5b;15x30 ef3e5e60dd7984d5 5b;15x30 59aa6fa51fcc702f 5b;15x30 fb94f8675798ba69 5b;15x30 9f2596d5cb024d11 8;15x30 f7963e7312d6d085 8;15x30 d98be0de49621a3f 13;15x30 493b7f120871a15a 8;15x30 680bac500e369c0b 8;15x30 305419263fc02222 15;15x30 adc0d540012f184f 10b;15x30 bfd9979407c5aaaf 11;15x30 f3b9bbb050e7141d 11;15x30 edfd8f5f054ce234 9b;15x30 8efc2c5480363f14 15;15x30 ca3163e3bc4f1d9f 15;",
+            "15x30 932b0e9364d6fe0c 18;15x30 92382d2081853b72 12;15x30 3d1c8eea0249f64f 26;15x30 3884c5e144be7c05 11;15x30 4421266e6206a710 12;15x30 e36afd9b38c0a153 14;15x30 7413ca505f75a080 5;15x30 1b239c79eae243af 13;15x30 0c9c0ff82d3b4c69 12;15x30 ce407cc4bc0bb54e 12;15x30 5a524f0c377d069e 11;15x30 24adcc89ea8396c6 2;15x30 73b66f65fd39ca77 2;15x30 e6b989518f1e743e 2;15x30 797a53d710f909fd 11;15x30 ccc5aa438dd1f6a6 11;15x30 f720a2910eecf2d9 11;15x30 4bdf36e477c5c089 15;15x30 34e4b228f1a7f79a 11;15x30 10484206bcd36e4a 8;15x30 78cebae845423dbc 15;15x30 fa5162239353f4e7 10;15x30 368a813bcf491982 1;15x30 805f44e1a039031d 20;15x30 15c078bd63e6fb19 17;15x30 1a26907beafff58b 17;15x30 8b920d506b2933a7 17;15x30 fa328e40b5dcc236 17;15x30 0cc9ee5c0e331e75 17;15x30 3796ccd014f04a99 17;15x30 0e08818d513da5c0 12;15x30 dd8965f7963022b9 11;15x30 5520b702e64c98e8 12;15x30 586c35e777a122bc 12;15x30 f0b11f8769eaa894 12;15x30 4a94ea8a168cb0f9 9b;15x30 786a03bbf68b126f 9b;15x30 2c451f03b44b58d5 9b;15x30 78c3a124fd2793e7 9b;15x30 011041f74c5be783 5;15x30 ce0554a97b050072 22;15x30 b51e2e57441e0577 9b;15x30 5708a12ed49e9267 12b;15x30 1a687bd0ff7a4d6a 12b;15x30 2b6cea86b7c54e68 12b;15x30 dc7b4c52f259b75b 11;15x30 a30e16801d5f2be6 11;15x30 d687323e2dcbc0ea 12;15x30 3397b98bcc4a8189 12;15x30 2482829221816e5d 21b;15x30 7f8c76e3b209f675 29;15x30 a95304f456a10b80 11;15x30 4b9de0477d974315 23;15x30 d3bd696ce15476e2 8;15x30 527c17bed4f1b349 7;15x30 4f07809c2071110c 7;15x30 d18019c2ba79594c 7;15x30 c1b9715e3e3cef71 1;15x30 2cbcc50822cf9f5f 4;15x30 a9adec14bad53fd2 4;15x30 8a5d04177527435a 10;15x30 d2c5538426401b51 10;15x30 d56ed27ded32ff94 18;15x30 3e47bb238001d260 3;15x30 6920751cd12c9972 9;15x30 b9c8e6cb108f0c98 10;15x30 48a1ada210707c63 10;15x30 b2390363237ff708 10;15x30 f7855c4cf43fc461 10;15x30 736fcebf5f64cafc 10;15x30 68d0f8a7c0eea675 4;15x30 9582c92cfc84f49c 3;15x30 74e29a4657058cac 18;15x30 87405f6517898d0c 3;15x30 3361e73adb8d6ff7 12;15x30 1d23ce6425714c39 26;15x30 6cebc2009d310cac 1;15x30 473e9e169f646fdf 2;15x30 980bb0ea879eb4f3 10;15x30 27830eeee972fc74 10;15x30 63049895dbeae80a 10;15x30 b7c56ae70017dc30 12;15x30 a44c5b4e7f560510 16;15x30 e344e11136eb070b 11;15x30 8ef9f92715a8a248 8b;15x30 a6d41f1d66fc6d45 10b;15x30 2f42ab1f70680d13 10b;15x30 a38787b2a4699a35 10b;15x30 a31b310bae1efd05 10b;15x30 4ffbc6ea7204986f 8;15x30 bc7e14be4f98257a 2;15x30 8c44dd088487cdc0 25;15x30 4c4efdb6d5417524 22;15x30 7ff1e4cbe06e2136 13;15x30 e68e57eb0c211583 22;15x30 fbcfdfee7ef4c572 19;15x30 215ddcc755d0dcee 26;15x30 7494c587b681284b 7;15x30 5bed41f61c976f88 29;15x30 ed6c9c98da2d01b6 29;15x30 74bdf351f1a4cc9a 29;15x30 fc419ee31c8a4ab1 25;15x30 7dff2a727cd3036f 25;15x30 0e607aa438a375c9 13;15x30 17cfd63022929fc5 13;15x30 43626b6791a90d44 13;15x30 857e9aba1cd20059 24;15x30 ae3e1494580c286f 13;15x30 400a03055084e09a 3b;15x30 e590a2aef7b19906 3b;15x30 e8efd1d1058299f1 3b;15x30 1d22176943b0cadb 3b;15x30 f10c7e9a9961693e 3b;15x30 3ac0e82399d2d61d 27b;15x30 088fe34b8cf8480b 18;15x30 18ad00213e90b824 18;15x30 fc5d9432ff3b5237 13;15x30 62da4cf187783d34 19;15x30 b56d8a41c09abc60 13;15x30 b0edf2eb29b2840a 19;15x30 c178ec713b87e0a5 13;15x30 a870645ed8f980a5 19;15x30 2837b1a629cebd49 19;15x30 9164d6eab6cb1fa3 19;15x30 775780d3aeb97075 7;15x30 ce80d0a400d38e52 21;15x30 2475474b3716e209 17;15x30 f917272ccfe85e4e 20;15x30 c62a3c95b0a6eda1 13;15x30 bbb9a94190822fb9 22;15x30 8ebc28913c0da43c 7;15x30 35ed60136d90db44 23;15x30 19fc126a936282fd 21;15x30 a2b8663341a762c9 23b;15x30 442992c1bf991813 23b;15x30 6f1a7822f11f3cf6 17;15x30 d43856861b83ba54 17;15x30 d3aa2eba62bdae74 17;15x30 da0062d2131a4bf8 10;15x30 bee1cbf897100357 13;15x30 a23571a471f471e0 23;15x30 f1fb10e728ac5ce0 25;15x30 f00913ca67e265cd 12;15x30 4d21ff2d3822f10a 18;15x30 6eb80342934d5299 8;15x30 677ce1e5e27dcbb4 8;15x30 60876d221d3a0374 18;15x30 86c0e08a81a0206b 6;15x30 1b6f81d8788f6204 26;15x30 1f77a64b13ed6889 6;15x30 e5167f910444869d 6;15x30 012b6008af2ce4f2 18;15x30 685712cede5efbbd 13;15x30 14bc2ab951bfefb2 18;15x30 b966368b018fe6de 15;15x30 eaacf2138e1aad10 19;15x30 f24f741bc61412a2 19;15x30 fca8cac212ef0e76 15;15x30 1d1ab7b822a47682 18;15x30 a9baa12596b0997c 20;15x30 a6d6ee0dfb2d7e56 20;15x30 367aaf9b1693b105 8;15x30 4192e4d657a46dc7 24;15x30 537ec2f0150245cf 2;15x30 b74636b7ba975981 12;15x30 48407d1667116577 12;15x30 778ac39a656a00bb 11;15x30 ea1758d4a2be319c 10;15x30 e098cd14e7f14457 5b;15x30 ef3e5e60dd7984d5 5b;15x30 59aa6fa51fcc702f 5b;15x30 fb94f8675798ba69 5b;15x30 9f2596d5cb024d11 8;15x30 f7963e7312d6d085 8;15x30 d98be0de49621a3f 13;15x30 493b7f120871a15a 8;15x30 680bac500e369c0b 8;15x30 305419263fc02222 15;15x30 adc0d540012f184f 10b;15x30 bfd9979407c5aaaf 11;15x30 f3b9bbb050e7141d 11;15x30 edfd8f5f054ce234 9b;15x30 8efc2c5480363f14 15;15x30 ca3163e3bc4f1d9f 15;15x100 42e2de873a988d1e 44;15x100 3b6b2b7ebbd87df6 53;15x100 2e9bd59f91ca4516 58;15x100 5030c3edcc54f12a 56;15x100 39446fcf63f895f1 57;15x100 2b3ece218de1e867 57;15x100 a7c36e1a0ca0ba1f 57;15x100 80c66dd4c48e94e0 57;15x100 2a2ec9a45b4f322a 57;15x100 e91b07ce9b27e1b6 57;15x100 8b3b9986b33658e0 53;15x100 67572a8ff7db7a4d 53;15x100 8748e8c2fc509fbd 53;15x100 decab78693492762 57;15x100 62366ebe94d3ebdd 31b;15x100 7599ddb1cbc164ca 57;15x100 700a796a8e337542 57;15x100 37d4b2e4e0eb3904 48;15x100 67a292a86b90c1be 48;15x100 da750fbad4ae9127 25;15x100 bdbec0b9eeffef3e 25;15x100 3fe004e751191644 25;15x100 221431243942a3b6 25;15x100 e97f0e551af24135 25;15x100 8e4d05e3cc9b3c84 25;15x100 017f17b55c7c46f5 19;15x100 a40b31ca4e8f2e0b 28;15x100 2f6d1b31f14c777b 19;15x100 46513a9227721d4b 19;15x100 7ca8d78964c707f8 19;15x100 29879c449b1469c3 19b;15x100 0fa50a02eb185c50 79b;15x100 dbaac228fda58fd7 31;15x100 74e07400abf248c6 51;15x100 0fb5c9aee2748f19 49;15x100 9826d53210aac4a1 49;15x100 d1857c4eef954340 13;15x100 54da368718aad483 13;15x100 f305205c04fe4c9e 13;15x100 cf9a138f091f5b57 13;15x100 13ebc9028f310bb1 13;15x100 3102302d5786f290 13;15x100 eebcd3ef70df5ab6 96b;15x100 d1267075346bd2f3 13;15x100 fd460d8ad35f0e0d 24;15x100 1a245facf8ddb02f 52b;15x100 d8030c89faabfe45 48;15x100 569c4b552174de85 47;15x100 d0cf6ccd0c127e06 50;15x100 7e3df2772b11b848 49;15x100 45246ffb3e6ea3ca 48b;15x100 58e54034a17aa0d7 48b;15x100 d4a67f6dafab96a4 57;15x100 aad7af765c173cfa 57;15x100 1a2e5ceacf04394f 57;15x100 233763f89abc62ad 45;15x100 43d0e58a7393bf72 58;15x100 60f79deb03923b9f 58;15x100 75b9055ca799f220 58;15x100 2be9efc4e71d79fb 55b;15x100 515e2850349164ee 58;15x100 2537257b4549be1a 53;15x100 dbfab8b4bdbb7ca7 35;15x100 434ba28bb02d7bcd 35;15x100 429fa5af369c46c3 35;15x100 d44dae58f9eadeb0 35;15x100 74e96c5464405d4a 43b;15x100 602a21efaa44b5c3 43b;15x100 d920b8f7779a7f6c 43b;15x100 13223dfff40b8e93 43b;15x100 67ef5f2355df9d33 0;15x100 fe3573e00cfaab4c 49;15x100 96153b57a7a47357 49;15x100 b1446ae709f9603c 51;15x100 3c822d4630a49845 48;15x100 9f1239920c39c592 50b;15x100 d9317ca23f07ae7e 50b;15x100 6d8e534b003e2b39 48;15x100 5c4c73520e3fdd47 47;15x100 baaedeea81ff19d1 48;15x100 b48651ac30de33a7 50;15x100 3bcb2548b2accec0 52;15x100 78db3b454b73946f 51;15x100 1ce419bbff6231e7 48;15x100 2082fdd0cce8f107 50b;15x100 0e4382a18403a486 48b;15x100 ac311569d19bcf51 47b;15x100 4249e87de34a02e1 0;15x100 e937b2d73f14f226 48;15x100 9c91606f0698def9 48;15x100 73f1c63050fd2c5a 49;15x30 19ea9290fead20a7 16;15x30 030513b3d1f08da9 15;15x100 9dfaf35c60e4d589 47;15x100 8d59e84ee1d3f232 47;15x100 d2d5b7b8f619137f 45b;15x100 6e4e0d4e87fd43d2 45b;15x100 713f94b4d88b9618 45b;15x100 5c27cf4acb281ee8 44;15x100 972117155cfe2e6f 43;15x100 e53aab6619ce2672 43;15x100 4cfc062ea5d0f59c 44;15x100 e7813662109d64b2 53;15x100 eba6fd9f70817852 53;15x100 9426a700a0c4f097 55;15x100 7af363cbd410dfdc 9;15x100 c79afaa4b26125b9 7b;15x100 e2d55d953c1d3900 55;15x100 6758dd1ac25b1b6f 55;15x100 0ad8d8490bb78957 55;15x100 e1e09ca74838d3ec 55;15x100 5b088ac9d2e69f1c 49;15x100 120c65c8908bc5e7 47;15x100 7722f27146648649 49;15x100 2ea39773babdc7fa 49;15x100 9b9883aaa73440dd 51;15x100 ec48ca08838051bb 48;15x100 14b192be28310f12 53;15x100 7ac091163c161db9 53;15x100 2ac58d24c93f189e 53;15x100 9460b449f9ea3f01 39;15x100 84b955a42ca6c129 39;15x100 32beb7fec2998f14 39;15x100 ce135d5f2ce5a49c 39;15x100 a2a8cb29d9245629 39;15x100 0138dffde5b90bfe 50;15x100 4a133f8c040ba28f 0;15x100 e7ceecda9b21f14e 0;15x100 634ef9bd1edb6cfb 85;15x100 c92725a87320fd05 52;15x100 bc3dd753f49d2f97 52;15x100 58a3444cf1be9409 52;15x100 761099c36ba6d4ff 53;15x100 5a04ec634a4f65dc 48;15x100 bbaec47eab057b9a 9b;15x100 f5e36c8f8d8a2fb1 50b;15x100 e888af007c5b92b0 55;15x100 35365a5a3a188eb3 55;15x100 7d6d2c392996ff5e 55;15x100 5ba465787b0d6321 55;15x30 a93d1258d2a89b04 14;15x30 20abf187786009fb 21;15x100 489c71a17448ff1b 11;15x100 41773fde1a3adba8 11;15x100 e1e3ee40cbbe3aac 11;15x100 ab3b4e345aecfb3f 10;15x100 19972f8e4e2fa6ba 10;15x100 6a7269095e5de695 5;15x100 34c688c996e0343b 6;15x100 c1dc5b94d232c1cf 5;15x100 5e7fbedbc2275224 28;15x100 b4f30011f30c3091 27;15x100 539e9f95db9092b5 27;15x100 6e3e7bb02062abaa 26;15x100 a960e08ffe652b95 26;15x100 e68dab44e3021c67 65;15x100 53dddb1fe9f4773a 65;15x100 42135a590bf21d6c 65;15x100 8c419ba073bb8210 41b;15x100 ec46b8f52ecc5d7b 41b;15x100 91d0d0575cec61d5 41b;15x100 52820f79c72795f7 41b;15x100 4dc94bef89ef027a 41b;15x100 5829d25b504b09dd 41b;15x100 cf9397f31d9de08d 41b;15x100 5d4a67487236af56 50b;15x100 d1d26f0a3ee4e7b5 50b;15x100 7f46253647e543a5 50b;15x100 bdccdebf719561d8 51;15x100 a7ac03474eed62ff 0;15x100 87abbce48ee71b84 0;15x100 3d5c97dc4a17a99d 47b;15x100 f922bdaedd1f2a26 50b;15x100 3b2b7fdd9fa38c8b 50b;15x100 2cad04f6051c7d61 39b;15x100 25cfa9ba549d0a21 39b;15x100 3d94bb8360c64aef 39b;15x100 332e8851c94768bf 39b;15x100 762f5476b7d21806 39b;15x100 ea1dfef35351b361 39b;15x100 7c93f84922337f32 39b;15x100 3b07fd73e2c5b86e 39b;15x100 1a45bf7973d469d8 39b;15x100 2f83109d6c943542 46;15x100 468d6e8437433ef8 30;15x100 aa7bd1efb34d5446 40;15x100 49fed696a14d9192 40;15x100 d5c248648d55279e 40;15x100 547448c5f97359a2 23;15x100 c2f90d0a49aa9946 49;15x100 687b4975157c30e7 16;15x100 3599c74bccc5dccd 16;15x100 1bef84d36b307d36 50b;15x100 fb4691e1c3280932 46;15x100 ac35c42ed5ef6d10 27;15x100 f227b6db8c312fd4 27;15x100 b251627c880d5e12 27;15x100 bd9a15232decb910 27;15x100 0d4047fa997bfa7f 28;15x100 23e41b9a47e9f92d 19;15x100 6fb0e1cf6b54f7f1 26b;15x100 7a573cb60617adab 26b;15x100 07c090fb3e46200b 23;15x100 0e8094dbb3aeff6a 26b;15x100 60d49301c4b52ec3 50;15x100 f41450d98419387c 46;15x100 f3b9704d3616f6c2 47;15x100 e28dcfa1dfd27dc8 47;15x100 026ece4804361b72 47;15x100 0a44a923a35cf876 55;15x100 83028d4b09c13298 48b;15x100 f85d4f473fad0c2a 48b;15x100 e224f332e48e40cf 48b;15x100 47ef1a109a3545e8 51;15x100 5b8c114435c11918 51;15x100 e500478c2bd0b945 51;",
+            "15x100 c3c505d61058bace 48b;15x100 4fe51ea380c09fc9 44b;15x100 d4c96122c3b7119f 50;15x100 cda4949afc70a636 36;15x100 92a7f46e649a67c9 51b;15x100 f1a151f9fc7febb2 36;15x100 a49f34b9296279f3 36;15x100 fd1e221c6c17c183 50;15x100 a92413816e2b4c3c 50;15x100 9539a5ad6c8d30e8 47b;15x100 05355fa4b924435c 53;15x100 187dd4be874bb165 49;15x100 5ebc082f043180f6 52b;15x100 bd8b1990be71464d 52b;15x100 a958040670b48896 52b;15x100 90cf365ad13ee70d 53;15x100 44176e2b7d6e7d70 28;15x100 dadc8b83d487619a 28;15x100 3fa8bfe9cbc8171f 28;15x100 585ab02c18194d84 89;15x100 cb416e249687a45b 89;15x100 77a9aed9e33158c8 7;15x100 2fa23bda016e4097 7;15x100 98ba35921caccc9e 4;15x100 9ec60393531868b3 56b;15x100 c7c18f63f1913f11 47;15x100 7a77205f846743c0 53;15x100 2ec621d6ae57bb3f 52;15x100 2d87024f33a24aee 49;15x100 ebe8e08277703591 50b;15x100 37a304abddc60bd6 57;15x100 ca9f706ea2d2be64 25;15x100 9d5e150cd0990379 32;15x100 5eb674c8bf48891e 25;15x100 002b5bde529cc2f8 25;15x100 96f8450a6a51ffce 25;15x100 380197d6cb0f1341 25;15x100 97314c6a33bb4b01 25;15x100 9fc925fd08641160 64;15x100 70ef9cc5c83af7a8 28;15x30 cd146bcc913691b5 15;15x100 c51a2f164b1ed365 49;15x100 d00d597d0194db0d 49;15x100 070a82376d0623c8 49;15x100 5bc0ecf01906a1da 49;15x100 a940eed38f32fc4a 46b;15x100 b38bc2621b25bdc5 47;15x100 c35040ca553edc45 47;15x100 2690cb297d98d0e3 43;15x100 f8d7482a0b994145 57;15x100 d038528ecc43d8b0 6b;15x100 bdb857dd05af4a88 6b;15x100 82f47d17a62808ea 63;15x100 339753917f87d950 48b;15x100 dd4b54404d545e6d 63;15x100 164e80ab26a7b68f 63;15x100 7ae78bb96e4bdae6 63;15x100 16bfdda9a81a42b1 63;15x100 0fe8e6a77f3e3f36 48b;15x100 22d0ba1ca3f34d31 0;15x100 03f4af04eae91cd8 5;15x100 5a84297876fb2939 5;15x100 7c46008f9e819b2a 53;15x100 f22c4dbc68c43dbf 47;15x100 39d7c200603c750c 50;15x100 3ccbbc94f29a6383 49;15x100 abee4bcc68950f63 49;15x100 efa509a535859e5b 54;15x100 6113799ee3919065 54;15x100 f27167afc84dd766 50;15x100 0f98c05c1a3de77b 49;15x100 2f0285fe97ad62d4 53;15x100 e5e3daf733a10995 0;15x100 dd556c35de6481f5 63;15x100 a29e8eacf1ebbef6 34b;15x100 f27e01a82c278c2d 30b;15x100 8170425de2c41c3a 63;15x100 74e6798900e0ce49 63;15x100 11c303d9e1862ece 63;15x100 71f5c8ac23739e9e 0;15x100 d871d57c11631bb5 49b;15x100 ef4945bbc37b7863 49b;15x100 a74b04460d3fa0d1 49;15x100 5767a307fc170594 49;15x100 745752d84960b627 49;15x100 a139437c2d57b8c4 49;15x100 f3eafce50317f3c4 1;15x100 ca4f871634d122ca 11;15x100 6aaf4a15a7896955 48;15x100 c942d77b3602cd46 48;15x100 d43aeb58c60f48b8 28;15x100 e069760cbf9e5a48 31;15x100 b09f8a6d4413db67 31;15x100 2cbc4e7f5530394d 67;15x100 686fb7a62ae2cab3 68b;15x100 0bfe5ba9012d64e0 49;15x100 3f1e06082b787b6c 49;15x100 3e86b7501754a8d7 53;15x100 d6c42861e29441a5 37;15x100 48d80472f12d599f 35;15x100 2df588115ab7eb66 40;15x100 010233fe84abdfef 34;15x100 d0981a599f33ce9d 5;15x100 26819097dcbfc867 54;15x100 52d28cce514021e1 19b;15x100 f84d3b60fc4d1992 19b;15x100 fa10ee33d2581b23 33b;15x100 3181d66d7600de61 33b;15x100 01392f211487df7c 16b;15x100 7fac41ba794357df 16b;15x100 ffcd39b11650f3e0 15b;15x100 80b050aa97fd0d5f 69b;15x100 06568ead667d9b40 69b;15x100 d1ebdafa69af1473 69b;15x100 3e5513f781e50119 69b;15x100 1cb2a7ebf04a8fe9 26;15x100 7e64aedf0a9a550d 26;15x100 930a3c5252ca31e0 26;15x100 bc04817955a9e5f3 60;15x100 802a8376064b56fe 5;15x100 d9ce2f256b4c0cfa 5;15x100 066ded41d852be6d 5;15x100 ae09968f9c52d6f1 5;15x100 e07ebd7118dcff17 46;15x100 7b60d3019b804ef6 47;15x100 5ef0cf1274762190 46;15x100 f8916668e5f762c8 42;15x100 9ded5cb8397ee216 46;15x100 b5fe8bfd23895461 0;15x100 53cb89af585ee953 49;15x100 e6cc1801e2ee5368 49;15x100 1e1358e333cd3597 50;15x100 682945dcfbf6a56b 50;15x100 851add2c8fa4071f 0;15x100 46a784484f8a6e91 24;15x100 d4e961985dc4a482 5;15x100 1a642d63a225d225 5;15x100 4e09aa31e14b49fb 7;15x100 74bbae960a9f40bf 7;15x100 9b9becdcc61486de 4b;15x100 bd1fbfccaadeb694 56;15x100 4dac6f9bec4dded8 56;15x100 ea63be986ae502a3 56;15x100 915dec23ea6ae869 56;15x100 a95d3110d106f804 56;15x100 1079b46a2cf23e1f 56;15x100 a6e9c21319dec706 48;15x100 fce396d7437ef28e 48;15x100 3e2e6f2806565347 48;15x100 b7416c6b22420716 38;15x100 bc4765bc730273a9 48;15x100 4b9b9d46dea5a003 24;15x100 86d68d898067b938 24;15x100 9e1ff715890c71fc 49;15x100 8a9d843a6e4f29fe 49;15x100 32e6af99bcf53a72 50;15x100 e84e26803cef2b62 1;15x100 9810bcac6acc5c80 4;15x100 4ce7aa3f7d881529 1;15x100 698d82d132845241 1;15x100 9ded94b8c995b861 6;15x100 91643c8ae719b0ef 5;15x100 8f1dfb771018769b 50;15x100 c7ce104e4861942a 50;15x100 a0ea9b8d00792038 49;15x100 3b26cfa4ba9db9bd 51;15x100 ffcb88c070e056d6 50b;15x100 eb1eada289ebdf2b 52;15x100 db25178c7001b850 49;15x100 56a09ccfb17ca919 0;15x100 bbf4e4e319a6a453 50;15x100 ac8376eb16918b74 49;15x100 4132c5ab01752199 49;15x100 20c938b06de7de67 2b;15x100 10bf0936d1aee8e0 49;15x100 c98b5ef3017f5d1d 75;15x100 ff3236a6865155d9 77;15x100 e501ea4652f68ab1 77;15x100 8bc95c4f4b40c45f 57b;15x100 7ec468a0f13cbad2 77;15x100 07d0ed0167aa2491 77;15x100 9fe87f46d504c122 15;15x100 fc9bbd6171e664ed 18b;15x100 0d70bddae2c97826 46;15x100 afb2e6ecb5563390 4;15x100 4b7e958a98f1167a 75;15x100 3f894a7ac3814b3d 76;15x100 67f65bf2fa0b7517 76;15x100 daa4beed04f20a33 75;15x100 ff24e0d848ae894e 34;15x100 987d9cfabbd143d0 0;15x100 734eb9a4c8b36b31 0;15x100 17656820ae9e7a1c 52b;15x100 cc6e700a1dcd122a 44;15x100 f58a6cfbebbd20b7 48;15x100 68a7d256fbb63700 47b;15x100 597fcd50a7e81372 47b;15x100 51e024f559ed965a 46;15x100 68f0cf0b3b021613 7;15x100 f900c764cf64c906 10;15x100 43322dd75999320d 9;15x100 5d7cb29bfccc7461 61;15x100 4be71f6d19c3d982 59;15x100 5c78503b2e598ef0 59;15x100 7da9d986a821fcae 59;15x100 aac507d678009f7e 53;15x100 45062c6e4a61eda3 56;15x100 b1712188874cdfae 50;15x100 6691b95d07141590 46;15x100 5dfae259215050fa 48;15x100 a2a6b1473f85515b 51;15x100 b4baad6c1708be4f 52;15x100 90e91a1c821fec08 52;15x100 4bfdbf7c463703e5 70;15x100 e9855bc874b2f8f6 70;15x100 54142a4191d3b505 48b;15x100 e0cc4bc7f44801b8 70;15x100 236082cc308ad893 70;15x100 5b2db09562b75f3a 70;15x100 07257cd93203a3ef 70;15x100 c13f0984f3dd7bb5 70;15x100 f922dd6e00b35fb2 46;15x100 cb1245c5597d9474 5;15x100 30aa900288258074 46b;15x100 adbdd6b040ddedb3 47;15x100 0bebc71321c46e8b 55b;15x100 6d152d646470fb09 55b;15x100 d0fdd289477b22d0 60;15x100 12503f871c53a448 60;15x100 2e8d7bd47f0b34e5 31;15x100 61add17f47502a16 54;15x100 2c7bbcf71c9459be 54;15x100 d7a72ed1f039ae33 54;15x100 6429a2ac4016462a 61;15x100 ed8461121a8a95f0 49b;15x100 d1d511cbabb68705 49b;15x100 a5a286dc97edf068 49b;15x100 70bdaccd800e6cf1 49b;15x100 5701a1803784efc2 43;15x100 fa45988b2c4df6f5 43;15x100 083e4df3bf6643fe 43;15x100 a44adc0db7e5c814 14;15x100 4131f2f9e2752350 17b;15x100 9f1926be993b315b 57;15x100 70d833296c09d818 51;15x100 3e8d90866337575f 51b;15x100 d18d0c8339330b60 55b;15x100 64095ce197f67420 33;15x100 efbac4d0e0142ba7 55b;15x100 883817743b89397e 57;15x100 8d667c0d9bcf93d9 51b;15x100 91916f0d6bc4c2e1 5;15x100 769383f4f806e850 5;15x100 13f1cc3f91b2fc10 5;15x100 af90f71c0b7e57a4 5;15x100 4ed4630b8fcfb9a9 5;15x100 f224e8a71fb0cb0a 4b;15x100 42b79af2f82e02b7 50;15x100 910d5880d32e54ec 54;15x100 542344388d47cc93 53;15x100 85b877597d46eea7 45;15x100 7d8f55f680600d63 45;15x100 5cd621162c24cf4d 51;15x100 8f26ed0a75a35a9c 48;15x100 08da66768f3efb7a 53;15x100 3a13ad31996ea76d 54;15x100 a1f6960f3d1258d4 52;15x100 efc773d1e45891d1 51;15x100 d632dc0214669b9a 5;15x100 41ce6bf511826eb0 5;15x100 d2cbd2b9137c95a4 5;15x100 0ef7f16e2b0ce1e4 5;15x100 3d80a6ccd0564fed 7;15x100 e8d9486acfc99e54 7;15x100 9ff20d9af8918707 4;15x100 6bd3fcc30af4baf1 4;15x100 a56d6d439333363d 0;15x100 bbb79557945fee7a 54;15x100 0afc26e207df6d64 50;15x100 508c03c7cea98282 53;15x100 239181f658129881 53;15x100 0e56aeb88fe5f175 50;15x100 efadc9a81d234048 52;15x100 ee493a25d1187190 50;15x100 99a526b818091370 8;15x100 2b998ceec8448602 8;15x100 938633e5a0d90f81 8;15x100 fca7b0ad3e743326 8;15x100 65e18da12d485149 8;15x100 e4172579da5036c2 8;15x100 54e1d1e07f2d6279 8;15x100 b400ec5eaad0fdd4 4;15x100 906cc261a5879b9d 10;15x100 b61f6f10962faaca 5;15x100 8613c50f9059f173 7b;15x100 d17db2beae4e0fc8 5;15x100 6c142bd1c83ff5ad 4;15x100 68ed256acf25fb93 4;15x100 1a118ae9661f5ddf 8;15x100 77ed4f9e5a73db50 8;15x100 ce33438403b65028 9b;15x100 537f8dbde001ee66 3;",
     };
     // LOSS BOOK END
 
@@ -655,16 +803,78 @@ public final class SerenaBot implements Algorithm {
         return NO_ACTION;
     }
 
-    /** Static evaluation for the side to move: line values and bomb readiness. */
-    int evaluate() {
-        if (networkOn) return networkScore();
-        int score = sideToMove == 0 ? staticScore : -staticScore;
-        return score + bombReadyBonus * (isBombReady(sideToMove) - isBombReady(1 - sideToMove));
+    /** Static evaluation for the side to move: line values, bomb readiness and (with the pattern table) the move itself. */
+    public int evaluate() {
+        int score;
+        if (networkOn) score = networkScore();
+        else score = (sideToMove == 0 ? staticScore : -staticScore)
+                + bombReadyBonus * bombBonusPercent / 100 * (isBombReady(sideToMove) - isBombReady(1 - sideToMove)) + tempo;
+        if (varietyNoise > 0 && quarkCount < varietyQuarks) score += varietyNoise();
+        return score;
+    }
+
+    // ------------------------------------------------------------------ variety
+
+    /**
+     * Largest evaluation noise in the opening, in points; 0 plays alike every match. Rivals can read
+     * our matches: a bot that plays alike every time loses again to a line that beat it once. The
+     * noise is fixed per position within a match, so the search stays consistent, and new each match.
+     */
+    public int varietyNoise = 0;
+    /** The noise applies while the board holds fewer quarks than this. */
+    public int varietyQuarks = 30;
+    /** This match's noise: a new seed for each bot made. */
+    public long varietySeed = System.nanoTime();
+
+    private int varietyNoise() {
+        long mixed = (positionKey() ^ varietySeed) * 0x9E3779B97F4A7C15L;
+        return (int) ((mixed >>> 33) % (2 * varietyNoise + 1)) - varietyNoise;
     }
 
     private int isBombReady(int player) {
         return bombCooldown[player] == 0 ? 1 : 0;
     }
+
+    // ------------------------------------------------------------------ the pattern table
+
+    /** Evaluate lines by their patterns where a table is embedded. Off: the line weights play. */
+    public static boolean usePatterns = true;
+    /** This bot's copy of {@link #usePatterns}, taken when it is made and read when a board is set up. */
+    public boolean withPatterns = usePatterns;
+    /** Patterns of a six-cell line. */
+    public static final int PATTERNS = 729;
+    public boolean patternsOn;
+    /** The value of each pattern per direction class, from player 0's point of view, at {@code direction * PATTERNS + pattern}. */
+    int[] patternValue;
+    /** Score of having the move, from the pattern table; 0 with the line weights. */
+    int tempo;
+
+    /**
+     * Decodes {@link #PATTERN_TABLE}, if one is embedded. Layout, little-endian: version (a byte); the
+     * value of every pattern of every direction class (int32, 3 x 729); the bomb readiness bonus and
+     * the tempo (int32 each).
+     */
+    private boolean loadPatterns() {
+        byte[] blob = Base64.getDecoder().decode(String.join("", PATTERN_TABLE));
+        int values = 3 * PATTERNS;
+        if (blob.length != 1 + 4 * (values + 2) || blob[0] != 1) return false;
+        patternValue = new int[values];
+        for (int i = 0; i < values; i++) patternValue[i] = littleEndianInt(blob, 1 + 4 * i);
+        bombReadyBonus = littleEndianInt(blob, 1 + 4 * values);
+        tempo = littleEndianInt(blob, 5 + 4 * values);
+        return true;
+    }
+
+    private static int littleEndianInt(byte[] bytes, int at) {
+        return bytes[at] & 0xff | (bytes[at + 1] & 0xff) << 8 | (bytes[at + 2] & 0xff) << 16 | bytes[at + 3] << 24;
+    }
+
+    /** The pattern table in base64. Generated; do not edit by hand. */
+    // PATTERNS BEGIN (generated by tools/qc-net)
+    static final String[] PATTERN_TABLE = {
+            "AQAAAAArAQAA1f7//+8AAACTAgAAlP7//xH///9sAQAAbf3//+QAAAC7AQAAUf///5EBAACyAwAAdf7///j///9fAAAAkP///xz///+vAAAARf7//wgAAABwAAAAof///2/+//+LAQAATvz//+QAAACzAQAAv////2cBAABIAgAAHAAAAOz////n////RQAAAAIBAABlAgAATf///5UCAAAbBQAA0v7//+////9F////mP///wAAAAA5AAAAZwAAANb///+QAAAAAQAAAMX///80AAAA7v///xz///9BAAAATf7//xQAAAC7////GQAAAJn+///k////uP3//wAAAACZ////x////zsAAAASAAAAzP///yoAAAD/////cP////7+//+zAAAAm/3//xEAAABoAAAAuwAAAGv9//8uAQAA5fr//+8AAAALAQAAEAAAAFQBAACCAQAAFQAAAAAAAADl////PwAAAGcBAADJAAAAEwAAAIcBAADUAgAAhQAAAKX///9+AAAAmf///xQAAAA2AAAAov///+T///+XAAAABAAAANf///9yAAAARAAAAJEBAAC0AQAArP///4cBAADGAgAAagEAACkAAABIAAAARQAAAJUCAACJAQAA8f///04AAACGGgAAmQAAANkAAACi////w////zsAAAAgAAAAbQAAAGIAAAB2AQAAZAAAAAAAAABFAAAAq/7//wgAAABfAAAAGP///+T///8lAAAACAAAAFsAAAAtAQAAif///9b///+x////uP///2IAAABBAAAAVQAAAAAAAADtAAAANAAAABEAAABuAAAAsf7//8L///+2AAAA8f///yf///8nAAAAmv///xH////w////9f7//wAAAADB////GwAAAKz+///r////fv7//+z///9eAAAAyv///ykAAAC8////jv///xwAAAD8////af///5n+///t////N////1sAAABnAAAAgv///3n+//97////LP3///j////oAAAAof///6X///93AAAA0/7//xwAAAD4////2////+////9PAQAAkv///9kAAABmAAAA2f///z4AAAAPAAAASv///yoAAABIAAAATwAAAAAAAADM////E////57///+r////v////2/+//9UAAAATP7//9f///+7////uP///3n+//+W/v//Ov3//8X///+T////4P///wAAAABVAQAAu////57///+c////iv7//2v9//8PAAAAd/7//yf///89AAAAXgAAALL///9n////euX//ysBAAB8AAAAAAAAAAsBAABpAQAA2gAAAPD////y////FwAAALMBAACyAQAAQwAAALQBAAAjAgAA/P///+gAAABGAAAA7v///0EAAAAx////KAAAAF8AAACb////YAAAAFQAAAABAAAAa////7sBAACyAQAA2P///8kAAABVAgAApf///14AAAD5////JAAAAGUCAAD7AQAAdAEAAIkBAACgEgAAGAAAAE8BAACwAgAAPQAAAJn///+/////AAAAALH///+8AAAAvgAAAJP////lAAAAOwAAAK8AAAAx////vf///zYAAAD1////fP///+3////x////u////zkAAAC/////AAAAACAAAABBAQAALwEAAEgAAACc////dwAAALMAAAA7AAAAjP7//24AAAD0AAAAzf///w8AAADd/v//NP7//5MCAABpAQAA6f///4IBAABaAgAAp////8H///9fAAAAAAAAAEgCAABVAgAARQAAAMYCAAC7EQAA1wEAAHcAAADEAAAAxAEAALv////1////3P///yUAAABuAQAALAEAALv////bAAAAav///7IDAAAjAgAAlQAAANQCAAC7EQAA2f///7z///+PAgAAlgAAABsFAACgEgAAzAEAAIYaAAAAAAAAQQIAAGYAAAALAwAA8wAAABIAAABBAQAAxf///0EAAAB9AgAARf///1UBAABc////AAAAAHAAAACb////EgAAAJcAAABuAQAAmAAAAGcAAACSAAAAPP7//5AAAAC8AAAAif///3YBAAB9AgAA8////8z///+tAQAAAAAAAGgAAAD0AAAAw////7YAAADG////5v///z0AAAATAAAADf///2wBAADy////Jv///+X///9fAAAAAAAAAOv///8/////WQAAAOf////5////hAAAAEgAAACPAgAA6P////j///+VAAAAaP///+T////x////WwAAAC0BAACSAAAA6P///5b+//86/v//JwAAAF8AAABGAAAAoP///34AAADEAAAAGAAAAPz///+VAAAA1P7//0X///+wAgAAMwAAAKL///8LAwAAhP///w8AAAC9AAAAGgAAAP////+c////Qv///+0AAACtAQAAAAAAAJz///9u/v//uwAAAIsBAAABAAAABAAAAHIAAADbAAAAGAAAAHv///86/v//Kf7//zQAAADlAAAA0f7//0UAAABc////AAAAAKv///9u/v//DQAAAC4BAADd/v//6P///ycAAAATAAAAfAAAAGf///85////v/3//9X+//8AAAAAhP///xAAAADp////DgAAAPX+//8m////l/7//7/////Y////zwAAAKz///+VAAAA/////6H///+g////ZQAAAE3+//+9////Tv7//xj///8SAAAAuv///0z+//8EAAAA3f3//1H///9DAAAAzwAAABMAAABFAAAADwAAAMr///+EAAAACwAAAE3///90AQAAxf////H////MAQAAIwEAAJL///8zAAAADP///8f///8AAAAAQQAAALj///+J////ZAAAAOD////R/v//v/7//0X+//8oAAAATv7//6L////c////BwAAADf///9bAAAAq/3//2cAAAAAAAAAQQAAAG0AAADF////G////08AAABC////RP///5v9//+M/v//Bf7//7H+///D////UP3//3f+///o////YO3//5T+///aAAAADgAAABUAAACn////wQAAABsAAAAAAAAAof///xwAAACl////DwAAAGoBAADZ////xgEAANP+//8YAAAAbv///xkAAAB8////BwAAAAgAAACYAAAAa////7j///8YAAAAcf3//3X+///8/////////4UAAADXAQAAxgEAAI7////o////Jf///9L+//8YAAAAIwEAAJkAAABBAgAAxwAAANn///+E////7f///8z///8vAQAAG////1UAAADz////kgEAALv///8AAAAApAAAAKH///9gAAAAuv///wQAAAAsAQAAa////4L////o////PP///wEAAAC+AAAAZAAAAGQAAABF////kgEAABP///8AAAAAU/7//7sAAADN////UP3///H////m////Q////14AAAB8AAAA9fz//239//8XAAAAl/7//z8AAAAAAAAAof///37+//9ZAAAApv3//0UAAAAkAAAACwAAAEUAAACWAAAAJf///9v////U/v//kv7//7j9//+7////q/3//4n///88/v//PP///zr9//8p/v//Re7//5D////u////ZQAAAJn////EAQAAbv///2n///9o////kv7//5j///89AAAADP///8P////zAAAA7f///0r///8aAAAAOgAAAHD///93AAAARP///zQAAAAAAAAAU/7//4r+//8NAAAAg/3//078//9r////3f3//0QAAABq////cf3//yz9//8nAAAARe7//+7///87AAAAv/7//6v+//8AAAAApAAAAL////+7AAAAg/3//+X6//80/v//YO3//5r///8N////9fz//3rl//+//f//AAAAAAAAAABDAAAAvf///xEAAAAXAwAAzP///+////80AAAA6fz//xEAAABLAAAAAAAAAEsAAADBAwAApwAAAAAAAACkAAAAMv///+////8AAAAAtf///wAAAADOAAAAXP///7X///9Z////P/z//xEAAABLAAAAAAAAAEsAAADMAAAAAAAAAAAAAAAAAAAAAAAAAEsAAADMAAAAAAAAAMwAAABBAwAAZwAAAAAAAAAbAAAAIv///wAAAAAAAAAAAAAAAAAAAAD3AAAA6v7//wAAAAAoAAAAiv7//+////8AAAAAtf///wAAAAAAAAAAAAAAALX///8AAAAANP///wAAAAAAAAAAAAAAAAAAAAB2AQAA2P///wAAAAAWAQAACf///7X///8AAAAANP///wAAAADeAAAA5f///zT///+Z////v/z//xEAAABLAAAAAAAAAEsAAADMAAAAAAAAAAAAAAAAAAAAAAAAAEsAAADMAAAAAAAAAMwAAACSAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEsAAADMAAAAAAAAAMwAAACSAgAAAAAAAAAAAAAAAAAAAAAAAMwAAACSAgAAAAAAAJICAAAuIAAAcgAAAAAAAAAWAAAA8v///wAAAAAAAAAAAAAAAAAAAAAaAAAAuv///wAAAADO////rP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWAQAATAAAAAAAAACA////BgAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAGQAAAAAAAAD4////z/7//+////8AAAAAtf///wAAAAAAAAAAAAAAALX///8AAAAANP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALX///8AAAAANP///wAAAAAAAAAAAAAAADT///8AAAAAbv3//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxAQAACAAAAAAAAADn////1P///wAAAAAAAAAAAAAAAAAAAAD6////gAAAAAAAAAC0////6v7//7X///8AAAAANP///wAAAAAAAAAAAAAAADT///8AAAAAbv3//wAAAAAAAAAAAAAAAAAAAABUAAAAMgAAAAAAAABGAAAA5v///zT///8AAAAAbv3//wAAAAAOAAAA6v///279//+O////0t///xEAAABLAAAAAAAAAEsAAADMAAAAAAAAAAAAAAAAAAAAAAAAAEsAAADMAAAAAAAAAMwAAACSAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEsAAADMAAAAAAAAAMwAAACSAgAAAAAAAAAAAAAAAAAAAAAAAMwAAACSAgAAAAAAAJICAABsIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEsAAADMAAAAAAAAAMwAAACSAgAAAAAAAAAAAAAAAAAAAAAAAMwAAACSAgAAAAAAAJICAABsIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMwAAACSAgAAAAAAAJICAABsIAAAAAAAAAAAAAAAAAAAAAAAAJICAABsIAAAAAAAAGwgAAAAAAAAXf///wAAAACk////Af///wAAAAAAAAAAAAAAAAAAAADhAAAArv///wAAAADxAAAAkv///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACvAAAAIAEAAAAAAABbAQAAyf7//wAAAAAAAAAAAAAAAAAAAAByAAAAOQAAAAAAAADU////lf7//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEAQAAXgEAAAAAAAAYAQAABgAAAAAAAAAAAAAAAAAAAAAAAACqAQAAqAAAAAAAAAAI////hvz//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADPAAAA/P///wAAAAAV////Ff7//wAAAAAAAAAAAAAAAAAAAADh/v//6v3//wAAAADJ////V////+////8AAAAAtf///wAAAAAAAAAAAAAAALX///8AAAAANP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALX///8AAAAANP///wAAAAAAAAAAAAAAADT///8AAAAAbv3//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALX///8AAAAANP///wAAAAAAAAAAAAAAADT///8AAAAAbv3//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADT///8AAAAAbv3//wAAAAAAAAAAAAAAAG79//8AAAAAlN///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACpAAAANwAAAAAAAAAWAgAAHwEAAAAAAAAAAAAAAAAAAAAAAADrAQAA6wAAAAAAAAAEAAAAMf///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6AwAA+AAAAAAAAABY////Vv7//wAAAAAAAAAAAAAAAAAAAAD6////6P7//wAAAACi/v//vP7//7X///8AAAAANP///wAAAAAAAAAAAAAAADT///8AAAAAbv3//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADT///8AAAAAbv3//wAAAAAAAAAAAAAAAG79//8AAAAAlN///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABrAQAALAAAAAAAAADH////jv///wAAAAAAAAAAAAAAAAAAAAA3AQAApf7//wAAAADg/v//Uf///zT///8AAAAAbv3//wAAAAAAAAAAAAAAAG79//8AAAAAlN///wAAAAAAAAAAAAAAAAAAAABuAAAAD////wAAAABSAAAAH////279//8AAAAAlN///wAAAAD/AAAAXAAAAJTf//+jAAAAAAAAAAAAAAAMAAAA9P///3EAAADyAQAABAAAAI/////8////Dv7//14AAAC3AQAA7f///w4CAACIBAAAAQEAALz///+HAAAAMv7//6L///8TAAAASf7//0QAAADOAQAAef////L9/////v//ePv///H///+JAQAAYf///yUBAABbAwAAmf///54AAADM////9/7///EAAABRAQAAzP///3gBAAC9BQAAiP///2r///8i////LAAAAAgAAAB0////pf///0z///8bAAAAsv///4X////0////h/7//w8AAACfAAAAd/7//2L///8JAQAANAAAANv+//9nAAAApfz///j///9bAAAAjAAAAHsAAAB5AQAADAAAALQAAABOAAAA5f///w////80AAAAr/7//5YAAADU////3gAAAIj+//94AAAAQ/r///7///8DAQAAk////38BAACfAQAALgAAAEAAAABpAAAAO////z0BAAA1AQAArv///y8BAACUAwAALQAAAIwAAABZ////nf///9H///8TAAAALAAAAJj///9aAAAAv////63///99AAAABf///+oAAADjAQAA9f///6gBAACxAgAA4v///zkAAAA5AAAAXP///4kBAACBAgAAxv///ywCAABNIAAAngAAAJX///8DAAAATf///3MAAABe////m////zYAAACHAQAAHAEAAIz+//83AAAAkP///yYAAABl////fP///2T///9tAAAABQEAAMv////wAAAA+f7//3wAAADy////7f///5X///8iAAAA0QAAAL3///9IAAAA0////y3////V/v//nv///+L///8kAQAAzf///xIAAAA3////Bv///wIAAABtAAAA/f7//8D////FAAAAl////4H+///S////Yf7//y8AAADU////7f///1MAAAD7AAAAg////2gAAABBAAAApv///8P+//9SAAAAy/7//3T///9jAAAApwAAANH+///T////bPz//9r///+EAAAAmwAAADUAAAAHAQAAEP///5wAAAD7/v//k////9MAAABiAAAAKwEAAO7////6AAAAyQAAAB4AAAAzAAAA3P7//4T///8TAAAADgAAAEMAAAAtAAAAuP///2sAAAAv////3v///xb///8LAAAAHf7//8f///+kAAAAx////1j+//8eAAAAT/3//43///9lAAAAogAAAHQBAABwAAAAyf///8r////k/v//ef7//3f+//86AAAAf/3//2sAAACzAAAA/f///9T9//9i////s9///zcAAABtAAAAqQAAAEsAAADiAQAAawAAAHH///+g////P////+EAAACYAQAAUQAAAK4BAABIAwAAi////30AAAC3////zgAAAIsAAADl////AwAAAJX///9xAAAAdP///4gAAABcAAAAbP////gBAAArAQAAOAAAAEoBAAB6AgAA3v///4D///8kAAAAbP///4ABAADdAgAArP///wwDAACnHQAAPf///6L///9/AQAAMf///+////8ZAAAAyP///ygAAABxAAAArP///63+///D////5P7//2cAAABu////EQAAAEwAAAADAAAAHQAAAIMAAABBAAAAtP///4IAAACp////owAAADIAAADhAAAA5P///6r///+a////Fv///+kAAABd////Vf///1gAAAC6AAAALf///0wAAAAhAAAA+v3//+IAAADhAQAA0v///5wAAABBAwAAFgAAALb///+g////ugAAAOEBAABbAgAA1////3sCAACrHAAAOwAAALP///9bAAAAr/7//yEAAADY////2AAAAJcAAAACAQAAn////8r///+g////MgAAALoBAAB7AgAAb////6kCAABPHAAAxf///wsAAAAGAAAAY////2YDAABKHQAAYf///+oeAAAAAAAAnQAAAGsAAAC4/v//8AAAAHb////j////Uf///9v///8iAAAA7f7//z/////C////RwEAAHsAAABAAAAAagAAAL/////EAAAAv/7//5L///8+AAAAvf7///z////sAAAACgAAABYAAABHAAAAigEAADwAAABSAAAAi////2YAAAC7/v//yf7//1oBAACU////hwAAAMAAAADCAAAAu////8f+///B////YQAAAAoAAABn////AwAAANf///9B////7P///yb///80AAAAxP///0YAAABLAAAApwAAAIP///9sAQAAfv7//yn///+1////HQAAAAkAAACdAAAA2f///1v///9i////eP7//3QAAAAoAAAASQAAAE0AAAArAAAAoAAAAGcAAAAVAAAALf///yD///9MAAAADP///z4AAADb////rP///6EAAADHAAAA2QAAAC4AAAAuAAAACQAAALf////W////lAAAANoAAACj////tv///6wAAAAFAAAAwv///8P////S////Rf///wMAAAAwAQAAzv3//zcAAABwAAAAyv////////8x////0////+z+///JAAAAZP///2AAAACsAAAA5v///3oBAAAh/////P///47////O////W////8n///9X////k////48AAADBAAAAYAAAALX///+V////Hv7//3X////9////GwAAAHj///+UAAAApP///2sAAACMAAAAj////x////+v////aP7//4P///8y////SQAAAFL+//91AAAAuPz//5n////v////kgAAAH3///9MAAAAv////7T////j/////f///xf///+rAAAAowAAALT///8GAgAA3////6j////TAAAARv///37///9d////VwAAAFYAAADqAAAAZgAAAM7///8cAAAAH////wj+///I////1f7//4AAAACUAAAA3P///7b+//8iAAAAhv3//xEAAAA4AAAA5////1MBAAAcAQAAPQAAANj///9UAAAAj////4D+//9UAAAAI/3//14AAADPAAAAgf7///T8///DAAAAWeL//zkBAACf////PwAAACkAAAAUAAAAvwAAAPb////9////mQAAANcAAADj////SwAAAKUAAACIAQAAngAAAPf///8nAAAAY////9oAAAA8AAAAzP///30AAACCAQAAlP7//7r///9Z////tf///1T///8+AAAA+/////3///8yAgAA0P7//z0AAAC7AAAALgAAAKD///8aAAAAVP///3IAAAClAAAAMgAAAIb+//8EAAAA3wAAAMn///82AAAAkP///xQBAACcAAAAN////wEAAAAtAAAAzwAAAIz///+3////2P///5n////TAAAA6////7P///9g////1f///9L////3////0v///yb///9KAAAAXQAAAEkAAABs////KgAAAOAAAAD0AAAAtP///1////8n////Of///8L///9UAAAAJQAAAB7///8uAAAAH/7//0oAAABG////YAAAAGT////q////v/z//9////8o////KAAAADYAAADO////YAAAAGn///9hAAAA/v7//x/+//8pAAAApf3//00AAABRAQAApf///4X9///F////VeP//4X///+W////wP///24AAABDAQAAwv///0EAAABBAQAAPP///5r///83AQAARQEAAED///9FAAAAPv///6b+//95////bAAAAAQAAAD2////FP///8T///91AAAArv///+r///92/v//uf///0b+//+RAAAAhf3///X///+dAAAA+v///1f9//87AAAAseP//4oAAACvAAAAHQAAAMEAAAC5/v//PgAAACUAAAATAQAA3v///5r8//+fAAAAtuL//5X///8Q////SAEAABbh//9j////AAAAAI8IAAAHBgAA",
+    };
+    // PATTERNS END
 
     // ------------------------------------------------------------------ the network
 
@@ -816,7 +1026,7 @@ public final class SerenaBot implements Algorithm {
 
     /** The score of the position for the side to move, searched to the given depth within (alpha, beta). */
     int negamax(int depth, int alpha, int beta, int ply) {
-        if ((++nodesSearched & 1023) == 0 && System.nanoTime() > deadlineNanos) outOfTime = true;
+        if ((++nodesSearched & (CLOCK_CHECK_NODES - 1)) == 0 && System.nanoTime() > deadlineNanos) outOfTime = true;
         if (outOfTime) return 0;
 
         int mover = sideToMove;
@@ -839,7 +1049,8 @@ public final class SerenaBot implements Algorithm {
             if (opponentThreats >= 2) forced = BOMBS_ONLY;
             if (opponentThreats == 1 && !mayBomb && depth == 0) depth = 1; // search the forced block, don't evaluate
         }
-        if (depth == 0 || ply == MAX_PLY - 1) return evaluate();
+        if (ply == MAX_PLY - 1) return evaluate();
+        if (depth <= 0) return forcingLine(depth, alpha, beta, ply, forced);
 
         long key = positionKey();
         int slot = tableSlot(key), tableAction = NO_ACTION;
@@ -886,17 +1097,78 @@ public final class SerenaBot implements Algorithm {
         return bestScore;
     }
 
+    /**
+     * Past the search depth: follows only forcing moves, to {@link #forcingPlies} plies deep. A side
+     * facing a threat without its bomb must block it. Any other side may take the evaluation instead
+     * ("stand pat"), or play a drop that makes a threat to complete at once. A side facing a threat
+     * with its bomb ready stands pat: a bomb answers in too many ways to follow here.
+     */
+    int forcingLine(int depth, int alpha, int beta, int ply, int forced) {
+        int mover = sideToMove;
+        if (forced >= 0 && bombCooldown[mover] > 0) { // the one answer: block
+            int previousCooldown = drop(forced);
+            int score = -negamax(depth - 1, -beta, -alpha, ply + 1);
+            undoDrop(forced, previousCooldown);
+            return score;
+        }
+        int standPat = evaluate();
+        if (forced != NOT_FORCED || depth <= -forcingPlies || standPat >= beta) return standPat;
+        int bestScore = standPat;
+        if (standPat > alpha) alpha = standPat;
+        for (int column : columnsCentreOut) {
+            if (!makesThreat(mover, column)) continue;
+            int previousCooldown = drop(column);
+            int score = -negamax(depth - 1, -beta, -alpha, ply + 1);
+            undoDrop(column, previousCooldown);
+            if (outOfTime) return 0;
+            if (score > bestScore) bestScore = score;
+            if (score > alpha) alpha = score;
+            if (alpha >= beta) break;
+        }
+        return bestScore;
+    }
+
+    /**
+     * Whether a drop in this column gives the player a threat it can complete next move: the cell
+     * above was a threat already, or the drop fills a four whose other empty cell is then playable.
+     */
+    boolean makesThreat(int player, int column) {
+        int height = columnHeight[column];
+        if (height == rows) return false;
+        int cell = column * rows + height;
+        if (height + 1 < rows && threatCount[player * cellCount + cell + 1] > 0) return true;
+        if (fourCount[player * cellCount + cell] == 0) return false;
+        int opponent = 1 - player;
+        for (int line : linesThroughCell[cell]) {
+            if (lineQuarks[2 * line + player] != LINE_LENGTH - 2 || lineQuarks[2 * line + opponent] != 0) continue;
+            for (int gap : cellsOfLine[line]) {
+                if (gap == cell || owner[gap] != EMPTY) continue;
+                int gapColumn = gap / rows, gapHeight = gap % rows;
+                if (gapHeight == (gapColumn == column ? height + 1 : columnHeight[gapColumn])) return true;
+            }
+        }
+        return false;
+    }
+
     /** {@link #orderedLegalActions}'s {@code forced}: any drop may be played, none (bombs only), or only the column given. */
     static final int NOT_FORCED = -1, BOMBS_ONLY = -2;
 
     /** Fills {@code actions} with the legal actions, best guess first, and returns how many there are. */
     int orderedLegalActions(int[] actions, int preferred, int forced) {
         boolean mayBomb = bombCooldown[sideToMove] == 0;
+        markColumnsNearQuarks();
         int count = 0;
         for (int column : columnsCentreOut) {
             if (columnHeight[column] == rows) continue;
-            if (forced == NOT_FORCED || forced == column) actions[count++] = action(column, false);
-            if (mayBomb) actions[count++] = action(column, true);
+            if (forced == NOT_FORCED && nearQuarks[column] || forced == column) actions[count++] = action(column, false);
+            if (mayBomb && blastHitsQuark(column) && (bombLineQuarks == 0 || blastMovesLine(column))) actions[count++] = action(column, true);
+        }
+        if (count == 0) { // an empty board, or nothing near is playable: every legal action
+            for (int column : columnsCentreOut) {
+                if (columnHeight[column] == rows) continue;
+                if (forced == NOT_FORCED || forced == column) actions[count++] = action(column, false);
+                if (mayBomb) actions[count++] = action(column, true);
+            }
         }
         int[] history = historyScore[sideToMove];
         for (int i = 1; i < count; i++) { // insertion sort: stable, so ties stay centre-out
@@ -908,6 +1180,47 @@ public final class SerenaBot implements Algorithm {
             actions[j + 1] = action;
         }
         return count;
+    }
+
+    /** Fills {@link #nearQuarks}: a column is near when a column at most {@link #dropReach} away holds a quark. */
+    void markColumnsNearQuarks() {
+        int lastWithQuark = -columns - dropReach - 1; // the nearest column to the left that holds a quark
+        for (int column = 0; column < columns; column++) {
+            if (columnHeight[column] > 0) lastWithQuark = column;
+            nearQuarks[column] = column - lastWithQuark <= dropReach;
+        }
+        int nextWithQuark = 2 * columns + dropReach + 1; // and to the right
+        for (int column = columns - 1; column >= 0; column--) {
+            if (columnHeight[column] > 0) nextWithQuark = column;
+            if (nextWithQuark - column <= dropReach) nearQuarks[column] = true;
+        }
+    }
+
+    /**
+     * Whether a bomb in this column would blast a quark besides its own: one below it, or one beside
+     * it in a neighbouring column. A blast that hits nothing only spends the bomb.
+     */
+    boolean blastHitsQuark(int column) {
+        if (columnHeight[column] > 0) return true;
+        return column > 0 && columnHeight[column - 1] > 0 || column < columns - 1 && columnHeight[column + 1] > 0;
+    }
+
+    /**
+     * Whether a bomb in this column would blast or drop a quark of a developing line: one holding at
+     * least {@link #bombLineQuarks} quarks of one player and none of the other. The blast clears the
+     * three columns around the drop from one below its landing height; the quarks above fall.
+     */
+    boolean blastMovesLine(int column) {
+        int from = Math.max(0, columnHeight[column] - 1);
+        for (int c = Math.max(0, column - 1); c <= Math.min(columns - 1, column + 1); c++) {
+            for (int height = from; height < columnHeight[c]; height++) {
+                for (int line : linesThroughCell[c * rows + height]) {
+                    int first = lineQuarks[2 * line], second = lineQuarks[2 * line + 1];
+                    if (first >= bombLineQuarks && second == 0 || second >= bombLineQuarks && first == 0) return true;
+                }
+            }
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------ transposition table

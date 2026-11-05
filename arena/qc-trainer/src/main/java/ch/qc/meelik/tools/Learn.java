@@ -158,13 +158,13 @@ public final class Learn {
         for (int move = 0; move < game.actions().length; move++) {
             if (board.sideToMove != game.players()[move]) board.skipTurn(); // a turn lost to a timeout
             if (board.hasLine()) break;
-            if (game.players()[move] == game.ourSeat())
-                ours.add(new Decision(game, move + 1, fieldFrom(board, game.ourSeat()),
-                        board.bombCooldown[game.ourSeat()], board.bombCooldown[1 - game.ourSeat()], game.actions()[move]));
-            if (!board.isLegal(game.actions()[move])) {
+            if (!board.isLegal(game.actions()[move])) { // checked first: analysing it would play it on a broken board
                 System.out.printf("  %s: move %d is illegal on our model; replay stops there%n", game.matchId(), move + 1);
                 break;
             }
+            if (game.players()[move] == game.ourSeat())
+                ours.add(new Decision(game, move + 1, fieldFrom(board, game.ourSeat()),
+                        board.bombCooldown[game.ourSeat()], board.bombCooldown[1 - game.ourSeat()], game.actions()[move]));
             board.play(game.actions()[move]);
         }
         boolean weLost = board.hasLine() && board.sideToMove == game.ourSeat();

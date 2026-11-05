@@ -1,0 +1,47 @@
+run	data	reg	train_loss	validation_loss	line_weights_loss
+# SerenaBot's pattern table (tools/qc-net qcpatterns): mean binary cross-entropy on the target; line_weights_loss = the line weights alone, scaled to log-odds
+# 2026-11-05T09:58:38: uv run qcpatterns --data ../../arena/out/dataset-15x100 --data ../../arena/out/dataset-15x30 --lam 0.7 --horizon 20; scale 100000
+2026-11-05T09:58:38	15x100+15x30	0.001	0.6770	0.6937	0.6903
+2026-11-05T09:58:38	15x100+15x30	0.0001	0.6766	0.6940	0.6903
+2026-11-05T09:58:38	15x100+15x30	1e-05	0.6765	0.6942	0.6903
+2026-11-05T09:58:38	15x100+15x30	1e-06	0.6765	0.6944	0.6903
+# 15x100 held-out archived positions (1627), loss against the result faded over 20 plies: line weights 0.7273 (accuracy 0.380), pattern table 0.7273 (accuracy 0.380); coin flip 0.6931
+# 15x30 held-out archived positions (2175), loss against the result faded over 20 plies: line weights 0.6955 (accuracy 0.612), pattern table 0.6955 (accuracy 0.612), the network 0.6737 (accuracy 0.633); coin flip 0.6931
+# 2026-11-05T10:04:04: uv run qcpatterns --data ../../arena/out/dataset-15x100 --data ../../arena/out/dataset-15x30 --lam 1.0 --horizon 20; scale 100000
+2026-11-05T10:04:04	15x100+15x30	0.001	0.6702	0.6933	0.6855
+2026-11-05T10:04:04	15x100+15x30	0.0001	0.6696	0.6940	0.6855
+2026-11-05T10:04:04	15x100+15x30	1e-05	0.6695	0.6944	0.6855
+2026-11-05T10:04:04	15x100+15x30	1e-06	0.6695	0.6946	0.6855
+# 15x100 held-out archived positions (1627), loss against the result faded over 20 plies: line weights 0.7273 (accuracy 0.380), pattern table 0.7273 (accuracy 0.380), the table it replaces 0.7273 (accuracy 0.380); coin flip 0.6931
+# 15x30 held-out archived positions (2175), loss against the result faded over 20 plies: line weights 0.6955 (accuracy 0.612), pattern table 0.6955 (accuracy 0.612), the table it replaces 0.6955 (accuracy 0.612), the network 0.6737 (accuracy 0.633); coin flip 0.6931
+# 2026-11-05T10:07:32: uv run qcpatterns --data ../../arena/out/dataset-15x100 --data ../../arena/out/dataset-15x30 --lam 1.0 --horizon 20 --search-scale 1000.0; scale 18836
+2026-11-05T10:07:32	15x100+15x30	0.01	0.4899	0.5791	0.5965
+2026-11-05T10:07:32	15x100+15x30	0.001	0.4782	0.6027	0.5965
+2026-11-05T10:07:32	15x100+15x30	0.0001	0.4749	0.6158	0.5965
+2026-11-05T10:07:32	15x100+15x30	1e-05	0.4736	0.6247	0.5965
+# 15x100 held-out archived positions (1627), loss against the result faded over 20 plies: line weights 1.0429 (accuracy 0.380), pattern table 1.6444 (accuracy 0.370), the table it replaces 1.0429 (accuracy 0.380); coin flip 0.6931
+# 15x30 held-out archived positions (2175), loss against the result faded over 20 plies: line weights 0.7961 (accuracy 0.612), pattern table 0.7572 (accuracy 0.613), the table it replaces 0.7961 (accuracy 0.612), the network 0.6737 (accuracy 0.633); coin flip 0.6931
+# 2026-11-05T10:08:54: uv run qcpatterns --data ../../arena/out/dataset-15x100 --data ../../arena/out/dataset-15x30 --lam 1.0 --horizon 20 --search-scale 3000.0; scale 22387
+2026-11-05T10:08:54	15x100+15x30	0.01	0.5577	0.6176	0.6145
+2026-11-05T10:08:54	15x100+15x30	0.001	0.5519	0.6295	0.6145
+2026-11-05T10:08:54	15x100+15x30	0.0001	0.5502	0.6353	0.6145
+2026-11-05T10:08:54	15x100+15x30	1e-05	0.5496	0.6390	0.6145
+# 15x100 held-out archived positions (1627), loss against the result faded over 20 plies: line weights 0.9719 (accuracy 0.380), pattern table 0.9719 (accuracy 0.380), the table it replaces 0.9719 (accuracy 0.380); coin flip 0.6931
+# 15x30 held-out archived positions (2175), loss against the result faded over 20 plies: line weights 0.7705 (accuracy 0.612), pattern table 0.7705 (accuracy 0.612), the table it replaces 0.7705 (accuracy 0.612), the network 0.6737 (accuracy 0.633); coin flip 0.6931
+# 2026-11-05T10:10:32: uv run qcpatterns --data ../../arena/out/dataset-15x100 --data ../../arena/out/dataset-15x30 --lam 1.0 --horizon 20 --search-scale 1000.0; scale 18836
+2026-11-05T10:10:32	15x100+15x30	1	0.5737	0.5562	0.5965
+2026-11-05T10:10:32	15x100+15x30	0.3	0.5463	0.5523	0.5965
+2026-11-05T10:10:32	15x100+15x30	0.1	0.5203	0.5575	0.5965
+2026-11-05T10:10:32	15x100+15x30	0.03	0.5014	0.5674	0.5965
+# 15x100 held-out archived positions (1627), loss against the result faded over 20 plies: line weights 1.0429 (accuracy 0.380), pattern table 1.3442 (accuracy 0.369), the table it replaces 1.0429 (accuracy 0.380); coin flip 0.6931
+# 15x30 held-out archived positions (2175), loss against the result faded over 20 plies: line weights 0.7961 (accuracy 0.612), pattern table 0.7309 (accuracy 0.577), the table it replaces 0.7961 (accuracy 0.612), the network 0.6737 (accuracy 0.633); coin flip 0.6931
+# 2026-11-05T10:10:53: uv run qcpatterns --data ../../arena/out/dataset-15x100 --data ../../arena/out/dataset-15x30 --lam 1.0 --horizon 20 --search-scale 1000.0; scale 18836
+2026-11-05T10:10:53	15x100+15x30	0.3	0.5463	0.5523	0.5965
+# 15x100 held-out archived positions (1627), loss against the result faded over 20 plies: line weights 1.0429 (accuracy 0.380), pattern table 1.3442 (accuracy 0.369), the table it replaces 1.0429 (accuracy 0.380); coin flip 0.6931
+# 15x30 held-out archived positions (2175), loss against the result faded over 20 plies: line weights 0.7961 (accuracy 0.612), pattern table 0.7309 (accuracy 0.577), the table it replaces 0.7961 (accuracy 0.612), the network 0.6737 (accuracy 0.633); coin flip 0.6931
+# 2026-11-05T11:57:15: uv run qcpatterns --data ../../arena/out/dataset-15x100-v2 --data ../../arena/out/dataset-15x30 --lam 1.0 --horizon 20 --search-scale 1000.0; scale 10593
+2026-11-05T11:57:15	15x100+15x30	1	0.5707	0.5255	0.5591
+2026-11-05T11:57:15	15x100+15x30	0.3	0.5528	0.5169	0.5591
+2026-11-05T11:57:15	15x100+15x30	0.1	0.5319	0.5120	0.5591
+# 15x100 held-out archived positions (1627), loss against the result faded over 20 plies: line weights 1.4192 (accuracy 0.380), pattern table 1.7554 (accuracy 0.369), the table it replaces 2.0813 (accuracy 0.369); coin flip 0.6931
+# 15x30 held-out archived positions (2175), loss against the result faded over 20 plies: line weights 0.9367 (accuracy 0.612), pattern table 0.8296 (accuracy 0.593), the table it replaces 0.8508 (accuracy 0.577), the network 0.6737 (accuracy 0.633); coin flip 0.6931

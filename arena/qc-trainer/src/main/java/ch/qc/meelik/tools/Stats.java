@@ -36,7 +36,7 @@ import java.util.concurrent.Executors;
  * <p>The concepts:
  * <ul>
  *   <li><b>The field</b> is the entrants of a league file, as in {@link League}. A directory line
- *       enters every parameter file and every bot JAR in it, so {@code Bots/} brings in teammates'
+ *       enters every parameter file and every bot JAR in it, so {@code jars/} brings in teammates'
  *       JARs and snapshots of older versions ({@code ./qc.sh snapshot}).
  *   <li><b>The game log,</b> out/stats/games.tsv, keeps every game ever played, one line each. A run
  *       only tops up each pairing to the requested number of games, so the statistics sharpen with
@@ -52,13 +52,14 @@ import java.util.concurrent.Executors;
  *       copies of one game say no more than one. The page counts the distinct games. Random
  *       openings (the first plies chosen at random, the same opening for both colours of a pairing)
  *       make every game different, at the price of no longer starting from the empty board as the
- *       tournament does.
+ *       tournament does. A negative number of opening plies takes them from real games instead: the
+ *       start of an archived match on the same board ({@link Openings}), mirrored and shifted.
  * </ul>
  *
- * <p>Usage: Stats [file=league.txt] [games per pair=10] [threads=cores/2] [opening plies=0] [size=8x12].
+ * <p>Usage: Stats [file=league.txt] [games per pair=10] [threads=cores/2] [opening plies=0, negative: archived] [size=8x12].
  * Games per pair 0 plays nothing and only writes the report. As in League, keep threads at or below
  * half the cores so time budgets stay realistic; the page shows each bot's worst move against the
- * 100 ms limit.
+ * server's limit ({@link Arena#MOVE_LIMIT_MS}, 50 ms).
  */
 public final class Stats {
     static final Path LOG = Path.of("out/stats/games.tsv"), REPORT = Path.of("results/stats.md"),
@@ -122,7 +123,7 @@ public final class Stats {
             digest.update(Files.readAllBytes(Path.of(spec.substring(4))));
         } else {
             String bot = spec.contains(":") ? spec.substring(0, spec.indexOf(':')) : spec;
-            String name = bot.split("[@/+]")[0], className = Arena.className(name);
+            String name = bot.split("[@/+#]")[0], className = Arena.className(name);
             digest.update(bot.substring(name.length()).getBytes());
             try (InputStream classFile = Stats.class.getClassLoader().getResourceAsStream(className.replace('.', '/') + ".class")) {
                 if (classFile == null) throw new IllegalArgumentException("unknown bot " + className);
@@ -189,16 +190,20 @@ public final class Stats {
             if (gamesPerPair > 0) System.out.printf("%d bots, every pairing has %d games already%n", n, 2 * perColour);
             return;
         }
-        System.out.printf("%d bots, %d games to play on %d threads (%d per pairing on %s, %d random opening plies)%n",
-                n, schedule.size(), threads, 2 * perColour, size, openingPlies);
+        System.out.printf("%d bots, %d games to play on %d threads (%d per pairing on %s, %s)%n",
+                n, schedule.size(), threads, 2 * perColour, size, describeOpenings(openingPlies));
 
         int[] dimensions = Tools.size(size);
+        Openings archived = openingPlies < 0 ? Openings.fromArchive(dimensions[0], dimensions[1], -openingPlies) : null;
+        if (archived != null && archived.isEmpty()) throw new IllegalStateException("no archived openings of " + -openingPlies + " plies on " + size);
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         CompletionService<Game> games = new ExecutorCompletionService<>(pool);
         for (Task task : schedule) {
             String firstSpec = field.get(task.first()).spec(), secondSpec = field.get(task.second()).spec();
             String firstPrint = fingerprints.get(task.first()), secondPrint = fingerprints.get(task.second());
-            int[] opening = opening(openingPlies, dimensions[1], firstPrint.hashCode() ^ secondPrint.hashCode(), task.opening());
+            long pairing = firstPrint.hashCode() ^ secondPrint.hashCode();
+            int[] opening = archived != null ? archived.draw(new Random(pairing * 1_000_003L + task.opening()))
+                    : opening(openingPlies, dimensions[1], pairing, task.opening());
             long seed = 1000L * task.opening() + 31L * task.first() + task.second();
             games.submit(() -> {
                 Arena.Result result = Arena.play(withOpening(Arena.make(firstSpec, seed), opening), withOpening(Arena.make(secondSpec, seed + 1), opening),
@@ -238,6 +243,10 @@ public final class Stats {
 
     static double averageMs(Arena.PlayerStats stats) {
         return stats.totalNanos / 1e6 / Math.max(1, stats.calls);
+    }
+
+    static String describeOpenings(int openingPlies) {
+        return openingPlies < 0 ? -openingPlies + " archived opening plies" : openingPlies + " random opening plies";
     }
 
     /** The columns of a pairing's random opening; the same pairing and index give the same opening. */
@@ -431,7 +440,7 @@ public final class Stats {
         // results/stats.md and the console: the ranking
         String when = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         StringBuilder table = new StringBuilder();
-        table.append(String.format(Locale.ROOT, "Stats: %d bots, %d games (%d distinct), %s, %d random opening plies, %s%n%n", n, games.size(), distinct.size(), size, openingPlies, when));
+        table.append(String.format(Locale.ROOT, "Stats: %d bots, %d games (%d distinct), %s, %s, %s%n%n", n, games.size(), distinct.size(), size, describeOpenings(openingPlies), when));
         table.append(String.format(Locale.ROOT, "Elo relative to %s (0), with 95%% intervals from %d resamples of the games. First mover's score: %.1f%%.%n%n",
                 field.get(anchor).label(), RESAMPLES, 100 * firstMoverPoints / games.size()));
         table.append("| # | Bot | Elo | 95% | Games | W | D | L | Score | As X | As O | Avg ms | Worst ms | Late moves | Skipped turns |\n");
@@ -483,7 +492,7 @@ public final class Stats {
         String data = String.format(Locale.ROOT, "{\"generated\":\"%s\",\"size\":\"%s\",\"openingPlies\":%d,\"anchor\":%s,\"games\":%d,\"distinct\":%d,"
                         + "\"ignored\":%d,\"firstMoverScore\":%s,\"resamples\":%d,\"limitMs\":%d,\"bots\":[%s],\"pairs\":[%s]}",
                 when, size, openingPlies, json(field.get(anchor).label()), games.size(), distinct.size(), log.size() - games.size(),
-                number(firstMoverPoints / games.size()), RESAMPLES, GameConstants.TIMEOUT_MS, String.join(",\n", bots), String.join(",\n", rows));
+                number(firstMoverPoints / games.size()), RESAMPLES, Arena.MOVE_LIMIT_MS, String.join(",\n", bots), String.join(",\n", rows));
         Files.createDirectories(PAGE.toAbsolutePath().getParent());
         Files.writeString(PAGE, Files.readString(TEMPLATE).replace("/*DATA*/null", data));
         System.out.println("charts written to " + PAGE);

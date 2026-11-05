@@ -1,2 +1,5 @@
 name	git_rev	book_entries	gate_games	gate_score	class_kb	jar_kb	heap_mb
 # ./qc.sh tank: one row per SerenaBot revision; gate vs the newest Tank before it on 15x30, sizes from ./qc.sh check
+Tank-05-1101	82ec65f-wip	480	0	-	145	1065	12
+Tank-05-1330	82ec65f-wip	655	10	0.600	152	1068	12
+Tank-05-1349	82ec65f-wip	702	10	0.400	154	1069	12

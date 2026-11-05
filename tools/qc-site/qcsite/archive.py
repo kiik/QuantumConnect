@@ -41,6 +41,17 @@ def moves_from_text(text: str) -> list[dict]:
             for token in text.split()]
 
 
+def played_columns(match: dict) -> int:
+    """The board width a match was played on. The site's match page gives the board size of the
+    tournament at the time it is fetched, not of the match: after a switch between 15x100 and 15x30,
+    older matches come back with the new width. On 15 rows the moves tell: a 15x100 match starts
+    near the centre column 49 and a 15x30 match never reaches column 30."""
+    if match["rows"] != 15 or match["columns"] not in (30, 100):
+        return match["columns"]
+    highest = max((move["column"] for move in moves_from_text(match["moves"])), default=0)
+    return 100 if highest >= 30 else 30
+
+
 def store_match(details: dict) -> None:
     record = {
         "match_id": details["match_id"],
@@ -143,5 +154,5 @@ def learner_text(games: list[dict], patterns: list[str]) -> str:
     for game in games:
         lines.append(f"# {game['loser']} lost to "
                      f"{game['first' if game['loser_side'] == 'second' else 'second']['bot']}")
-        lines.append(f"{game['match_id']} {game['rows']}x{game['columns']} {game['loser_side']} {game['moves']}")
+        lines.append(f"{game['match_id']} {game['rows']}x{played_columns(game)} {game['loser_side']} {game['moves']}")
     return "\n".join(lines) + "\n"

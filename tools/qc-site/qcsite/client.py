@@ -325,6 +325,8 @@ def replay_match(rows: int, columns: int, moves: list[dict]) -> dict:
     winner, deciding_move = None, None
     for index, move in enumerate(moves):
         column, player = move["column"], move["player"]
+        if not 0 <= column < columns:  # an invalid answer the engine rejected
+            continue
         stack = stacks[column]
         if len(stack) >= rows:
             continue
@@ -500,4 +502,6 @@ def upload_bot(site: Site, bot_name: str, jar_path: Path) -> dict:
     if answer.status_code >= 400:
         raise SiteError(f"upload answered HTTP {answer.status_code}")
     summary = page_summary(answer.url.path, answer.text)
+    if "no longer upload" in summary["text"]:
+        raise SiteError("the site refused the upload: uploads are closed")
     return {"bot": bot_name, "jar": str(jar_path), "landed_on": summary["path"], "page_text": summary["text"][:600]}
