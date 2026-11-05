@@ -1,0 +1,19 @@
+{
+ "match_id": "1a836573-93a8-4580-af8e-f6aefbb894cc",
+ "first": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "Strange Quark 1",
+  "bot_id": "c65fccbb-1bf8-42e9-a194-eaef67455171",
+  "team": "Strange Quark"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 10,
+ "moves": "f49 s0 f49 s0 f49 s0 f49 s0 f49 s0 f49",
+ "fetched_at": "2026-11-05T13:31:50"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "f865e62f-d3f4-4fdf-ad9a-8874e7580b61",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "Tank-05-1101",
+  "bot_id": "12641149-1c9e-444e-a7ba-854a834e19de",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 31,
+ "moves": "f6 f6 f6 f6 s6 s6 f5 f5 f5 s7 s5 f5 f7 s7 f7 s4 s7 f7 s7 s6 f8 f5 s5 s10 f8 f4 s8 f4 f3 s6 f4 f3 s4 s4 f8 f3 f8 s10 s5 s10 f3 f8 s2b s4 f3 s10 s10 f3 f10 s2b s7 s4 s3 f8 s8 f3 s1 s1 f1 s6 s5 f3 f3 s7 f7 s6 f9 s6",
+ "fetched_at": "2026-11-05T13:37:09"
+}

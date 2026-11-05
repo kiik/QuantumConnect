@@ -1,0 +1,19 @@
+{
+ "match_id": "cdecfb20-4350-4374-8875-f378956bcb9b",
+ "first": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "HumanBot_Test2",
+  "bot_id": "afec6137-0d58-4493-8cf9-f8db129a17d6",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 93,
+ "moves": "f14 s27 f14 s24 f14 s28 f14 s0 f14 s14 f14 s7 f14 s18 f13 s8 f13 s23 f25 s29 f7b s6 f13 s15 f13 s4 f13 s13 f13 s23 f13 s27 f24 s7 f2 s15 f15 s15 f15 s27 f15 s1 f23 s4 f15 s20 f12 s18 f9 s14 f10 s11 f15 s29 f15 s15 f16b s10 f24 s15 f23 s9 f24 s16 f18 s0 f23 s11 f12 s21 f19 s12 f12 s4 f16 s26 f18 s29 f17 s14 f23 s26 f24 s10 f24 s24 f16 s5 f17 s17 f17 s16b f13 f12b",
+ "fetched_at": "2026-11-05T15:29:34"
+}

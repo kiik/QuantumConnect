@@ -1,0 +1,19 @@
+{
+ "match_id": "4b05744e-4f76-412d-a21e-0d5390a21b16",
+ "first": {
+  "bot": "test123",
+  "bot_id": "91a81ab1-c838-4808-a3d1-0227f8ad5385",
+  "team": "Tiim566779"
+ },
+ "second": {
+  "bot": "Tank-05-1101",
+  "bot_id": "12641149-1c9e-444e-a7ba-854a834e19de",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": null,
+ "deciding_move": null,
+ "moves": "f49 f50 s49 f48 f51 s47 f54 s49 f55 s54 f56 s53 f59 s49 f60 s58 f49 f49 s53b s55 f54 s49 s51 s51 f51 s50 f48 s50 f48 f48 s48 f54 s50b f50 s51 f49 f49 s48 s48 f48 s49 f49 s49 s48 f49 s48 f48 s49 f49 s46b f47 s52 f46",
+ "fetched_at": "2026-11-05T13:54:16"
+}

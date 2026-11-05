@@ -1,0 +1,19 @@
+{
+ "match_id": "ab3ea238-4378-42e6-8663-aa31446caa0a",
+ "first": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "HWGAbot12.0",
+  "bot_id": "f167375f-1cbd-421e-9e84-aa4dd8914c81",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 448,
+ "moves": "s49 f50 s49 f49 s50 f50 s49 f50 s50 f50 s49 f49 s49 f49 s50 f50 s50 f49 s49 f50 s48 f48 s48 f48b s48 f49 s49 f49 s48 s46 f44 s49 f50 s50 f49 s44 f50 s47 f47 s49 f49 s50 f50 s49 f42 s43 f42 s42 f44 s44 f48 s48 f48 s48 f48 s44 f48 s43 f48 s46 f43b s42 f43 s42 f46 s44 f46 s44 f44 s46 f43 s44 f44 s42 f42 s44 f48 s48 f42 s42 f42 s42 f44 s44 f42 f48b s48 f44 s44 f42 s43 f48 s44 f43 s43 f42 s42 f48 s43 f44 s46 f46 s43 f43 s43 f43 s46 f46 s46 f46 s44 f42 s47 f47 s47 f47 s43 f43 s43 f43 s46 f42 s41 f49 s46 f49 s49 f47 s47 f47 s46 f47 s47 f41 s47 f52 s41 f41 s41 f52 s54 f47b s41 f48 s48 f47 s41 f47 s41 f41 s52 f52 s41 f41 s54 f54 s54 f41 s54 f54 s54 f54 s54 f54 s54 f52 s52 f52 s46 f46 s52 f51b s51 f52 s52 f52 s52 f47 s52 f52 s52 f50 s50 f56 s46 f48 s46 f56 s56 f52 s55 f56 s55 f56 s55 f47b s48 f55 s55 f47 s56 f56 s56 f56 s56 f46 s46 s48 f47 s52 f56 s56 f54 s55 f54 s54 f54 s56 f55 s55 f55 s55 f41 s41 f41 s57 f57 s55 f55 s55 f57 s57 f57 s57 f57 s57 f57b s57 f56 s56 f57 s57 f57 s53 f57 s57 f56 s55 f57 s55 f56 s56 f57 s53 f53 s40 f38 s40 f53 s40 f40 s40 f36 s40 f40 s34 f40 s34 f40 s40 f40 s40 f34 s34 f34 s34 f34 s34 f34 s34 f34 s36 f36 s36 f36 s36 f36 s36 f36 s36 f36 s36 f38 s38 f38 s38 f38 s38 f38 s38 f38 s38 f38 s36 f38 s37 f37 s37 f58 s37 f37 s37 f58 s38 f58 s37 f37 s58 f58 s58 f58 s58 f58 s58 f58 s37 f58 s38 f37 s37 f37 s37 f34 s34 f36 s34 f60 s60 f60 s60 f58 s60 f59b s53 f53 s58 f60 s60 f60 s60 f60 s60 f60 s60 f60 s62 f62 s62 f62 s62 f62 s62 f62 s62 f62 s62 f62 s62 f64 s64 f64 s64 f64 s64 f64 s64 f64 s64 f64 s64 f62 s64 f64 s64 f58 s58 f32 s32 f32 s32 f32 s32 f32 s32 f32 s32 f32 s32 f32 s35 f35 s35 f35 s35 f35 s35 f60 s31 f31b s32 f32 s32 f30 s62 f66 s60 f68 s67 f67 s30 f67 s67 f66 s66 f67 s51 f51 s67 f67 s67 f67 s51 f67 s67 f66 s68 f66 s66 f66 s66 f66 s51 f66 s51 f51 s51 f66 s51 f51",
+ "fetched_at": "2026-11-05T13:11:23"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "8f38f5b7-51a2-4d7f-bda5-c4010067a9a2",
+ "first": {
+  "bot": "FunkyMelodyBot3",
+  "bot_id": "ac9ca783-c29f-4a2c-a5ac-e8adfe9894ec",
+  "team": "FunkyMelody"
+ },
+ "second": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 170,
+ "moves": "f24 f23 s25 f19 s24 f25 s25 f18 s21 f14 s15 f10 s24 f9 s11 f5 s24 f24 s25 f4 s25 f6 s7 f61 s24 f60 s25 f25 s24 f62 s59 f65 s64 f68 s25 f67 s24 f24b s24 f69 s70 f74 f73 s25 f75 s24 f24 s25 f71 s25 f78 s76 f81 s25 f25 s24 f24b s25 f25 s24 f80 s82 f54 s24 f53 s52 f86 s25 f85 s24 f87 s88 f47 s19 f46 s19 f24b s18 f48 s45 f92 s18 f91 s18 f93 s19 f89 s94 f40 s48 f39 s18 f18 s19 f19 s19b f18 s19 f19 s18 f41 s38 f33 s19 f32 s18 f34 s19 f30 s31 f32 s18 f19 s18 f18 s19 f66 s47 f72 s46 f90 s45 f63 s47 f79 s46 f77 s45 f46b s47 f84 s46 f83 s47 f42 s46 f46 f43 s44 f44 s45 f49 s49 f35 s43b f36 s37 f42 s45 f45 s47 f47 s49 f43 s44 f44 s49 f3 s49 f49 s49 f2 s1 f17 s43b f42 s48 f43 s44 f44 s44",
+ "fetched_at": "2026-11-05T09:18:04"
+}

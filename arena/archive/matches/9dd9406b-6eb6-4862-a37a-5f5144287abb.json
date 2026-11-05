@@ -1,0 +1,19 @@
+{
+ "match_id": "9dd9406b-6eb6-4862-a37a-5f5144287abb",
+ "first": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "HWGAbot10.1",
+  "bot_id": "9e741676-f125-4171-9f9e-c0ff38df3bbd",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 177,
+ "moves": "s49 s49 f50 f49 s49 s49 f49 f49 s49 s49 f49 s49 f49 s49 s49 f49 f48 s49 f49 s49 f49 s49 s49 f49 f49 s50 f50 s48 s48 s50 f48 f50 s50 s48 f50 f48 s47 s50 f50 f48 s50 s48 f48b f50 s52 s48 f49 f48 s49 s50 f52 f48 s50 s48 f49 f49 s54 s45 f48 f48b s49 f52 f49 s52 s45 f52 s55 f45 f52 s43 f44 s52 f56 s43 f44 s54 s43 f54 f43 s55 f54 s43 s54 f48 s43 f55 f45 s49 f55 s45 s56 f43 f47 s43 s55 f43 s43 f54b f54 f43 s44 s55 f44 f56 s44 s54 f44b f52 s56 s44 f45 f55 s55 s43 f54 f43 s52 s44 f55 f44 s51 s43 f44 f56 s44 s50 f44 f54 s55 s44 f54 f43 s44 s54 f44 f49b s52 s43 f52 f43 s44 s49 f48 f55 f54 s44 f47b s52 s48 f52 f45 s51 f51 f45 s45 s51 f51 f48 s55 s50 f45 f50 s45 s51 f50 f45 s45 s57 f45 f49 s51 f50 s49 f53 f51b s53 s52 f53 f50 f48 s54 s50 f56 f54 s54 s53 f47 f53 s53 s57 f53 f47 s57 s53 f53 f56 s57 s53 f49 f56 s53 s56 f47 f54 f48 s49 f54 s57 s54 f57 s59 f54 s53 f59 s52 f54 f48 s54 f54 s48 f48 s54 s48 f54b s56 f48 s47 f53 f56 s54 s50 f53 f45 s58 f51 s46 s58 f46 f54 s56 f56 s58 f53 s56 f54 s58 f53 s53 f58 s48 f54 s55 f59 s58 f58 s58 f58 s58 s54 f51 s53 f54b s53 f58 s53 f56 f58 s54 f51 s51 f56 s56 f56 s56 f54 s56 f56 f56 s50 f56 s56 f58 s58 f59 s58 f45 s45 f43 s47 f59 s59 f59 s57b f59 s56 f56 s61 f59 s59 f59 s59 f59 s59 f50 s50 f59b s59 f58 s50 f51 s51 s59 f58 s58 f51 s51 f50 s50 f50 s50 f59 s50 f50 s50 f50 s50 f50 f59 f61 s63 f51 s51 f61 s51 f51 s61 s51 f61 s61 f58 s61 f55 s55 f56 s61 f61 s64 f65 s64 f64 s64 f64 s64 f64 s64 f64 s64 f64 s67 s64 f67 s69 f67 s71 f70 s69 f69 s69 f69 s69 f67 s69 f67 s61 f61 s67 f67 s67 f67 s69 s69 f69 s67 f67 s64 f69 s64 f67 s64 f61 s61 f69 f69 s71 f71 s71 f51 s71 f71 s72 f71 s72 f72 s71 f72 f70 s72 f71 s71 f71 s71 f71 s67 f69 s69 f72 s68 f71 s67 f67 s74 f75 s77 f75 s75 f77 s75 f75 s77 f75 s75 f75 s75 f75 s77 f75 s75 f77 s77 f77 s77 f77 s70 f70b",
+ "fetched_at": "2026-11-05T09:16:32"
+}

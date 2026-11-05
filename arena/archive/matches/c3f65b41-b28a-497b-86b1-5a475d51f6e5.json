@@ -1,0 +1,19 @@
+{
+ "match_id": "c3f65b41-b28a-497b-86b1-5a475d51f6e5",
+ "first": {
+  "bot": "test123",
+  "bot_id": "91a81ab1-c838-4808-a3d1-0227f8ad5385",
+  "team": "Tiim566779"
+ },
+ "second": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 157,
+ "moves": "f49 f50 s48 f49 s49 f50 s50 f48 s48 f49 s49 f50 s48 f49 s49 f48 s48 f48 s49 f50 s50 f50 s48 f50 s48 f49 s48 s49 f48 s49 s48 f49 s52 s54 f52 s54 f52 s52 f55 s49 f54 s48 f54 s54 f50 s50 f50 s54 s54 f54 s54 s54 f54 s50 f50 s50 f52 s52 f55 s55 s48 f49 s54 f56 s49 f55 s48 s55 f55 s55 f55 s55 f55 s55 f55 s50 f54 s55 f59 s60 f55 s54 f45 s45 f45 s55 f45 s45 f45 s45 f45 s45 s45 s45 s45 s45 f45 s45 f53b s53b f52 s52 f54 s52 f52 s54 f52 s52 f52 s52 f52 s54 f52 s60 f60 s60 f60 s60 f60 s60 f60 s60 f47 s60 s59 s59 f59 f59 s59 f59 s59 f59 s59 f59 s59 f47 s47 f47b s48 f48 s48 f47 s47 f60 s59 f59 s47 f52 s52 f52 s60 f60 s46b f47 s47 f47 s51 f47b",
+ "fetched_at": "2026-11-05T13:11:54"
+}

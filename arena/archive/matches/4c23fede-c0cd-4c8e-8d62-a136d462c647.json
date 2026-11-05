@@ -1,0 +1,19 @@
+{
+ "match_id": "4c23fede-c0cd-4c8e-8d62-a136d462c647",
+ "first": {
+  "bot": "Testing_v2",
+  "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+  "team": "LinMacWin"
+ },
+ "second": {
+  "bot": "lalalalalalala",
+  "bot_id": "4fd45705-a6a3-4974-8bfd-ceb4349d07ad",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 5,
+ "moves": "s5 s6 s7 s8 s4 s3",
+ "fetched_at": "2026-11-05T09:17:16"
+}

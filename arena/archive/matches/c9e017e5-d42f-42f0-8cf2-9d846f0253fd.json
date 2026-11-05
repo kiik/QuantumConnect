@@ -1,0 +1,19 @@
+{
+ "match_id": "c9e017e5-d42f-42f0-8cf2-9d846f0253fd",
+ "first": {
+  "bot": "test123",
+  "bot_id": "91a81ab1-c838-4808-a3d1-0227f8ad5385",
+  "team": "Tiim566779"
+ },
+ "second": {
+  "bot": "Early Bird",
+  "bot_id": "e03d0d21-4458-4875-a612-b02db13c377e",
+  "team": "Shalomtehnikud"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 10,
+ "moves": "f49 f49 f50 f50 f48 f48 f51 f51 f47 f47 f52 f52",
+ "fetched_at": "2026-11-05T13:12:52"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "b11bd4ac-5f9e-498c-beda-37f438e81f97",
+ "first": {
+  "bot": "HWGAbot12.0",
+  "bot_id": "f167375f-1cbd-421e-9e84-aa4dd8914c81",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 202,
+ "moves": "f49 f49 s49 f50 s48 f49 f50 s50 f50 s49 f50 s49 f50 s50 f49 s49 f48 s48 f50 s50 f49 s49 f50 s49 f50 s49 f48 s50 f48 s48 f50 s49 f49 s50 f49 s50 f51 s51b f50 s52 f52 s50 f48 s48 f52 s52 f48 s52 f52 s48 f52 s52 f48 s51 f51 s51 s53b f53 s52 f51 s48 f52 s52 f53 s52 f53 s52 f52 s48 f53 s48 f51 s51 f51 s51 f51 s51 f51 s51 f51 s52b f51 s52 f51 s52 f52 s50 f47 s47 f47 s47 f51 s51 f52 s55 f48 s57 f57 s57 f57 s57 f57 s57 f57 s57 f57 s57 f57 s57 f57 s55 f58 f58 s58 f58 s58b f58 s58 f58 s55 f58 s55 f58 s58 f55 s55 f58 s55 f55 s58 f55 s55 f55 s57 f55 s58 f58 s57 f54 s60 f56 s60 f60 s60 f55 s55 f56 s60 f56 s60 f56 s56 f56 s56 f60 s60 f56 s55 f60 s60 f60 s45 f60 s56 f56 s57 f60 s60 f56 s56b f54 s56 f57 s55 f55 s57 f58 s55 f57 s57 f58 s61 f60 s61 f61 s61 f54 s54 f54 s53 f53 s59 f59 s53 f53 s61 f46 s61 f61 s61b f53 s47 f47",
+ "fetched_at": "2026-11-05T13:11:24"
+}

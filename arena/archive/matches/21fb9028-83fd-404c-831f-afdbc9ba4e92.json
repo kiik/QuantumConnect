@@ -1,0 +1,19 @@
+{
+ "match_id": "21fb9028-83fd-404c-831f-afdbc9ba4e92",
+ "first": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "Testing_v2",
+  "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+  "team": "LinMacWin"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 5,
+ "moves": "f49 f49 f49 f49 f49 f49",
+ "fetched_at": "2026-11-05T13:31:45"
+}

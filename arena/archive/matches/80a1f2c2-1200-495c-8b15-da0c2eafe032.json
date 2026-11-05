@@ -1,0 +1,19 @@
+{
+ "match_id": "80a1f2c2-1200-495c-8b15-da0c2eafe032",
+ "first": {
+  "bot": "SPMoveDestroyer3",
+  "bot_id": "c90e4fc4-6371-46d9-9228-b815d26f8468",
+  "team": "KolmApelsini"
+ },
+ "second": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 64,
+ "moves": "f49 s49 f49 s49 f49 s49 f49 s49 f49 s49 f50 f50 s50 f50 s50 f50 s50 f50 s50 f50 s50 s49 f48 s50 f48 s47 f48 s48b f49 s49 f48 s48 f48 s50 f48 f48 s48 f48 s48 f51 s48 f51 s49 f51 s49 f51 s48 s48 s49 f49b s52 f51 s51 f51 s51 f51 s51 s51 f47 s51 f47 s48 s51 s48 s48",
+ "fetched_at": "2026-11-05T13:31:25"
+}

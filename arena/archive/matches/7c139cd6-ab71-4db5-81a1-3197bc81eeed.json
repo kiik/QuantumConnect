@@ -1,0 +1,19 @@
+{
+ "match_id": "7c139cd6-ab71-4db5-81a1-3197bc81eeed",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 8,
+ "moves": "f6 s49 s41 s38 s38 s38 s38 s38 s38",
+ "fetched_at": "2026-11-05T13:31:32"
+}

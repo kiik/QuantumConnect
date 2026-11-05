@@ -1,0 +1,19 @@
+{
+ "match_id": "69f32339-5cd2-4379-a600-cc98eebd9798",
+ "first": {
+  "bot": "Strange Quark 1",
+  "bot_id": "c65fccbb-1bf8-42e9-a194-eaef67455171",
+  "team": "Strange Quark"
+ },
+ "second": {
+  "bot": "HWGAbot10.1",
+  "bot_id": "9e741676-f125-4171-9f9e-c0ff38df3bbd",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 14,
+ "moves": "f0 s49 f0 f0 s50 f0 s47 f0 s0 f0 s48 f0 s51 f0 s52",
+ "fetched_at": "2026-11-05T09:16:04"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "57feec30-8a8b-4c9d-bc68-a481a0e33a2a",
+ "first": {
+  "bot": "test123",
+  "bot_id": "91a81ab1-c838-4808-a3d1-0227f8ad5385",
+  "team": "Tiim566779"
+ },
+ "second": {
+  "bot": "SPMoveDestroyer3",
+  "bot_id": "c90e4fc4-6371-46d9-9228-b815d26f8468",
+  "team": "KolmApelsini"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 10,
+ "moves": "f49 s49 f50 s49 f48 s49 f51 s50 f47 s48 f52",
+ "fetched_at": "2026-11-05T13:12:58"
+}

@@ -1,0 +1,145 @@
+{
+ "as_of": "2026-11-04T20:36:07",
+ "entries": [
+  {
+   "rank": 1,
+   "bot": "King beater",
+   "bot_id": "f551c510-ac69-46fe-a77d-42a0e22a30f7",
+   "team": "No beaches?",
+   "participants": 2,
+   "wins": 81,
+   "losses": 3,
+   "draws": 0
+  },
+  {
+   "rank": 2,
+   "bot": "Savi12 - \"The King\"",
+   "bot_id": "5a3e4d88-87b2-4868-a861-8bac54137149",
+   "team": "Savi",
+   "participants": 4,
+   "wins": 78,
+   "losses": 6,
+   "draws": 0
+  },
+  {
+   "rank": 3,
+   "bot": "HWGAbot5.0",
+   "bot_id": "d492d0d3-6809-4d7c-91d9-bce24d060c5c",
+   "team": "WileyQuarks",
+   "participants": 3,
+   "wins": 66,
+   "losses": 18,
+   "draws": 0
+  },
+  {
+   "rank": 4,
+   "bot": "L4l4Th3D3str0y3r",
+   "bot_id": "a8bd8fa3-e121-416e-a189-9520873d6ba5",
+   "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074",
+   "participants": 4,
+   "wins": 63,
+   "losses": 21,
+   "draws": 0
+  },
+  {
+   "rank": 5,
+   "bot": "BeetaSaag",
+   "bot_id": "93e3a0e3-817f-4a1b-82f7-0d0b1f640921",
+   "team": "Saag1",
+   "participants": 4,
+   "wins": 45,
+   "losses": 32,
+   "draws": 0
+  },
+  {
+   "rank": 6,
+   "bot": "True Random Bot",
+   "bot_id": "e720c76c-8cef-49c1-b9b4-96ae5f9f66cb",
+   "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2",
+   "participants": 4,
+   "wins": 43,
+   "losses": 34,
+   "draws": 0
+  },
+  {
+   "rank": 7,
+   "bot": "SPMoveDestroyer3",
+   "bot_id": "c90e4fc4-6371-46d9-9228-b815d26f8468",
+   "team": "KolmApelsini",
+   "participants": 3,
+   "wins": 43,
+   "losses": 34,
+   "draws": 0
+  },
+  {
+   "rank": 8,
+   "bot": "MimimiTest",
+   "bot_id": "f018c523-40cc-4494-8e8b-2491d4937706",
+   "team": "Mimimi",
+   "participants": 2,
+   "wins": 29,
+   "losses": 55,
+   "draws": 0
+  },
+  {
+   "rank": 9,
+   "bot": "Strange Quark 1",
+   "bot_id": "c65fccbb-1bf8-42e9-a194-eaef67455171",
+   "team": "Strange Quark",
+   "participants": 2,
+   "wins": 18,
+   "losses": 59,
+   "draws": 0
+  },
+  {
+   "rank": 10,
+   "bot": "Hurt me plenty",
+   "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+   "team": "cristi",
+   "participants": 1,
+   "wins": 15,
+   "losses": 62,
+   "draws": 0
+  },
+  {
+   "rank": 11,
+   "bot": "FunkyMelodyBot",
+   "bot_id": "3d4fadab-4e04-46b6-bf9a-a447d6dc9146",
+   "team": "FunkyMelody",
+   "participants": 2,
+   "wins": 13,
+   "losses": 64,
+   "draws": 0
+  },
+  {
+   "rank": 12,
+   "bot": "QuarkStorm",
+   "bot_id": "a91e046e-ef52-484f-a053-44d0b90353bb",
+   "team": "Tiim566779",
+   "participants": 2,
+   "wins": 3,
+   "losses": 32,
+   "draws": 0
+  },
+  {
+   "rank": 13,
+   "bot": "NapalmBot",
+   "bot_id": "b0a20668-ef55-43ad-8434-7037fe92028b",
+   "team": "Shalomtehnikud",
+   "participants": 4,
+   "wins": 0,
+   "losses": 0,
+   "draws": 0
+  },
+  {
+   "rank": 14,
+   "bot": "Testing_v2",
+   "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+   "team": "LinMacWin",
+   "participants": 2,
+   "wins": 0,
+   "losses": 77,
+   "draws": 0
+  }
+ ]
+}

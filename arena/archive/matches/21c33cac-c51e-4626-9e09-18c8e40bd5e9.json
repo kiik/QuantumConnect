@@ -1,0 +1,19 @@
+{
+ "match_id": "21c33cac-c51e-4626-9e09-18c8e40bd5e9",
+ "first": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "MimimiTest",
+  "bot_id": "f018c523-40cc-4494-8e8b-2491d4937706",
+  "team": "Mimimi"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 23,
+ "moves": "s49 f50 s49 f49 s49 f49 s49 f49 s49 f49 s49 f49 s49 f50 s49 f50 s49 f50 s49 f51 s48 f50 s48 f50",
+ "fetched_at": "2026-11-05T13:11:45"
+}

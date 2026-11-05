@@ -1,0 +1,19 @@
+{
+ "match_id": "76604317-5dac-41d7-a082-26434fc90e78",
+ "first": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "test123",
+  "bot_id": "91a81ab1-c838-4808-a3d1-0227f8ad5385",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 238,
+ "moves": "f49 s49 f49 s49 f49 f49 s49 f49 s49 f49 s49 f49 s49 f44 s44 f44 s44 f44 f44 s44 f44 s44 f44 f44 s44 f44 s48 f48 f49 f48 s48 f48 f48 s48 f48b s48 f48 s48 f48 s48 f48 s49 f53 s48 f53 s53 f53 s53 f53 s53 f53 s49 f53 f53 s53 f53 f49 f54 s52 f52 s52 f54 s54 f52b s54 f54 s54b f54 s54 f53 s53 f54 s54 f54 s53 f54 s53 f52 s52 f52 s52 f52 s52 f52 s52 f52 f53 s54 s48 f52 s52 f53 s53 f52 s53 f57 s57 f54 s54 f55 s58 f55 s55 f55 s57 f57 s57 f52 s58 f53 s58 f58 f58 s55 f49 s59 f48 s58 f57 s44 f57 s44 f58 s42 f57 s57 f57 s42 f58 s58 f58 s42 f42 s58 f42 f42 s42 f42 f42 s42 f57 f51 s51 f51 s51 f51b s52 f50 s57 f51 s51 s51 f42 s57 f51 s50b f49 s51 f51 s52 f51 s51 f51 s49 f51 s54 f51 s51 f50b s49 f51 s49 f42 s57 f42 s42 f51 s51 f51 s59 f51 s59 f59 s52 f58 s58 f58 s58 f42 s41 f41 s41 f41 s41 f41 s41 f41 s41 f41 s41 f49 s38 f40 s57 f46 s46 f46 s46 f41 s46 f46 s46 f46 f46 f46 s46 f41 s41 f46 s46 f46 s46 f40 s40 f40 s45 f45 s62 f45 s45 f50 s50 f50 s61 f50 s50b f50 s50 f50",
+ "fetched_at": "2026-11-05T13:31:55"
+}

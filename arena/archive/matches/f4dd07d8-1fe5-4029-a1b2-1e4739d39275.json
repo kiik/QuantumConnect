@@ -1,0 +1,19 @@
+{
+ "match_id": "f4dd07d8-1fe5-4029-a1b2-1e4739d39275",
+ "first": {
+  "bot": "HWGAbot10.1",
+  "bot_id": "9e741676-f125-4171-9f9e-c0ff38df3bbd",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "Data Collector",
+  "bot_id": "51500332-cc42-4cc7-94ba-5074182e9f6a",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 71,
+ "moves": "f49 s49 f49 s49 f49 s49 f49 f49 s49 f49 s49 f48 s48 f50 s50 f52 s51 f51 s50 f50 s50 f50 s50 f50 s50b f52 s51 f50 s51 f52 s50 f52 s52 f51 s51 f48 s49 f47 s52 f48 s52 f45 s46 f46 s51 f49 s51 f51 s48 f46 s52 f48 s47b f52 s51 f45 s52 f45 s52 f45 s45 f53 s50 f48 f47 s46 f46 f46 s46 f55 s47 f47",
+ "fetched_at": "2026-11-05T09:16:17"
+}

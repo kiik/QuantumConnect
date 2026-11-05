@@ -1,0 +1,19 @@
+{
+ "match_id": "12292c1d-a11a-4378-8982-8729210243f4",
+ "first": {
+  "bot": "HWGAbot10.1",
+  "bot_id": "9e741676-f125-4171-9f9e-c0ff38df3bbd",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "Data Collector",
+  "bot_id": "51500332-cc42-4cc7-94ba-5074182e9f6a",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 293,
+ "moves": "f49 s49 f49 s49 f49 s49 f51 s49 f49 s49 f49 s51 f52 s50 f50 s50 f49 s50 f50 s50 f48 s50 f50 s50 f50 s51 f50 s49 f50 s51 f51 s51 f50 s51 f46 s51 f45 s51 f50 s50 f51 s51 f43 s44 f43 s51 f43 s45 f44 s44 f44 s43 f43 s44 f44 s43 f44 s43 f43 s44 f44 s43 f44 s43 f44 s43 f44 s43 f43 s44 f41 s45 f40 s45 f45 s45 f45 s45 f38 s45 f37 s39 f40 s45 f41 s39 f41 s45 f39 s45 f45 s39 f39 s41 f41 s38 f41 s40 f40 s40 f40 s39 f39 s41 f41 s41 f39 s41 f45 s39 f51 s42b f41 s41 f48 s39 f54 s40 f40 s41 f55 s40 f57 s40 f48 s56 f48 s48 f57 s48 f57 s48 f57 s48 f48 s48 f57 s57 f35 s42b f42 s41 f34 s41 f49 s40 f41 s36 f46 s46 f38 s38 f46 s39 f46 s46 f46 s38 f46 s39 f43 s43b f43 s43 f44 s39 f39 s57 f57 s41 f34 s38 f34 s38 f38 s38 f49 s38 f38 s38 f40 s40 f38 s44 f40 s44 f44 s41 f34 s34 f51 s49 f55 s34 f56 s56 f56 s54 f55 s55 f56 s55 f55 s56 f56 s56 f56 s55 f56 s51 f57 s45 f56 s34 f56 s34 f34 f57 s44 f57 s57 f55 s55 f56 s56 f55 s55 f34 s41 f34 s40 f34 s34 f39 s55 f32 s55 f31 s35 f52 s35 f29 s30 f52 s52 f52 s52 f52 s43 f43 s43 f43 s52 f52 s52 f46 s46 f46 s46 f46 s46 f46 s35 f35 s35 f35 s35 f35 s35 f35 s38 f55 s52 f30 s52 f52 s52 f32 s31 f32 s52 f32 s32 f32 s32 f32 s31 f32 s31 f30 s30 f35 s31 f31b",
+ "fetched_at": "2026-11-05T09:16:19"
+}

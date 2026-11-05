@@ -1,0 +1,19 @@
+{
+ "match_id": "a87cb756-0cdb-47cb-bda8-8f7af09c29e3",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "FunkyMelodyBot3",
+  "bot_id": "ac9ca783-c29f-4a2c-a5ac-e8adfe9894ec",
+  "team": "FunkyMelody"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 12,
+ "moves": "f6 f6 s53 s53 s52 s52 s54 s54 s50 s50 s51 s51 s49 s49",
+ "fetched_at": "2026-11-05T09:17:25"
+}

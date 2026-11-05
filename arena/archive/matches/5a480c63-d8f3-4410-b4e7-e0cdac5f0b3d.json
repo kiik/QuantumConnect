@@ -1,0 +1,19 @@
+{
+ "match_id": "5a480c63-d8f3-4410-b4e7-e0cdac5f0b3d",
+ "first": {
+  "bot": "MimimiTest",
+  "bot_id": "f018c523-40cc-4494-8e8b-2491d4937706",
+  "team": "Mimimi"
+ },
+ "second": {
+  "bot": "HWGAbot10.1",
+  "bot_id": "9e741676-f125-4171-9f9e-c0ff38df3bbd",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 33,
+ "moves": "f49 s49 f49 s49 f49 s49 f49 s49 f49 s49 f49 s51 f49 s51 f49 s47 f49 s47 f49 s51 f48 s53 f48 s48 f48 s54 f48 s46 f48 s54 f48 s54 f48 s48b",
+ "fetched_at": "2026-11-05T09:15:53"
+}

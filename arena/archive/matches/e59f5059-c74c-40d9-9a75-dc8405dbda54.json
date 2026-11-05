@@ -1,0 +1,19 @@
+{
+ "match_id": "e59f5059-c74c-40d9-9a75-dc8405dbda54",
+ "first": {
+  "bot": "Tank-05-1101",
+  "bot_id": "12641149-1c9e-444e-a7ba-854a834e19de",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "BombSaag",
+  "bot_id": "0808c09e-fa9f-43b6-bd27-1dba6eefd56b",
+  "team": "Saag1"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 72,
+ "moves": "s5 s5 f14 s5 f5 s5 f5 s5 f5 f5 s5 s5 f5 f5 s5 f5 s5 s5 s5 f5 s5 f5 f6 s5 s5 s5 f5 f5 f5 s5 s5 s6 f5 f5 f7 s6 s6 f7 s6 f6 s6 s6 s6 f5 s6 f7b s6 f6 s6 s6b f6 s6 f6 f7 s6 s6 s5 f5 f6b f7b s5b s6b s5 f7 f6 f6 s5 s5 s5 s5 f6 f6 s5 s5 f7 s5 f6 f6 s5 s5 f5 s5 f6 s6 s6 f7 f5 s6 s6 f5 s6 f15 s6 f5 f6 s6 s6 s6 s6 f6 f6 f5 s6b s6 s6 s6 f13 f5 s6 f6 s4 f5 s6b s6 s4 f6 f14 s5 f4 s6 f6 s4b f6 f5 s4 s5 f6 f6 s4 s5 f4 f5 s4 s4 f7 f15 s4 s7 f5 f16 s4 s4 f12 f4 s11 s4 f9 f17 s4b f5 s4 s4 f4 s4 f5 s4 f5 s5 f5b s5 f4 s5 s5 f4 s7 f3 s7b f7 s6 s6 f6 s7 f7 s7 f6 s7 f3b s7 s7 f7 s3 f4 s3 s3b f4 s4 f4 s3 f2 s3 s3 s3 f3 s3 f3 s3 f3 s8 f8",
+ "fetched_at": "2026-11-05T13:54:20"
+}

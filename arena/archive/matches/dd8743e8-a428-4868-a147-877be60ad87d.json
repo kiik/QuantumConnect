@@ -1,0 +1,19 @@
+{
+ "match_id": "dd8743e8-a428-4868-a147-877be60ad87d",
+ "first": {
+  "bot": "test123",
+  "bot_id": "91a81ab1-c838-4808-a3d1-0227f8ad5385",
+  "team": "Tiim566779"
+ },
+ "second": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 426,
+ "moves": "f49 f50 s48 f49 s49 f50 s50 f48 s48 f49 s49 f50 s48 f49 s49 f48 f48 s48 f49 s48 f48 s48 f49 s49 f49 s48 f48 s49 f49 s48 s49 f54 s48 f53 s52 f52 s53 s53 f52 s52 f53 s52 f52 s52 f52 s52 s53 s53 f53 s53 f52 s53 f53 s52b f53 s52 s53 f54 s52 f52 s54 f50 s50 f50 s53 f53 s52 f50 s49 f50 s50 f50 s50b f50 s50 f49 s52 s49 s54 s50 f54 s50 f53 s53 f54 s52 s54 s54 s54 s50 s51 s51b s49 s54 f54 s50 f50 s54 s54 s46 s50 f46 s54 s55 s46 s48 f46 s54 f43 s55b f54b s54 f54 s46 f46 s46 f46 s46 f46 s46 f52 s43 f52 s52 f56 s43 f56 s56 f43 s56 f53 s46 f46 s43 f43 s43 f43 s43 f43 s53b f54 s52 f52 s43 f52 s43 f56 s56 f51 s51 f51 s54 f53b s53 f54 s52 f52 s52 f54 s46 f46 s56 f56 s56 f56 s56 f53 s56 f53 s53 f54 s54 f58 s60 f58 s60 f60 s60 f60 s60 f58 s58 f58 s58 f58 s58 f58 s61 f60 s60 f60 s60 f58 s58 f58 s58 f58 s60 f60 s60 f43 s60 f62 s43 f61 s61 f61 s61 f61 s61 f61 s61 f61 s61 f62 s62 f62 s62 f62 s62 f62 s62 f62 s62 f62 s61 f61 s61 f58 s60 f40 s42 f40 s40 s40 f40 s40 f40 s40 f40 s40 f40 s40 f40 s40 f36 s37 f37 s36 f37 s37 f37 s37 f37 s37 f37 s37 f37 s37 f36 s36 f36 s36 f36 s36b f36 s36 s37 f36 s36 f43 s37 f37 s36 f40 s36 f42 s42 f42 s36 f36 s37 f42 s42 f42 s42 f42 s42 f42 s42 f42 s42 f42 s37 f37 s36 f62 s62 f62 s34 f67 s67 f66 s68 f66 s66 f66 s67 f67 s66 f63 s67 f63 s66 f63 s63 f63 s66 f66 s67 f67 s67 f67 s66 f66 s67 f63 s66 f67 s63 f63 s67 f63 s63 f63 s66 f56 s56 f66 s56 f63 s63 f63 s64b f59b s60 s58 s64 f63 s63 f67 s58 f59 s66 f67 s57 f57 s34 f34 s34 f34 s34 f59 s34 f34 s34 f38 s34 f34 s51 f61b s61 f62 s34 f38 s38 f38 s34 f38 s38 f38 s38 f38 s38 f38 s38 f38 s38 f38 s61 f62 s34 f60 s33b f34 s34 f31 s32 f60 s32 f34 s31 f32 s31 f31 s31 f31 s31 f32 s32 f33 s33 f33 s32 f32 s51 f33 s57 s47 s47 f33 s47 f57 s47 f57 s51 f51b",
+ "fetched_at": "2026-11-05T13:11:33"
+}

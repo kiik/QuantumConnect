@@ -1,0 +1,19 @@
+{
+ "match_id": "71f7d611-0a1b-40d6-b1ed-32cabc98683e",
+ "first": {
+  "bot": "Early Bird",
+  "bot_id": "e03d0d21-4458-4875-a612-b02db13c377e",
+  "team": "Shalomtehnikud"
+ },
+ "second": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 5,
+ "moves": "s49 s49 s49 s49 s49 s49 s49 s49 s49 s49 s49 s49",
+ "fetched_at": "2026-11-05T13:32:08"
+}

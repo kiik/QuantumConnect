@@ -1,0 +1,19 @@
+{
+ "match_id": "cd64509c-bb68-4df3-a336-2d48854ae226",
+ "first": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "test123",
+  "bot_id": "91a81ab1-c838-4808-a3d1-0227f8ad5385",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 327,
+ "moves": "f49 s49 f49 s49 f49 s49 f49 s49 f49 f49 s49 f49 s49 f49 s50 f50 s50 f50 s50 f50 s50 f50 s50 f50 s50 f50 s50 f50 s54 f54 s55 f55 s53 f53 s56 f56 s57 f57b s56 f57 f56 s57 f55 s54b f56 s51 f52 s53 f57 s53 f57 s53 f53 s53 f55 s55 s57 f56 s56 f57 s56 f57 s56 f54b s56 f56 f57 s57 f52 s53 s53 f52 f51 s53 f51 f53 s51 f51 s51 f51 f51 s53 f51 s51 f52 f52 s52 f53 f51 f51 f52 f52 f52 f52 s52 f52 f53 s53 f53 f57 f56 s53 f50 s54b f53 s53 f57 s52 f51 s57 f56 s56 f51 s52 f49 s56 f58 s57 f58 s58 f58 s58 f59 s46 f52 s51 f58 s58 f58 s46 f58 s58 f58 s58 f46 s58 f46 s46 f46 s58 f53 s46 f54b s53 f46 s46 f46 s46 f46 s55 f46 s56 f46 s57 f53 s62 f56 s62 f62 s62 f62 s43 f62 s42 f62 s44 f45 s62 f45 s45 f45 s45 f45 s45 f45 s45 f45 s45 f45 s39 f45 s38 f40 s45 f62 s62 f57 s62 f39 s62 f38 s62 f62 s40 f38 s38 f39 s39 f40 s40 f58 s39 f46 s40 f40 s39 f39 s38 f38 s40 f40 s43 f38 s43 f38 s43 f43 s39 f38 s43 f39 s43 f38 s38 f39 f39 s39 f43 s43 f43 s43 f45 s40 f40 s40 f43 s40 f43 s38 f40 s39 f53 s40 f43 s39 f43 s38 f38 s40 f59 s59 f60 s59 f59 s59 f59 s59 f59 s59 f39 s59 f59 s59 f59 s59 f48 s34 f55b s55b f56 s56 f56 s56 f34 s35 f35 s35 f35 s35 f35 s33 f33 s32 f36 s36 f34 s36 f32 s55 f35 s36 f36 s35 f34 s56 f35 s62 f35 s36 f36 s34 f31 s36 f31 s36 f36 s35 f36 s36 f35 s36 f31 s63 f33 s61 f32 f33 s31 f33 s33 f33 s61 f33 s35 f33 s61 f33 s34b",
+ "fetched_at": "2026-11-05T13:31:24"
+}

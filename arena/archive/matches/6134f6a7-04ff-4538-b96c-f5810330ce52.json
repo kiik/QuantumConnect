@@ -1,0 +1,19 @@
+{
+ "match_id": "6134f6a7-04ff-4538-b96c-f5810330ce52",
+ "first": {
+  "bot": "Testing_v2",
+  "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+  "team": "LinMacWin"
+ },
+ "second": {
+  "bot": "FunkyMelodyBot3",
+  "bot_id": "ac9ca783-c29f-4a2c-a5ac-e8adfe9894ec",
+  "team": "FunkyMelody"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 10,
+ "moves": "s24 s24 s23 s23 s25 s25 s21 s21 s22 s22 s20 s20",
+ "fetched_at": "2026-11-05T09:17:35"
+}

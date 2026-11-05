@@ -1,0 +1,19 @@
+{
+ "match_id": "34324c65-492c-4f14-8dc1-d1907d1dab86",
+ "first": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "HWGAbot10.1",
+  "bot_id": "9e741676-f125-4171-9f9e-c0ff38df3bbd",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 41,
+ "moves": "s49 f51 s49 f49 s51 f51 s48 f51 f49 s49 f49 s51 f51 s48 s48 f48 s48 f49 s49 f51 s48 f48 s51 f48 s46 f49 s46 f49 s50 f50 s47 f45 s49 f48 s48 f51 s50 f45 s51 f51 s45 f44b",
+ "fetched_at": "2026-11-05T09:16:29"
+}

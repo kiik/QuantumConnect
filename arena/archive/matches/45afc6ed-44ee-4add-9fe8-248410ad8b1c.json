@@ -1,0 +1,19 @@
+{
+ "match_id": "45afc6ed-44ee-4add-9fe8-248410ad8b1c",
+ "first": {
+  "bot": "HumanBot_Test2",
+  "bot_id": "afec6137-0d58-4493-8cf9-f8db129a17d6",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "second": {
+  "bot": "Cod Published CHET45",
+  "bot_id": "7cf3f313-305c-467b-8d07-d81a40013905",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "second",
+ "deciding_move": 20,
+ "moves": "f61 s49 f76 s49 f86 f93 s49 f23 s49 f68 s49 f49 s49 f94 s49 f87 s49 f8 s49 s49 s49",
+ "fetched_at": "2026-11-05T13:31:30"
+}

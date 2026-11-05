@@ -1,0 +1,19 @@
+{
+ "match_id": "8857de3e-124a-4b00-8d58-4d173b35cc60",
+ "first": {
+  "bot": "savi22 - \"The King\"",
+  "bot_id": "1099b6f1-c6de-44a6-b3cc-ae2c0aec736c",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "Strange Quark 1",
+  "bot_id": "c65fccbb-1bf8-42e9-a194-eaef67455171",
+  "team": "Strange Quark"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 26,
+ "moves": "s0 s0 f49 s0 s0 f0 s0 f50 s0 f49 s0 f50 s0 f0 s0 s0 s0 s0 f49 s0 f50 s1 f49 s1 f50 s1 f1b",
+ "fetched_at": "2026-11-05T13:11:51"
+}

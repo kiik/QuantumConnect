@@ -1,0 +1,19 @@
+{
+ "match_id": "10f2ebdb-7432-4d6e-8fdb-4b4673644063",
+ "first": {
+  "bot": "FunkyMelodyBot3",
+  "bot_id": "ac9ca783-c29f-4a2c-a5ac-e8adfe9894ec",
+  "team": "FunkyMelody"
+ },
+ "second": {
+  "bot": "HWGAbot10.1",
+  "bot_id": "9e741676-f125-4171-9f9e-c0ff38df3bbd",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 109,
+ "moves": "f24 s49 f27 f26 s25 f30 s31 f20 s31 f32 s50 f19 s21 f35 s31 f34 s37 f30 s25 f15 s47 f14 s16 f10 s31 f31 s25 f9 s11 f5 s48 f46 s21 f51 s30 f4 s6 f30b s30 f54 s25 f25 s35 f53 s35 f55 s35 f58 s57 f61 s35 f35 s30 f60 s49 f62 s63 f48b s30 f45 s30 f30 s30 f44 s43 f67 s25 f66 s30 f68 s69 f73 s30 f72 s30 f30 s50 f74 s75 f79 s51 f78 s50 f50b s50 f80 s50 f50 f76 s81 f85 s54 f84 s53 f86 s55 f49 s49 f82 s49 f89 s49 f87 s86b f85 s57 f86 f87 s49 f83",
+ "fetched_at": "2026-11-05T09:16:09"
+}

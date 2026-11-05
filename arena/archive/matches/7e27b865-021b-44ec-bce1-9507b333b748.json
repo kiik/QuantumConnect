@@ -1,0 +1,19 @@
+{
+ "match_id": "7e27b865-021b-44ec-bce1-9507b333b748",
+ "first": {
+  "bot": "Tank-05-1101",
+  "bot_id": "12641149-1c9e-444e-a7ba-854a834e19de",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "SPMoveDestroyer3",
+  "bot_id": "c90e4fc4-6371-46d9-9228-b815d26f8468",
+  "team": "KolmApelsini"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 150,
+ "moves": "f49 s49 s49 s49 s49 s49 f49 f49 s49 s49 f49 f49 s49 s49 f49 f49 s49 s49 s49 f49 f49 s50 f51 s50 f50 s50 f51 s50 f50 s50 f50 s50 s50 f50 s50 f50 f50 s50 f50 s50 s50 f50 f48 f49 s48 s50 f51 f48 s48 f48b s49 f48 s48 f50 s49 f48 f48 f49 s48 s48 f48 f51 s51 s51 f49 f50 s51 s48 f48 f51 s51 s48 f51b f48 f48 s50 s48 f50 s50 f46 f50 s48 s51 f44 f50 f51 s51 s48 s51 f51 f48 f47 s51 s51 f48 f51 f48 s51 s51 f51 f48 s47 s48 f47 s47 f52 f48b f47 s47 s48 f51 f51 s47 s47 f48 f47b s48 s47 f49 s48 s47 s48 f51 s48 f47 s47 s52 s48 f48 f47 s47 s47 f44 f47 s47 f49 s47 f47 f47 s47 f43 s52 f51 s52 s52 f52 s46 f51 f46b s51 f45 s47 s46 f47 s47 f52b f50 s52 s46 f53 s52 s46 f50 f51 s46 s52 f52 f52 s52 s52 f49 s52 f51 s49 f51 s51 s52 f49 f51 s46 s46 s46 f45 f46b s46 s47 f46 f47 s47 s46 f47 s46 f46 f46b s46 f44 s46 f44 s44 f44 s46 f52 s52 f52 f52 s52b f53b s52 f51 s46 f46 s53 f47 s47 f47",
+ "fetched_at": "2026-11-05T13:37:16"
+}

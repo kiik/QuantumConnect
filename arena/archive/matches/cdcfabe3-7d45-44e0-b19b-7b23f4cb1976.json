@@ -1,0 +1,19 @@
+{
+ "match_id": "cdcfabe3-7d45-44e0-b19b-7b23f4cb1976",
+ "first": {
+  "bot": "lalalalalalala",
+  "bot_id": "4fd45705-a6a3-4974-8bfd-ceb4349d07ad",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "second": {
+  "bot": "Early Bird",
+  "bot_id": "e03d0d21-4458-4875-a612-b02db13c377e",
+  "team": "Shalomtehnikud"
+ },
+ "rows": 15,
+ "columns": 100,
+ "winner": "first",
+ "deciding_move": 6,
+ "moves": "f5 f6 f7 f8 f4 s3 f9",
+ "fetched_at": "2026-11-05T09:17:21"
+}
