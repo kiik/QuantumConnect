@@ -1051,8 +1051,12 @@ public class SerenaBot implements Algorithm {
      * blast takes the danger with it.
      */
 
-    /** Percent of the shaped bomb value the evaluation counts; 0 counts only the flat readiness bonus. */
-    public int bombHoldPercent = 100;
+    /**
+     * Percent of the shaped bomb value the evaluation counts; 0 counts only the flat readiness bonus.
+     * Off: with the flat bonus at 600% it added nothing (150-150 over 300 games on 15x30), and with
+     * the refined search it cost 21 to 78 Elo.
+     */
+    public int bombHoldPercent = 0;
     /** Danger of one open threat line and one open four line of a player. */
     public int bombHoldThreat = 600, bombHoldFour = 200;
     /** The most danger counted for one player. */
@@ -1738,9 +1742,11 @@ public class SerenaBot implements Algorithm {
     /**
      * Whether {@link #chooseAction} runs the threat-space search: a proven win of ours is played at
      * once, and each move the alpha-beta search settles on is checked for a proven win it hands the
-     * opponent, bombs included; a refuted move is left out and the depth searched again.
+     * opponent, bombs included; a refuted move is left out and the depth searched again. Off: on
+     * 15x30 at the 50 ms limit the bot without it beat the bot with it by 61 Elo over 300 games, the
+     * time it takes costing more depth than its proofs save.
      */
-    public boolean threatSpaceSearch = true;
+    public boolean threatSpaceSearch = false;
     /** Percent of a move's budget the threat-space search may take, all its proofs together. */
     public int threatSharePercent = 20;
     /** Longest proof looked for, in plies, attacker and defender together. */
