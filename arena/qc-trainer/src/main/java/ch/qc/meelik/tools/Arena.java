@@ -335,7 +335,10 @@ public final class Arena {
      * {@code forcing} (forcingPlies), {@code reach} (dropReach),
      * {@code variety} (varietyNoise), {@code varietyQuarks}, {@code refined} (refinedSearch, 0 or 1:
      * 0 plays the plain alpha-beta search), {@code lmr} (lateMoveReductions, 0 or 1),
-     * {@code bombHorizon} (0 to 3); for ThreatBot also {@code threat} (threatPlies).
+     * {@code bombHorizon} (0 to 3), {@code tss} (threatSpaceSearch, 0 or 1), {@code tssShare}
+     * (threatSharePercent), {@code tssPlies} (threatSearchPlies), {@code tssBombs} (bombThreats, 0 or 1);
+     * for ThreatBot also {@code threat} (threatPlies). ThreatBot shares {@code refined} and {@code lmr}
+     * (its own refined search now is SerenaBot's) and keeps {@code tss} off, running its own proofs.
      */
     static void applySettings(SerenaBot bot, String settings) {
         for (String setting : settings.split(",")) {
@@ -353,6 +356,10 @@ public final class Arena {
                 case "variety" -> bot.varietyNoise = value;
                 case "varietyQuarks" -> bot.varietyQuarks = value;
                 case "bombHorizon" -> bot.bombHorizon = value;
+                case "tss" -> bot.threatSpaceSearch = value != 0;
+                case "tssShare" -> bot.threatSharePercent = value;
+                case "tssPlies" -> bot.threatSearchPlies = value;
+                case "tssBombs" -> bot.bombThreats = value != 0;
                 case "threat" -> ((ThreatBot) bot).threatPlies = value;
                 case "refined" -> bot.refinedSearch = value != 0;
                 case "lmr" -> bot.lateMoveReductions = value != 0;
