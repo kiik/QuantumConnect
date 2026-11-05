@@ -1,0 +1,19 @@
+{
+ "match_id": "a75461e7-8158-4f49-b067-b8ba1a34b978",
+ "first": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "back-to-safe",
+  "bot_id": "338037d5-cc64-41bd-89da-bd4590b40925",
+  "team": "KolmApelsini"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 53,
+ "moves": "f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s15 s15 s15 s15 f14 f14 f14 f14 s15 s15 s15 s15 f15 f15 f15 f15 s15 s15 s15 s15 f15 f15 f15 f15 s15 s15 s15 s15 f15 f15 f15 f15 s15 s15 s15 s15 f15 f15 f15 f15 s15 s15 s15 s15 f14 f13b f13b f13b s15 s15 s15 s15 f14 f14 f13b f14 s15 s15 s15 s15 f14 f14 f14 f14 s15 s15 s15 s15 f14 f14 f14 f14 s14 s14 s14 s14 f15 f15 f15 f15 s13 s13 s13 s13 f8 f8 f8 f8 s13 s13 s13 s13 f13 f13 f13 f13 s13 s13 s13 s13 f13 f13 f13 f13 s13 s13 s13 s13 f13 f13 f13 f13 s13 s13 s13 s13 f13 f13 f13 f8 s13 s13 s13 s13 f13 f8 f13 f13 s13 s16 s16 s16 f16 f16 f8 f16 s16 s16 s13 s16 f16 f16 f13 f16 s16 s16 s16 s16 f16 f16 f16 f16 s16 s16 s16 s16 f16 f16 f16 f16 s16 s16 s16 s16 f13 f16 f13 f13 s16 s16 s16 s16 f16b f16b f16b f16 s16 s16 s16 s16 f15 f15 f16 f15 s16 s12 s16 s16 f12 f13 f13 f13 s12 s16 s16 s16 f15 f12 f15 f15 s16 s16 s16 s12 f16 f16 f16 f12 s12 s12 s12 s12 f12 f12 f12 f12 s12 s12 s12 s12 f12 f12b f12 f12 s12 s13 s12 s12 f8 f12 f12 f12 s8 s12 s12 s12 f12 f12 f12 f12 s12 s12 s12 s13 f8 f8 f8 f8 s12 s13 s12 s12 f8 f4 f13 f15 s12 s12 s12 s13 f12 f14b f12 f13 s17 s17 s12 s14 f12 f12 f12 f16 s12 s17 s17 s17 f20 f12 f8 f12 s17 s17 s17 s12 f4 f17 f17 f8 s17 s12 s17 s17 f7 f4 f8 f7 s11 s8 s17 s11 f12 f12 f17 f7 s17 s11 s11 s11 f14 f18 f12 f7 s11 s11 s17 s11 f20 f16 f4 f12 s11 s17 s11 s11 f17b f11 f11 f4 s16 s11 s11 s4 f11 f4 f11 f16 s11 s17 s11 s11 f12 f11 f11 f17 s11 s17 s11 s18 f11b f11b f11 f6 s17 s11b s11 s11b f12 f5 f12 f6 s17 s17 s17 s11 f12 f5 f6 f17 s11 s17 s17 s11 f6 f11 f16 f5 s11 s17 s17 s18 f20 f11 f7 f5 s11 s17 s12 s18 f5 f6 f12 f11 s12 s11 s18 f5 f5 f4 s11 s17 s18 f5 f11 f9 s5 s10 s11 f4 f7 f6 s18 s7b f18 f7 s18 s9 f5b f3 s5b f7 s9 f3",
+ "fetched_at": "2026-11-05T23:38:14"
+}

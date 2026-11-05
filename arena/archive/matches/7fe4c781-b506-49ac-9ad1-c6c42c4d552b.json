@@ -1,0 +1,19 @@
+{
+ "match_id": "7fe4c781-b506-49ac-9ad1-c6c42c4d552b",
+ "first": {
+  "bot": "back-to-safe",
+  "bot_id": "338037d5-cc64-41bd-89da-bd4590b40925",
+  "team": "KolmApelsini"
+ },
+ "second": {
+  "bot": "anysize",
+  "bot_id": "49d95bfa-dd9e-4180-bd42-8a948aa3b454",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 38,
+ "moves": "f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f15 f15 f15 s14 s14 s14 f15 f15 f15 s14 s14 s14 f15 f15 f15 s14 s14 s14 f15 f15 f15 s14 s14 s14 f14 f14 f14 s16 s16 s16 f15 f15 f15 s15 s15 s15 f13 f13 f13 s16 s16 s16 f13 f13 f13 s12 s12 s11 f13 f13 f13 s13 s13 s13 f13 f13 f13 s13b s13b s13b f15 f15 f15 s14 s14 s14 f15 f15 f15 s14 s14 s15 f15 f15 f15 s13 s11 s15 f13 f15 f15 s13 s13 s13 f13 f15 f15 s15 s15 s15 f13 f13 f13 s13 s11 s15 f13 f13 f13 s13 s11 s10 f13 f13 f16 s13 s15 s13 f16 f13 f16 s13 s15 s13 f16 f16 f12 s13 s17 s12 f10 f12 f16 s13 s13 s16 f12 f16 f17 s16 s13 s13 f12 f16 f17 s14 s13 s12 f17 f16 f12 s13 s15 s13 f17 f16 f12 s13 s15 s13 f17 f13 f13 s16b s16b s16 f16 f12 f17 s16 s12 s16 f17 f16 f16 s16 s15 s16 f16 f16 f17 s15 s15 s17 f16 f16 f17 s15 s16 s12 f17 f15 f16 s16 s17 s16 f18 f16 f16 s16 s15 s15 f18 f15 f12 s14 s16 s16 f18 f12 f12 s16 f18 s16 f12 f12 s19 s12 s12 f18 f17 s18 f12 f18 s12 s16 f17 f12 s19 s16 f18 s14 s19 f17 f12 s19 f10 s16 f12 f17 s19 f10 s17 s12 f10 f17 f11 s12 s11 s12 f11 f11 f17 s12 s12 s11 f17 f18 f11 s10 s12 s12 f11 f17b f18 s18b s18 s18 f18 f11 f17 s18 s17 s18 f11 f18 s18 s19 f11 f18 s11 s18 f18 f11 s18 s18 f11 f10 s18 s10 f10 f18 s18 s10 f10 f11 s12 s11 f10 f10 s11 s10 f10 f10 s10 s11 f19 f19 s10 s19 f19 f19 s10 s19 f19 f19 s21 s10 f19 f19 s10 s19 f9 f10 s20 s9 f9 f19 s19 s9 f9 f19 s19 s8 f19 f9 s7 s9 f9 f19 s8 s19 f9 f9 s9 s9 f8 f9 s9 s8 f8 f9 s9 s9 f11 f8 s8 s11b f8 s9 f8 s8 f8 s7 f8 s8 f21 s7 f21 s8 f21 s8 f21 s7 f21 s21 f21 s22 f21 s6 f21 s21 f7 s7 f7 s24 f7 s23 f20 s20b",
+ "fetched_at": "2026-11-05T23:39:01"
+}

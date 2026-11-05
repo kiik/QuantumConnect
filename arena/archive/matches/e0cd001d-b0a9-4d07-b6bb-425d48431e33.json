@@ -1,0 +1,19 @@
+{
+ "match_id": "e0cd001d-b0a9-4d07-b6bb-425d48431e33",
+ "first": {
+  "bot": "atoipjyriuo",
+  "bot_id": "7d482c60-5f57-4bfe-b74c-49a9380a6b03",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "second": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 353,
+ "moves": "f5 s7 f5 s5 f7 s7 f5 s5 f7 s5 f5 s7 f7 s7 f5 s7 f5 s5 f7 s7 f5 s7 f2 s7 f7 s5 f5 s2 f4 s3 f3 s3 f4 s4 f4 s2 f3 s2 f4 s4 f8 s8 f8 s8 f8 s8 f9 s8 f8 s8 f8 s4 f12 s8 f13 s11 f11 s8 f8 s12 f11 s11 f12 s11 f11 s11 f11 s12 f8 s12 f12 s12 f12 s12 f11 s5 f11 s11 f12 s11 f11 s12 f12 s12 f12 s11 f17 s12 f15 s16 f4 s4 f4 s4 f4 s4 f16 s8 f7 s11 f7 s17 f17 s16 f16 s16 f16 s17 f17 s16 f16 s17 f17 s17 f16 s16 f17 s16 f17 s17 f2 s16 f2 s17 f2 s2 f16 s19 f16 s20 f20 s21 f23 s2 f2 s2 f19 s19 f23 s21 f19 s19 f23 s23 f19 s19 f2 s6 f2 s23 f2 s2 f23 s23 f20 s20 f18 s20 f20 s20 f18 s20 f20 s20 f20 s20 f20 s23 f17 s23 f23 s23 f17 s20 f16 s23 f17 s20 f25 s23 f24 s26 f24 s24 f25 s26 f25 s25 f25 s24 f24 s24 f24 s24 f24 s24 f24 s24 f18 s18 f18 s18 f18 s18 f18 s18 f18 s18 f18 s23 f18 s24 f18 s24 f26 s26 f26 s26 f26 s26 f26 s25 f25 s25 f25 s26 f25 s25 f25 s25 f25 s23 f25 s26 f26 s26 f26 s5 f10 s3 f3 s3 f3 s3 f3 s3 f3 s3 f3 s14 f10 s10 f10 s0 f10 s14 f9 s9 f3 s9 f24 s9 f26 s14 f10 s10 f10 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s15 f10 s4 f4 s13 f15 s22 f15 s22 f1 s1 f1 s1 f0 s1 f15 s15 f15 s1 f0 s27 f0 s0 f0 s13 f15 s15 f13 s10 f10 s10 f19 s19 f10 s10 f19 s22 f22 s22 f22 s22 f0 s10 f0 s0 f0 s21 f0 s27 f0 s0 f0 s28 f0 s28 f1 s1 f1 s1 f1 s28 f28 s28 f1 s28 f28 s28 f1 s28 f1 s28 f1 s28 f6 s6",
+ "fetched_at": "2026-11-05T23:38:28"
+}

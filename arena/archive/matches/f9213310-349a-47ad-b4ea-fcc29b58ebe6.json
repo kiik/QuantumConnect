@@ -1,0 +1,19 @@
+{
+ "match_id": "f9213310-349a-47ad-b4ea-fcc29b58ebe6",
+ "first": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "anysize",
+  "bot_id": "49d95bfa-dd9e-4180-bd42-8a948aa3b454",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 369,
+ "moves": "f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f14 f14 f14 s14 s14 s14 s14 f14 f4 f14 f14 s11 s14 s14 s14 f11 f14 f14 f14 s14 s16 s14 s16 f4 f11 f16 f16 s16 s15 s14 s16 f16 f16 f11 f4 s16 s4 s16 s11 f15 f16 f11 f16 s16 s16 s11 s4 f16 f9 f11b f4b s11 s16 s16 s4 f4 f16 f16b f11 s11 s16 s16 s4 f4 f11 f16b f16 s16 s4 s16 s11 f4 f11 f16 f16 s11 s4 s16 s16 f16 f11 f16 f4 s16 s16 s11 s4 f16 f20 f4 f6 s9 s4 s20 s6 f10 f20 f6 f9 s15 s6 s9 s20 f9 f20 f15 f6 s15 s6 s20 s9 f20 f9 f15 f6 s15 s20 s6 s9 f6 f9 f15 f20 s9 s20 s6 s15 f6b f9 f20 f15 s15 s20 s6 s9 f6 f15b f9b f20 s15 s6 s20 s9 f9 f20b f6 f15 s6 s9 s15 s20 f5 f24 f21 f9 s6 s9 s20 s15 f24 f19 f14 f9 s6 s5 s15 s14 f5 f6 f14 f15 s24 s15 s6 s5 f6 f5 f13 f24 s6 s24 s5 s12 f5 f13 f24 f6 s6 s24 s5 s12 f12 f24 f6 f5 s6 s5 s24 s12 f24 f6 f18 f5 s6 s24 s5 s10 f11 f6 f5 f24b s5 s11 s24 s6 f11b f6b f24 f6 s11 s24 s5 s6 f6 f4 f11 f19 s9 s6 s24 s11 f24 f8 f11 f4 s11 s24 s21 s9 f8 f11 f21 f9 s24 s11 s24 s9 f11 f19 f21 f9 s9 s24 s11 s19 f5 f24 f11 f9b s9 s19 s11 s21 f21 f19 f12 f9 s9 s19 s21 s11 f19 f9 f24 f12 s9 s19 s24 s12 f24 f13 f19 f6 s19 s7 s21 s11 f19b f24 f13 f9 s19 s9 s11 s21 f13 f19 f9 f21b s13 s9 s24 s19 f21 f7 f12 f5 s24 s19 s4 s16 f4 f12 f8 f21 s19 s4 s24 s16 f5 f12 f4 f24 s12 s24 s4 s5 f15 f7 f21 f13 s4 s12 s5 s24 f5 f21 f4b f13 s13 s21 s5 s5 f19 f12 f8 f3 s12 s5 s21 s5 f3 f15 f15 f12 s5 s5 s21 s13 f22 f3 f5 f15 s10 s13 s2 s5 f15 f2 f5 f20 s15 s23 s4 s12 f6 f5b f10 f2 s5 s15 s8 s1 f15 f2 f15 f8 s8 s4 s16 s10 f8 f10 f6 f24 s4 s16 s15 s8 f15b f4 f5 f3 s2 s7 s8 s14 f8 f9 f10 f23 s6 s16 s7 s14 f20 f16 f8 f11 s14 s8 s9 s2 f11 f4 f3 f23 s12 s7 s16 s2 f10 f12 f8 f2 s6 s13 s10 s13 f10 f13 f5 f15 s8 s11 s10 s13 f11 f10 f13 f15 s10 s13 s11 s8 f17 f15 f6 f11 s12 s11 s18 s15 f8 f11 f6 f10 s15 s10 s6 s11 f3 f11 f4 f15 s6 s10 s11 s18 f15 f11 f2 f18 s15 s19 s11 s16 f11 f1 f15b f20 s15 s1b s11 s16 f24 f7 f3 f20 s5 s2 s10 s13 f13 f7 f20 f4 s20 s13 s5 f20 f3 f10 s10 s3 s10 f3 f20 f24 s20 s13 s4 f1 f13b f19 s17 s14 s2 f4 f13 f19 s19b s1 s4 f13 f15 f4 s20 s4 s4 f13 f22 f4 s20 s5 s4 f13 f4 f15 s13 s15 s4 f19 f5b f13 s24 s20 s3 f15 f4 f13 s24 s17 s5 f4 f22 f13 s18 s24 s20 f18 f24 f20 s4 s5 s22 f4 f13 f19 s14 s4 s20 f13 f15 f6 s22 s4 s12 f12 f22 f7 s22 s12 s7 f7 f24 f22 s10 s24 s17 f17 f24 f3 s23 s24 s3 f6 f24 f15 s22 s14 s7 f18 f24 f15 s23 s24 s7 f19 f7 f15 s24 s7 s15 f23 f18 f19 s23 s19 s14 f19 f15b f23 s15 s2 s19 f19 f23 f22 s19 s7 s22 f7 f8 f19 s18 s19 s22 f18 f16 f19 s19 s22 s18 f16 f19 f18 s19 s22 s18 f14 f18 f19 s19 s23 s7 f18 f7b f8 s6 s1 s22 f0 f23 f6 s6 s23 s6 f18 f23 f7 s23 s18 s6 f23 f23 f7b s12 s18 s20 f20 f23 f12 s23 s20 s6 f23 f10 f8 s13 s7 s10b f6 f7 f18 s23 s23 s10 f21 f23 f23 s22 s14 s23 f7 f7 f23 s10 s25 s1 f7 f10 f0 s15 s23 s10 f8 f7 f18b s8 s7 s23 f8 f12 f23 s12 s23 s7 f8 f12 f8 s8 s23 s2 f12b f7 f7 s10 s19b f10 f8 s25 s18 f20 f8 s25 s21 f21 f8 s18 s25 f10 f25 s10 s20 f10 f8 s10 s8 f10 f17 s12 s18 f10 f17 s12 s10 f10 f20 s12 s10 f8 f3b s8 s9b f12 f17 s17 s12 f7 f12 s12 s7 f12 f18 s15 s18 f21 f19b s20 s16 f7 f13 s21 s20 f7 f13 s19 s1 f7 f13 s13 s20 f16 f7 s16 s7 f9 f17 s17 s4 f17 f9b s17 f4 s4 f8 s19 f4 s4 f7b s8 f7 s7 f12 s13 f4 s4 f12 s13b f18 s14 f18 s11 f8 s11 f17 s14 f18 s7 f18 s18 f13b s18 f4 s14 f8 s4 f4 s4 f18 s17 f18 s18 f11 s20 f12 s12 f14 s5 f18 s18 f18 s2 f11 s18 f6 s5 f4 s14 f6 s26 f26b s25 f4 s25 f6 s25 f14 s13 f4 s11 f11 s11 f4 s13 f13 s11 f13 s11 f12 s12 f13b s13b f14 s19 f19",
+ "fetched_at": "2026-11-05T23:38:13"
+}

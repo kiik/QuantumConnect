@@ -1,0 +1,19 @@
+{
+ "match_id": "759c6eca-f83d-49ed-a2f3-1a289d9dc664",
+ "first": {
+  "bot": "FunkyMelodyBot3",
+  "bot_id": "303b97c7-d85b-4e68-ae80-b012910719ba",
+  "team": "FunkyMelody"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 27,
+ "moves": "f17 s14 f25 s14 f19 s14 f17 s14 f14 s14 f17 s14 f17 s17 f16 s17 f16 s17 f17 s16 f15 s14 f15 s14 f14 s17 f15 s15b",
+ "fetched_at": "2026-11-05T23:38:18"
+}

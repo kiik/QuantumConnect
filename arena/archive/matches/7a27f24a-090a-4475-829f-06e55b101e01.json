@@ -1,0 +1,19 @@
+{
+ "match_id": "7a27f24a-090a-4475-829f-06e55b101e01",
+ "first": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "coffeeAt21",
+  "bot_id": "a6fc4b45-53d3-4ace-8db8-1f496a19c420",
+  "team": "coffee_break"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 102,
+ "moves": "f14 s14 f15 s14 f14 s14 f14 s14 f15 s15 f14 s15 f14 s15 f15 s15 f14 s15 f15 s15 f14 s15 f14 s14 f15 s15 f14 s15 f16 s18 f16 s12 f16 s16 f16 s13 f18 s16 f16 s16 f16 s16 f15 s16 f18 s18 f14 s17 f16 s13 f16 s17 f20 s13 f12b s13 f20 s17b f17 s17 f12 s12 f12 s20 f22 s18 f18 s13 f16 s16 f16 s17 f13 s19 f16 s16 f13 s19 f12 s17 f17 s18 f13b s13 f12 s17 f14 s17 f17 s17b f14 s20 f13 s13 f20 s13 f20 s20 f13 s13 f14 s13 f13b",
+ "fetched_at": "2026-11-05T23:38:34"
+}

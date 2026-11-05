@@ -1,0 +1,19 @@
+{
+ "match_id": "dd4db654-b516-4e1e-aa66-539fa14aa006",
+ "first": {
+  "bot": "Just Chill",
+  "bot_id": "9002cfdd-633b-4d94-9e60-5f2415f0cb5b",
+  "team": "I need to test your server"
+ },
+ "second": {
+  "bot": "anysize",
+  "bot_id": "49d95bfa-dd9e-4180-bd42-8a948aa3b454",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 9,
+ "moves": "f0 f0 f0 f0 s3 s3 s3 s3 f0 f0 f0 f0 s3 s3 s3 s3 f0 f0 f0 f0 s3 s3 s3 s3 f0 f0 f0 f0 s6 s6 s6 s3 f0 f0 f0 f0 s0 s0 s0 s0 f0 f0 f0 f0 s6 s6 s6 s5 f0 f0 f0 f0 s6 s3 s4 s5 f0 f0 f0 f0 s6 s5 s4 s3 f0 f0 f0 s6 s7 s7 f0 f0 f0 s6 s2 s2",
+ "fetched_at": "2026-11-05T23:38:58"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "0427ef31-2be5-4c67-baa0-a9121aaa5388",
+ "first": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 240,
+ "moves": "f14 s13 f14 s14 f14 s13 f14 s12 f14 s14 f14 s12 f14 s14 f13 s8 f13 s10 f13 s10 f11b s13 f8 s12 f8 s13 f8 s8 f8 s13 f8 s13 f13 s13 f8 s8 f8 s14 f8 s14 f13b s13 f14 s14 f14 s13 f8 s8 f21 s13 f21 s14 f21 s21 f21 s13 f21 s21 f21 s8 f13b s13 f21 s14 f21 s21 f13 s4 f21 s5 f5 s9 f5 s10 f11 s9 f5 s5 f5 s9 f10b s9 f5 s10 f11 s9 f5 s9 f5 s5 f9 s9 f5 s6 f7 s3 f21 s12 f11 s9 f9 s4 f9 s9 f4 s4 f4 s9 f9 s9 f5 s9 f9b s8 f5 s9 f20 s9 f20 s8 f20 s5 f20 s20 f20 s24 f20 s3 f4 s3 f24 s1 f2 s2 f24 s4 f2b s2 f1 s2 f4 s4 f4 s2 f17 s2 f2 s19 f2 s4 f2 s4 f7 s2 f22 s22 f22 s25 f22 s22 f22 s27 f25 s25 f22 s28 f26 s7 f25 s3 f3 s14 f25 s25 f24 s24 f24 s25 f22 s22 f22 s25 f25 s20 f22 s9 f20 s20 f22 s22 f24 s24 f24 s24 f25 s28 f24 s28 f24 s28 f7 s28 f28 s24 f7 s7 f7 s7 f7 s2 f20 s20 f20 s28 f24 s28 f22 s28 f23b s19 f19 s28 f28 s20 f7 s26 f22 s26 f7 s7 f7 s7 f19 s25 f24 s7 f19 s19 f18b s23 f23",
+ "fetched_at": "2026-11-05T23:38:24"
+}

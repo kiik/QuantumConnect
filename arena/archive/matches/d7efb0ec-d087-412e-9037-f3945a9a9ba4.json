@@ -1,0 +1,19 @@
+{
+ "match_id": "d7efb0ec-d087-412e-9037-f3945a9a9ba4",
+ "first": {
+  "bot": "anysize",
+  "bot_id": "49d95bfa-dd9e-4180-bd42-8a948aa3b454",
+  "team": "Tiim566779"
+ },
+ "second": {
+  "bot": "Hello, fellow balts",
+  "bot_id": "c954604a-4d25-4805-ad11-6c21b280fee8",
+  "team": "Shalomtehnikud"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 23,
+ "moves": "f14 s15 f15 s14 f15 s14 f15 s15 f15 s14 f15 s11 f14 s14 f14 s10 f14 s15 f14 f15 f14 f15 f14 f14",
+ "fetched_at": "2026-11-05T23:39:08"
+}

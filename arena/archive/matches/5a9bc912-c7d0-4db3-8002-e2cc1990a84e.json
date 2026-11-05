@@ -1,0 +1,19 @@
+{
+ "match_id": "5a9bc912-c7d0-4db3-8002-e2cc1990a84e",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 9,
+ "moves": "f6 f6 f6 f6 s14 s14 s14 s14 s14 s14 s14 s14 s14 s14 s6 s14 f6 s14 s14 s14 s14 s14 s14 s6 s14 s14 f5 s14 s6 f5 s6 f5 s5 f7 s5 f7 s5 f7 s8 f7 s8b s4 f7 s14 s14 s14 s14",
+ "fetched_at": "2026-11-05T23:38:06"
+}

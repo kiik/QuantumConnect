@@ -1,0 +1,19 @@
+{
+ "match_id": "acd9d80d-1fd2-4b82-9e91-2241279b5bba",
+ "first": {
+  "bot": "Strange Quark 1",
+  "bot_id": "c65fccbb-1bf8-42e9-a194-eaef67455171",
+  "team": "Strange Quark"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 9,
+ "moves": "f0 f0 f0 f0 s14 s14 s14 s14 f0 f0 f0 f0 s14 s14 s14 s14 f0 f0 f0 f0 s14 s14 s14 s14 f0 f0 f0 f0 s14 s14 s14 s14 f0 f0 f0 f0 s0 s0 s0 s0 f0 f0 f0 f0 s14 s15 s15 s15 f0 f0 f0 f0 s14 s14 s14 s14 f0 f0 f0 s14 s14 s14",
+ "fetched_at": "2026-11-05T23:38:02"
+}

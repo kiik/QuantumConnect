@@ -1,0 +1,19 @@
+{
+ "match_id": "e8224c9d-c6e5-4aaf-bebf-b3a7d06dbb04",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 36,
+ "moves": "f6 s6 f6 s6 f5 s6 f5 s6 f5 s6 f6 s5 f7 s4 f7 s7 f8 s5 f8 s5 f8 s5 f5 s9 f8 s6b f8 s8 s8 f3 s8 f3 s3 f2 s6 f2 s6",
+ "fetched_at": "2026-11-05T23:38:39"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "e13c5781-b54e-4f30-be35-890981069d7c",
+ "first": {
+  "bot": "OJ477",
+  "bot_id": "7a870c7f-a9a3-421a-8559-5f5e8c27fa6a",
+  "team": "Darknet_cracker"
+ },
+ "second": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 29,
+ "moves": "f0 s0 f1 s1 f2 s1 f3 s5 f4 s7 f6 s6 f8 s6 f9 s5 f10 s5 f11 s13 f12 s4 f14 s7 f15 s4 f16 s3 f17 s8",
+ "fetched_at": "2026-11-05T23:38:37"
+}

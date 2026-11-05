@@ -1,0 +1,19 @@
+{
+ "match_id": "25133ccd-24b5-404e-a749-353a2883d5cd",
+ "first": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 225,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f15 s15 f13 s13 f12 s11 f12 s16 f16 s15 f15 s15 f15 s15 f12 s11b f15 s15 f15 s15 f15 s13 f13 s13 f13 s13 f13 s16 f16 s13 f13 s13 f13 s15 f16 s16 f16 s16 f16 s16 f13 s16 f11 s16 f16 s16 f10 s10b f13 s13 f14 s11 f9 s9 f15 s14 f10 s10 f12b s11 f11 s11 f9 s12 f12 s12 f12 s12 f9 s10 f11 s12 f11 s12 f9 s10 f13 s12 f12 s9 f17 s9 f16 s9 f9 s9 f9 s9 f10 s10 f10 s10 f13 s10 f14 s15 f10 s12 f12 s10 f10 s10 f10 s10 f12 s12 f12 s9 f9 s12 f7 s7 f6 s6 f5 s8 f5 s6 f6 s6 f6 s6 f6 s6 f6 s6 f7 s7 f3 s7 f7 s7 f7 s7 f7 s6 f6 s7 f6 s8 f7 s7 f7 s8 f8 s8 f8 s9 f7 s8 f5 s8 f3 s2 f17 s8 f8 s8 f6 s8 f2 s8 f8 s23 f8 s23 f25 s23 f23 s23 f23 s23 f23 s23 f23 s23 f23 s22 f3 s22 f22 s22 f22 s22 f22 s22 f22 s22 f22 s21 f21 s20 f19 s18b f19 s21 f11b s10 f12 s21 f12 s21 f10 s21 f4 s21 f21 s5 f4 s5 f4 s21 f12 s11b",
+ "fetched_at": "2026-11-05T23:38:24"
+}

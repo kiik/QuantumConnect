@@ -1,0 +1,205 @@
+{
+ "as_of": "2026-11-05T21:39:31",
+ "entries": [
+  {
+   "rank": 1,
+   "bot": "GitHub CHET45",
+   "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+   "team": "No beaches?",
+   "participants": 2,
+   "wins": 102,
+   "losses": 3,
+   "draws": 0
+  },
+  {
+   "rank": 2,
+   "bot": "oldMan",
+   "bot_id": "94fe1811-3473-448e-86c0-60a171b438b9",
+   "team": "WileyQuarks",
+   "participants": 3,
+   "wins": 90,
+   "losses": 15,
+   "draws": 0
+  },
+  {
+   "rank": 3,
+   "bot": "coffeeAt18",
+   "bot_id": "54785c53-f96e-4f58-a626-53f1f638f324",
+   "team": "coffee_break",
+   "participants": 2,
+   "wins": 88,
+   "losses": 17,
+   "draws": 0
+  },
+  {
+   "rank": 4,
+   "bot": "anysize",
+   "bot_id": "49d95bfa-dd9e-4180-bd42-8a948aa3b454",
+   "team": "Tiim566779",
+   "participants": 2,
+   "wins": 87,
+   "losses": 18,
+   "draws": 0
+  },
+  {
+   "rank": 5,
+   "bot": "Tank-05-1101",
+   "bot_id": "12641149-1c9e-444e-a7ba-854a834e19de",
+   "team": "SuperPosition",
+   "participants": 3,
+   "wins": 80,
+   "losses": 32,
+   "draws": 0
+  },
+  {
+   "rank": 6,
+   "bot": "L4l4Qu4ntumD3str0y3r",
+   "bot_id": "b463d43b-4ee9-4545-9a58-41da2f4af927",
+   "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074",
+   "participants": 4,
+   "wins": 72,
+   "losses": 33,
+   "draws": 0
+  },
+  {
+   "rank": 7,
+   "bot": "2 Random 2 Bot",
+   "bot_id": "676d3015-a763-40fb-a340-d4e45e660b28",
+   "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2",
+   "participants": 4,
+   "wins": 72,
+   "losses": 33,
+   "draws": 0
+  },
+  {
+   "rank": 8,
+   "bot": "BombSaag",
+   "bot_id": "0808c09e-fa9f-43b6-bd27-1dba6eefd56b",
+   "team": "Saag1",
+   "participants": 4,
+   "wins": 56,
+   "losses": 49,
+   "draws": 0
+  },
+  {
+   "rank": 9,
+   "bot": "back-to-safe",
+   "bot_id": "338037d5-cc64-41bd-89da-bd4590b40925",
+   "team": "KolmApelsini",
+   "participants": 3,
+   "wins": 53,
+   "losses": 52,
+   "draws": 0
+  },
+  {
+   "rank": 10,
+   "bot": "Hurt me plenty",
+   "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+   "team": "cristi",
+   "participants": 1,
+   "wins": 42,
+   "losses": 70,
+   "draws": 0
+  },
+  {
+   "rank": 11,
+   "bot": "MimimiTest",
+   "bot_id": "f018c523-40cc-4494-8e8b-2491d4937706",
+   "team": "Mimimi",
+   "participants": 2,
+   "wins": 34,
+   "losses": 78,
+   "draws": 0
+  },
+  {
+   "rank": 12,
+   "bot": "Strange Quark 1",
+   "bot_id": "c65fccbb-1bf8-42e9-a194-eaef67455171",
+   "team": "Strange Quark",
+   "participants": 2,
+   "wins": 29,
+   "losses": 80,
+   "draws": 3
+  },
+  {
+   "rank": 13,
+   "bot": "QuantiniConnectini6",
+   "bot_id": "2669a1a3-2b2d-4a1d-987b-66144cee293a",
+   "team": "cristi",
+   "participants": 1,
+   "wins": 25,
+   "losses": 80,
+   "draws": 0
+  },
+  {
+   "rank": 14,
+   "bot": "OJ477",
+   "bot_id": "7a870c7f-a9a3-421a-8559-5f5e8c27fa6a",
+   "team": "Darknet_cracker",
+   "participants": 2,
+   "wins": 23,
+   "losses": 89,
+   "draws": 0
+  },
+  {
+   "rank": 15,
+   "bot": "Just Chill",
+   "bot_id": "9002cfdd-633b-4d94-9e60-5f2415f0cb5b",
+   "team": "I need to test your server",
+   "participants": 2,
+   "wins": 19,
+   "losses": 83,
+   "draws": 3
+  },
+  {
+   "rank": 16,
+   "bot": "Testing_v2",
+   "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+   "team": "LinMacWin",
+   "participants": 2,
+   "wins": 0,
+   "losses": 105,
+   "draws": 7
+  },
+  {
+   "rank": 17,
+   "bot": "yerrrr",
+   "bot_id": "78e2758f-a28c-44cb-b9c8-362eb123b59d",
+   "team": "Kollektiivne Intellekt (KI)",
+   "participants": 4,
+   "wins": 0,
+   "losses": 35,
+   "draws": 7
+  },
+  {
+   "rank": 18,
+   "bot": "Šeši septyni, latvis",
+   "bot_id": "e351fab7-ccbc-41a5-aadf-d6ac567f2369",
+   "team": "Shalomtehnikud",
+   "participants": 4,
+   "wins": 0,
+   "losses": 0,
+   "draws": 0
+  },
+  {
+   "rank": 19,
+   "bot": "FunkyMelodyBot4",
+   "bot_id": "025aeb69-0c7c-4b56-9d0e-30e089600367",
+   "team": "FunkyMelody",
+   "participants": 2,
+   "wins": 0,
+   "losses": 0,
+   "draws": 0
+  },
+  {
+   "rank": 20,
+   "bot": "Savi24 - \"The King\"",
+   "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+   "team": "Savi",
+   "participants": 4,
+   "wins": 0,
+   "losses": 0,
+   "draws": 0
+  }
+ ]
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "16588e81-f6fc-4ced-a64e-ae80735c8d34",
+ "first": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "second": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 33,
+ "moves": "f3 s2 f8 s8 f7 s10 f7 s7 f8 s8 f5 s8 f6 s4 f5 s7 f6 s5 f4 s2 f5 s5 f9 s7 f7 s7 f6 s6 f6 s6 f10 s4 f4 s3b",
+ "fetched_at": "2026-11-05T23:38:26"
+}

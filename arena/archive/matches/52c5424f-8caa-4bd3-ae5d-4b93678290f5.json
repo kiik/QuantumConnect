@@ -1,0 +1,19 @@
+{
+ "match_id": "52c5424f-8caa-4bd3-ae5d-4b93678290f5",
+ "first": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 49,
+ "moves": "f3 s14 f5 s14 f4 s14 f6 s7 f14 s14 f5 s14 f5 s14 f5 s5 f4 s14 f14 s5 f6 s6b f4 s4 f6 s14 f6 s4 f6 s4 f4 s6 f6 s6 f4 s6 f4 s6 f4 s6 f6 s4 f6 s4 f4 s6 f4 s6 f5 s5b",
+ "fetched_at": "2026-11-05T23:38:00"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "2559fbd0-b9ec-417a-9eb0-654ef9e361a5",
+ "first": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "QuantiniConnectini6",
+  "bot_id": "2669a1a3-2b2d-4a1d-987b-66144cee293a",
+  "team": "cristi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 9,
+ "moves": "f14 f14 f14 f14 s4 s4 s4 s4 f14 f14 f14 f14 s4 s4 s4 s4 f4 f4 f14 f4 s4 s4 s4 s4 f4 f4 f4 f14 s4 s4 s4 s4 f4 f4 f4 f4 s4 s4 s4 s4 f4 f14 f4 f4 s4 s4 s4 s4 f14 f14 f14 f14 s7 s7 s7 f4 f4 f14 s7 s7 s7 f14 f14 f14 s7 s7 s7 f7 f7 f14 s7 s7 f6b f6b s7 s7 f7 f7 s7 s7 f7 f7 s7 s7 f7 f7 s7 s7 f14 f4 s4 s4 f7 f14 s7 f26 s7 f4 s2 f6 s2 f6 s2 f3b s4 f14 s2 f14",
+ "fetched_at": "2026-11-05T23:38:12"
+}

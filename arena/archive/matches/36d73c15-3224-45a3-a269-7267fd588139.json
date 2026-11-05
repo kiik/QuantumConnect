@@ -1,0 +1,19 @@
+{
+ "match_id": "36d73c15-3224-45a3-a269-7267fd588139",
+ "first": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 163,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f13 s13 f11 s12 f12 s13 f13 s13 f13 s13 f16 s16 f13 s13 f11 s11b f13 s13 f17 s18 f12 s13 f18 s18 f12 s12 f12 s12 f12 s12 f16 s17 f12 s12 f16 s18 f18 s17 f16 s17 f17 s17b f17 s9 f15 s18 f15 s18 f15 s15 f18 s18 f9 s18 f9 s18 f18 s12 f11 s11 f11 s10 f10 s10b f10 s15 f10 s9 f15 s10 f11 s12 f16 s9 f15 s10 f9b s15 f11 s15 f11 s15 f15 s15 f15 s10b f11 s11 f10 s12 f11 s10 f10 s9 f18 s13 f14b s10 f15 s10 f10 s12 f12 s15 f9 s16b f17 s15 f15 s20 f14 s10 f13 s10 f10 s16 f16 s10 f10 s17 f9 s9 f14 s9 f9 s9 f18 s9 f9 s15b f14 s15 f9 s17 f15 s15 f15 s20 f16b s20 f17 s17 f16 s16 f16 s16 f20 s16 f11 s11 f11 s11b",
+ "fetched_at": "2026-11-05T23:38:22"
+}

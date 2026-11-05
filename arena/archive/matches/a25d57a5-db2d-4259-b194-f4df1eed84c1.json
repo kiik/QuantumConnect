@@ -1,0 +1,19 @@
+{
+ "match_id": "a25d57a5-db2d-4259-b194-f4df1eed84c1",
+ "first": {
+  "bot": "anysize",
+  "bot_id": "49d95bfa-dd9e-4180-bd42-8a948aa3b454",
+  "team": "Tiim566779"
+ },
+ "second": {
+  "bot": "back-to-safe",
+  "bot_id": "338037d5-cc64-41bd-89da-bd4590b40925",
+  "team": "KolmApelsini"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 41,
+ "moves": "f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s15 s15 s15 f14 f14 f14 s15 s15 s15 f14 f14 f14 s15 s15 s15 f14 f14 f14 s15 s15 s15 f14 f14 f14 s15 s15 s15 f15 f15 f15 s15 s15 s15 f17 f16 f16 s13 s13 s13 f16 f17 f17 s13 s13 s13 f17 f17 f13 s13 s13 s13 f17 f13 f17 s13 s13 s13 f13 f13 f13 s13 s16 s13 f17 f13 f16 s16 s16 s17 f17 f16 f17 s13 s16 s16 f17 f17 f16 s16 s16 s17 f17 f17 f16 s16 s16 s12 f17 f16 f17 s16 s16 s12 f17 f16 f16 s16 s12 s17 f18 f17 f16 s16 s12 s12 f12 f15b f17 s16 s14 s12 f17 f17 f16 s16 s12 f12 f17 s17 s12 f12 f16 s12 s12 f12 f12 s12 s12 f12 f12 s11 s12 f17 f12 s11 s12 f16 f12 s12 s11 f12 f11 s11 s12 f12 f12 s11 s11 f12 f21 s11 s11 f12 f13b s14 s11 f12 f12 s11 f12 s11 f11 s11 f12 s12 f20 s19 f16 s11 f19 s11 f19 s11 f11 s18 f20 s10 f8 s10 f15b s14 f13 s13 f16 s13 f16 s16 f13 s10 f13 s10 f11 s10 f10 s10 f7 s10 f7 s10 f21 s10 f10 s19 f10 s19 f11 s19 f20 s19 f13 s19 f19 s19 f20 s19 f10 s19 f19 s9 f9 s9 f14 s20 f9b s9 f15 s15b f15 s15 f15 s15 f15 s14 f10",
+ "fetched_at": "2026-11-05T23:39:02"
+}

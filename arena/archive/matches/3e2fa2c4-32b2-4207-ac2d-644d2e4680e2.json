@@ -1,0 +1,19 @@
+{
+ "match_id": "3e2fa2c4-32b2-4207-ac2d-644d2e4680e2",
+ "first": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "second": {
+  "bot": "Tank-05-1101",
+  "bot_id": "12641149-1c9e-444e-a7ba-854a834e19de",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 363,
+ "moves": "f3 s3 f3 s3 f6 s5 f5 s5 f5 s5 f6 s5 f6 s5 f5 s6 f4 s5 f4 s3 f3 s7b f7 s3 f6 s3 f7 s8 f8 s8 f3 s5 f5 s3 f3 s5 f5 s3 f3 s10 f10 s10 f10 s10 f10 s10 f10 s10 f13 s10 f13 s10 f10 s13 f13 s13 f13 s13 f13 s13 f16 s13 f17 s18 f12 s12 f12 s15 f12 s12b f16 s13 f13 s8 f8 s16 f17 s18 f17 s17 f18 s8 f8 s8 f8 s8 f8 s8 f8 s13 f10 s8 f18 s7b f17 s8 f18 s8 f18 s18 f16 s17 f16 s16 f6 s7 f6 s12 f12 s12 f12 s12 f12 s18 f17 s6 f6 s17 f7 s16 f16 s12 f13 s18 f12 s17 f12 s5 f18 s8 f11 s10 f13 s17 f17 s16 f16 s18 f16 s15 f15 s16 f18 s13 f4 s16 f12 s3 f12 s17 f10 s16 f16 s17 f18 s18 f17 s4 f4 s13 f13 s8 f12 s14b f17 s14 f14 s18 f3 s4 f4 s14 f6 s6 f4 s6 f6 s6 f6 s6 f6 s6 f5 s9b f8 s14 f14 s14 f14 s14 f14 s14 f14 s6 f14 s13 f14 s10 f14 s10 f14 s13 f8 s4 f4 s4 f4 s4 f4 s7b f8 s6 f7 s7 f7 s8 f8 s7 f6 s6 f4 s20 f23 s23 f24 s24 f25 s7 f7 s7 f7 s26 f25 s19b f15 s20 f20 s20 f15 s24 f15 s23 f25 s25 f22 s24 f22 s24 f24 s23 f23 s22 f22 s21b f20 s20 f20 s22 f22 s25 f25 s20 f20 s23 f25 s20 f22 s22 f22 s22 f24 s22 f23 s21b f20 s23 f22 s23 f20 s22 f18 s23 f18 s23 f23 s22 f22 s22 f25 s25 f25 s20 f20 s22 f22 s20 f20 s21b f20 s20 f24 s25 f7 s7 f7 s7 f7 s22 f23 s20 f20 s23 f25 s25 f28 s21 f21 s9b f11 s26 f26 s24 f26 s24 f24 s24 f11 s20 f20 s11 f23 s11 f11 s25 f11 s26 f26 s26b f26 s8 f8 s26 f26 s25 f25 s24 f24 s24 f21 s25 f25 s22 f22 s28 f28 s28 f28 s19b f21 s21 f20 s21 f21 s21",
+ "fetched_at": "2026-11-05T23:37:33"
+}

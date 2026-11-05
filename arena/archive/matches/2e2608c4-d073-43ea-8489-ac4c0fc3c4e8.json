@@ -1,0 +1,19 @@
+{
+ "match_id": "2e2608c4-d073-43ea-8489-ac4c0fc3c4e8",
+ "first": {
+  "bot": "Tank-05-1101",
+  "bot_id": "12641149-1c9e-444e-a7ba-854a834e19de",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "back-to-safe",
+  "bot_id": "338037d5-cc64-41bd-89da-bd4590b40925",
+  "team": "KolmApelsini"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 153,
+ "moves": "f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s14 s14 s14 f14 f14 f14 s15 s15 s15 f14 f15 f14 s15 s15 s15 f15 f15 f15 s15 s15 s15 f15 f15 f15 s15 s15 s15 f14 f15 f15 s15 s15 s15 f15 f15 f15b s15 s15 s14 f15 f14 f14 s15 s14 s15 f15 f13b f13b s15 s15 s14 f14 f15 f14 s15 s15 s14 f14 f15 f14 s14 s14 s14 f14 f15 f15 s13 s13 s13 f15 f14 f13 s13 s13 s15 f13 f13 f15 s13 s13 s13 f15 f13 f14 s13 s13 s13 f13 f12 f13 s13 s13 s13 f12b f13 f17 s13 s13 s13 f15 f16 f17 s13 s13 s13 f13 f17 f13 s13 s16 s13 f13 f11 f13 s16 s13 s16 f11 f13 f15 s16 s13 s16 f13 f13 f17 s16 s16 s13 f17 f16 f13 s16 s16 s16 f16 f16 f17 s16 s16 s16 f16 f13 f17 s17 s16 s16 f13 f13 f17 s12 s16 s16 f13 f16b f10 s16 s16 s17 f16 f10 f15 s17 s16 s12 f12 f13 f16 s17 s12 s12 f10 f16 f12 s17 s12 s12 f10 f12 f10 s12 s12 s17 f16 f12 f16b s16 s12 s12 f10 f12 f13 s10 s12 s12 f16 f12 f12 s17 s12 s16 f13 f17b f16 s13 s12 s16 f17 f12 f16 s12 s16 s16 f17 f12 f16 s17 s17 s16 f17 f17 f15 s16 s17 s17 f17 f12 f17 s16 s11 s17 f16 f18 f12 s11 s11 s17 f12 f19 f9 s11 s11 s17 f19 f11 f15 s11 s11 s17 f16 f12 f10b s17 s12 s11 f11 f17 f19 s17 s12 s11 f11b f19 f12 s17 s12 s17 f11 f10b f19 s12 s10 s17 f19 f12 f17 s12 s11 s17b f18 f11 f17 s12 s18 s16 f17 f19 f11 s19 s18 f20 f8 s17 s18 f22 f17 s18 s11 f20 f18 s21 s18 f11 f6 s18 s11 f12 f11 s11 s18 f11 f12 s11 s18 f18 f10b s11b s10 f12 f11 s12 s10 f8 f12 s12 s10 f6 f11 s10 s11 f10 f10 s10 s10 f9b f10 s10 s10 f21 f5 s19 s10 f10 f24 s10 s19 f7 f10 s9 s10 f21 f7 s10 s9 f20 f9b s19 f25 s23 f16 s19 f16 s16 f18 s9 f24 s9 f9 s9 f10 s10 f23 s10 f25 s22 f18 s10 f17b s17 f12 s17 f24 s17 f17 s10 f10 s19 f10 s19 f19 s19 f19 s19 f25 s19 f19 s9 f16b s15b f14 s14 f15 s15 f16",
+ "fetched_at": "2026-11-05T23:37:37"
+}

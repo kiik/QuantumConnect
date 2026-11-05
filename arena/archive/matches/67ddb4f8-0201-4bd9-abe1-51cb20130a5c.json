@@ -1,0 +1,19 @@
+{
+ "match_id": "67ddb4f8-0201-4bd9-abe1-51cb20130a5c",
+ "first": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "second": {
+  "bot": "Tank-05-1101",
+  "bot_id": "12641149-1c9e-444e-a7ba-854a834e19de",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 196,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f16 s16 f16 s18 f16 s15 f15 s15 f15 s16b f15 s15 f16 s16 f16 s16 f16 s16 f16 s16 f16 s16 f14 s16 f14 s17 f15 s15 f15 s15 f15b s15b f14 s14 f16 s16 f15 s15 f15 s14 f16 s14 f15 s15 f16 s14 f14 s15 f16 s16 f17 s16 f15 s13 f14 s13 f13 s13 f19 s13 f13 s13 f13 s17b f16 s18 f15 s17 f17 s19 f17 s21 f21 s16 f18 s18 f18 s21 f18 s19 f13 s21 f21 s13 f16 s13 f21 s13 f21 s13 f21 s21 f19 s21 f21 s21 f22 s21 f21 s22 f22 s22 f22 s13 f13 s22 f22 s22 f22 s22 f22 s22 f22 s22 f21 s23 f22 s23 f23 s23 f23 s23 f23 s23 f20 s23 f23 s23 f23 s23 f25 s25 f25 s25 f25 s12 f11 s25 f25 s25 f25 s25 f12 s25 f25 s25 f23 s23 f11 s11 f11 s9 f9 s8 f8 s6 f6 s8 f5 s5 f8 s6 f9 s8 f9 s9 f9 s8 f6 s8 f8 s9 f9 s9 f11 s9 f11 s11 f11 s11 f12 s19b f17 s17 f18b",
+ "fetched_at": "2026-11-05T23:37:49"
+}
