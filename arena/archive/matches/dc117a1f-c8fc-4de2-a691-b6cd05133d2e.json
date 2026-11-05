@@ -1,0 +1,19 @@
+{
+ "match_id": "dc117a1f-c8fc-4de2-a691-b6cd05133d2e",
+ "first": {
+  "bot": "Testing_v2",
+  "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+  "team": "LinMacWin"
+ },
+ "second": {
+  "bot": "10101010",
+  "bot_id": "fd780349-0d78-4331-9315-a288b1a506d7",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 5,
+ "moves": "s14 s14 s14 s14 s14 s14",
+ "fetched_at": "2026-11-06T00:06:43"
+}

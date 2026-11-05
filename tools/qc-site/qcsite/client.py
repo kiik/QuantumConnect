@@ -504,4 +504,7 @@ def upload_bot(site: Site, bot_name: str, jar_path: Path) -> dict:
     summary = page_summary(answer.url.path, answer.text)
     if "no longer upload" in summary["text"]:
         raise SiteError("the site refused the upload: uploads are closed")
+    if "Error uploading bot" in summary["text"]:
+        # Seen when replacing our bot races with one of its matches still being played: retrying later works.
+        raise SiteError("the site refused the upload: " + summary["text"][:300])
     return {"bot": bot_name, "jar": str(jar_path), "landed_on": summary["path"], "page_text": summary["text"][:600]}

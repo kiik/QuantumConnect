@@ -1,0 +1,19 @@
+{
+ "match_id": "c9687ba5-af58-45db-9780-14c49a67457f",
+ "first": {
+  "bot": "BotBot/user",
+  "bot_id": "bfb9ab89-ee8a-4c74-9a28-394bd3d0a089",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "second": {
+  "bot": "10101010",
+  "bot_id": "fd780349-0d78-4331-9315-a288b1a506d7",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 133,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f13 s16 f16 s16 f16 s16 f16 s16 f16 s16 f16 s16 f16 s16 f16 s13 f10 s13 f11 s12 f10 s15 f13 s13 f14 s11 f10 s10 f13 s13 f13 s10 f10 s10 f10 s10 f10 s10 f10 s10 f10 s11 f11 s11 f8 s9b f12 s11 f9 s11 f11 s11 f12 s12 f12 s9 f6 s7 f7 s11 f11 s7 f9 s9 f9 s7 f7 s7 f7 s7 f7 s7 f9 s10 f9 s9 f9 s7 f9 s9 f9 s7 f7 s10 f9 s9 f7 s4 f7 s4 f4 s4 f13 s4 f4 s4 f4 s4 f13 s4 f4 s18 f13 s20 f13 s12b",
+ "fetched_at": "2026-11-06T00:06:56"
+}

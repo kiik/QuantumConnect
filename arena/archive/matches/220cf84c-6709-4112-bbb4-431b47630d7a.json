@@ -1,0 +1,19 @@
+{
+ "match_id": "220cf84c-6709-4112-bbb4-431b47630d7a",
+ "first": {
+  "bot": "10101010",
+  "bot_id": "fd780349-0d78-4331-9315-a288b1a506d7",
+  "team": "WileyQuarks"
+ },
+ "second": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 17,
+ "moves": "f14 f14 s13 s13 f14 f14 s14 s14 f14 f14 s13 s13 f14 f14 s12 s12 f14 f14 s14 s14 f14 f14 s12 s12 f13 f13 s8 s8 f13 f13 s10 s10 f12 f13 s10 s10 f13 f13 s13 s8 f13 f11b s13 s8 f13 f13 s12 s8 f14 f13 s8 s12 f11 f8 s11 s12 f11b f12 s12 s12 f12 f10 s10 s9 f14 f12 s10 s14 f13 f8 s13 s17 f13 f14 s6 s7 f14 f12 s12 s8 f8 f13 s7 s9 f9 f9 s7 s9 f9b f8 s7 s5 f4 f8 s13 s8 f12 f12 s12 s12 f14 f12 s14 s11 f6 f13 s6 s5 f7 f6b s12 s7 f12 f8 s8 s7 f8 f6 s7 s7 f8 f7 s5 s6 f6 f7 s12 s6 f12 f6b s4 s12 f12 f7 s7 s12 f7 f8 s8 s4 f7 f8 s5 s8 f6 f8 s6 s4 f4 f6 s7 s4 f7 f4 s6 s7 f7 f8 s3 s5 f13 f8 s6 s5 f8 f12 s14 s8 f12 f5b s4 s6 f6 f4 s7 s13 f6 f4 s12 s7 f6 f4 s7 s6 f8 f6 s7 s13 f6 f7 s7 s4 f4 f7 s8 s7 f7 f13 s7 s8 f4 f7 s7 s4 f15 f4 s4 s7 f7 f17 s18 s8 f17 f15 s21 s7 f17 f18 s20 s17 f17 f19 s7 s19 f17 f18 s17 s24 f19 f17 s17 s25 f19 f14 s17 s23 f22 f17 s8 s26 f17 f18 s4 s18 f19 f17 s19 s19 f19 f19 s20 s23 f21 f18 s18 s15 f19 f18 s16 s19 f15b f18 s24 s14 f20 f22 s16 s22 f20 f22 s18 s23 f15 f22 s23 s21 f21 f24b s23 s12 f5 f18 s23 s5 f5 f22 s23 s9 f23 f6 s19 s6 f6 f23 s18 s6 f19 f15 s22 s15 f18 f23 s16 s23 f27 f18 s16 s22 f21 f6 s5 s20 f6 f21 s21 s5 f5 f21 s5 s17 f21 f21 s9 s16 f12 f22 s20 s19 f22 f22 s22 s5 f18 f5 s19 s5 f19 f23 s23 s5 f20 f23 s5 s23 f19 f9 s9 s19 f18 f23 s26 s18 f20 f19 s26 s19 f26 f19 s18 s25 f19 f26 s18 s25 f18 f26 s24 s21 f21 f27 s26 s9 f21 f26 s27 s18 f24 f20 s18 s22 f18b f26 s17 s26 f15 f26 s18 s26 f22 f21 s18 s18 f20 f18 s18 s20 f19 f26 s18 s23 f18 f3 s19 s3 f3 f21 s3 s19 f3 f21 s21 s22 f21 f3 s26 s19 f21 f3 s3 s19 f3 f20b s21 s3 f3 f21 s3 s20 f3 f19 s20 s1 f1 f20 s20 s1 f15 f3 s0 s16 f17 f2 s16 s2 f16 f2 s2 s16 f0 f15 s17 s22 f21 f9 s9 s27 f15 f21 s9 s21 f21 f21 s21 s9 f20 f21 s9 s27 f9 f21 s9 s21 f27 f9 s9 s5 f24 f13 s15 s25 f25 f15 s24 s18 f19b f24 s25 s16 f16 f25",
+ "fetched_at": "2026-11-06T00:06:55"
+}

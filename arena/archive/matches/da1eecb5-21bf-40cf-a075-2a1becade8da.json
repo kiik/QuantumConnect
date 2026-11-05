@@ -1,0 +1,19 @@
+{
+ "match_id": "da1eecb5-21bf-40cf-a075-2a1becade8da",
+ "first": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "second": {
+  "bot": "10101010",
+  "bot_id": "fd780349-0d78-4331-9315-a288b1a506d7",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 89,
+ "moves": "f3 f3 s14 s14 f5 f5 s14 s14 f4 f4 s13 s14 f6 f6 s2 s2 f12 f14 s14 s13 f12 f5 s14 s13 f5 f13 s13 s14 f5 f12 s13 s14 f14 f12 s12 s5 f8 f4 s5 s7 f6 f10 s6b s12 f17 f4 s4 s11b f15 f6 s4 s14 f6 f14 s13 s4 f13 f6 s6 s6 f4 f20 s4 s6 f14 f12 s6 s12 f14 f8 s12 s6 f19 f14 s4 s18 f8 f6 s12 s4 f8 f4 s8 s6 f5 f12 s6 s8 f5 f7 s5 s8 f5 f8 s19 s14 f8 f5 s6 s18 f5 f17 s19 s5 f6 f17 s20 s5 f13 f5 s4 s17 f13 f6 s5 s17 f6 f13 s0 s12b f12 f5 s8 s18 f18 f10 s17 s4 f4 f17 s18 s16 f17 f18 s20 s17 f16 f19 s16 s19 f14 f18 s14 s17 f14 f19 s19 s19 f15 f20 s19 s18 f17 f4 s20 s19 f19 f20 s16b s19 f17 f19 s14 s16 f13 f17 s17 s14 f17 f13 s17 s21 f21 f16 s21 s16 f22 f13 s21 s21 f22 f17 s21 s16 f16 f14 s16 s14 f12 f22 s22 s22 f22 f14 s16 s21 f23 f21 s21 s22 f26 f21 s22 s18 f24 f17 s19 s17 f18 f21 s21 s6 f24 f17 s19 s18 f8 f23 s18 s26 f24 f8 s8 s22 f12 f24 s17 s16 f12 f24 s24 s6 f6 f28 s20 s22 f22 f20 s20b s25 f19 f25 s20 s23b f13 f21 s25 s13 f12 f26 s24 s12 f20 f27 s23 s20 f17 f23 s6 s25 f18 f26 s14 s19 f19 f17 s26 s6 f16 f20 s22 s5 f24 f20 s5 s22 f20 f24 s4 s24 f28 f20 s5 s23 f20 f23 s20 s24 f25 f5 s29 s8 f25 f4 s26 s4 f25 f18 s6 s25 f23 f18 s5 s23 f17 f25 s5 s21 f21 f17 s18 s5 f18 f14 s6 s26 f6 f26 s17 s5 f5 f23 s4 s24 f13 f17 s4 s23 f4 f23 s4 s24 f4 f24 s3 s22 f22 f2 s2 s23 f2 f17 s21 s17 f21 f17 s21 s21 f21 f24 s21 s5 f4 f21 s5 s23 f19 f21 s21 s23 f22 f21 s22 s7 f21 f24 s24 s6 f14 f14 s8 s23 f13 f22 s11 s12 f18 f12 s6 s11 f10 f19 s11 s5 f19 f11 s8 s11 f19 f28 s11 s4 f19 f11 s19 s11 f23 f19 s11 s19 f19 f5 s4 s11 f11 f4 s5 s11 f0 f6 s6 s11 f17 f4 s24 s1 f1 f16 s16 s6 f9 f10 s5 s10 f4 f11 s25 s24 f25 f25 s25b s24 f24 s24 f11 s24 f24 s24 f24 s21 f25 s25 f25 s25 f23 s25 f25 s25 f25 s25 f25 s16 f11 s11 f9 s11 f9 s11 f11 s11b",
+ "fetched_at": "2026-11-06T00:06:51"
+}

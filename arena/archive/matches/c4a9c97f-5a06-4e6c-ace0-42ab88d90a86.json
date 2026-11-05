@@ -1,0 +1,19 @@
+{
+ "match_id": "c4a9c97f-5a06-4e6c-ace0-42ab88d90a86",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "10101010",
+  "bot_id": "fd780349-0d78-4331-9315-a288b1a506d7",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 13,
+ "moves": "f6 s14 s14 s14 s15 s15 s15 s15 s13 s13 s14 s16 s12 s17",
+ "fetched_at": "2026-11-06T00:06:42"
+}
