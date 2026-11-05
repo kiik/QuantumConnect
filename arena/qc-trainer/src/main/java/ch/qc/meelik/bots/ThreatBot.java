@@ -187,18 +187,10 @@ public class ThreatBot extends SerenaBot {
 
         int forced = NOT_FORCED;
         if (ply > 0) {
-            int opponentThreats = 0;
-            for (int column = 0; column < columns; column++) {
-                if (completesLine(mover, column)) return WIN - ply - 1;
-                if (completesLine(1 - mover, column)) {
-                    opponentThreats++;
-                    forced = column;
-                }
-            }
-            boolean mayBomb = bombCooldown[mover] == 0;
-            if (opponentThreats >= 2 && !mayBomb) return ply + 2 - WIN;
-            if (opponentThreats >= 2) forced = BOMBS_ONLY;
-            if (opponentThreats == 1 && !mayBomb && depth == 0) depth = 1;
+            int decided = threatAnalysis(ply);
+            if (decided != UNDECIDED) return decided;
+            forced = forcedAnswers;
+            if (forced >= 0 && bombCooldown[mover] > 0 && depth == 0) depth = 1;
         }
         if (ply == MAX_PLY - 1) return evaluate();
         if (depth <= 0) return forcingLine(depth, alpha, beta, ply, forced);

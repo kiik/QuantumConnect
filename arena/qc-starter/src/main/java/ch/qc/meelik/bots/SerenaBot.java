@@ -43,9 +43,12 @@ import java.util.Random;
  * transposition table reuses positions reached by other move orders, and moves are tried best guess
  * first: the table's move, then moves that caused cut-offs before, then centre columns. The threats
  * force moves: a side that can complete a line wins; one facing two threats without its bomb has
- * lost; one facing a single threat must block it or bomb. Past the depth, the search follows only
- * forcing moves ({@link #forcingPlies}): drops that make a threat to complete at once, and the blocks
- * they force. So a threat, block, double-threat combination is seen however deep it starts.
+ * lost; one facing a single threat must block it or bomb. A bomb whose collapse forms a line is a
+ * threat too, seen at every node ({@link #threatAnalysis}): it wins for a side with its bomb ready,
+ * and a side facing the opponent's must answer it near the bomb's column. Past the depth, the
+ * search follows only forcing moves ({@link #forcingPlies}): drops that make a threat to complete at
+ * once, and the answers they force, blocks and, where no block holds, bombs. So a threat, block,
+ * double-threat combination is seen however deep it starts.
  *
  * <h2>The clock</h2>
  * The arena skips a turn answered after 100 ms, and its machine stalls where a laptop does not: a
@@ -164,6 +167,12 @@ public class SerenaBot implements Algorithm {
      * none of the other, counted at both their empty cells, at {@code player * cellCount + cell}.
      */
     int[] fourCount;
+    /**
+     * Full lines a cell plugs: lines holding five quarks of a player and, in this cell, one of the
+     * other's, at {@code player * cellCount + cell}. A blast that drops the player's quark into the
+     * cell completes such a line ({@link #blastFormsLine}).
+     */
+    int[] pluggedFives;
     public int sideToMove;
     int quarkCount;
     /** Pattern of each line: the sum over its cells of 0 (empty), 1 (player 0) or 2 (player 1) times 3^place. */
@@ -177,7 +186,8 @@ public class SerenaBot implements Algorithm {
     long zobristSideToMove, boardHash;
     /** Scratch space for the quarks above a blast. */
     int[] fallingQuarks;
-    int stateSize;
+    /** Length of a saved state ({@link #saveState}). */
+    public int stateSize;
 
     // ------------------------------------------------------------------ search memory (about 8 MB at the default table size)
 
@@ -197,6 +207,8 @@ public class SerenaBot implements Algorithm {
     public int dropReach = 2;
     /** Per column: whether a drop there is within {@link #dropReach} of a quark; refilled at each node. */
     boolean[] nearQuarks;
+    /** Scratch for {@link #bombAnswers}: the gaps of the opponent's drop threats. */
+    int[] threatGaps;
     /**
      * How many plies past the search depth forcing moves are still followed: drops that make a threat
      * to complete at once, and the blocks they force. 0 ends the search at its depth.
@@ -210,6 +222,16 @@ public class SerenaBot implements Algorithm {
      * bomb is kept for defence and for strokes, not spent on small gains.
      */
     public int bombLineQuarks = 0;
+    /**
+     * How well the search sees bombs away from its full-width nodes ({@link #threatAnalysis}).
+     * 0: bombs are tried at full-width nodes only. 1: also every node inside the tree sees a bomb
+     * that wins at once, its own (a win) and the opponent's (a threat to answer, like a drop threat).
+     * 2: also in the forcing line, a threatened side with its bomb ready, which stood pat before,
+     * blocks with a drop, or where no drop may answer or the blocks lose by force, tries the bombs
+     * that may. 3: also tries the bombs where the blocks fail low (sees more, costs about a
+     * quarter of a ply on 15x30).
+     */
+    public int bombHorizon = 2;
     long deadlineNanos;
     public long nodesSearched;
     boolean outOfTime;
@@ -273,6 +295,7 @@ public class SerenaBot implements Algorithm {
         }
         columnsCentreOut = centreOut(columns);
         nearQuarks = new boolean[columns];
+        threatGaps = new int[columns];
 
         // A fixed seed: the loss book stores position hashes, so they must not change between runs.
         Random random = new Random(20261102L);
@@ -286,10 +309,12 @@ public class SerenaBot implements Algorithm {
         linePattern = new int[lineCount];
         threatCount = new int[2 * cellCount];
         fourCount = new int[2 * cellCount];
+        pluggedFives = new int[2 * cellCount];
         fallingQuarks = new int[rows];
         networkOn = withNetwork && loadNetwork();
         patternsOn = withPatterns && loadPatterns();
-        stateSize = owner.length + columnHeight.length + lineQuarks.length + linePattern.length + threatCount.length + fourCount.length + 9 + (networkOn ? 2 * hidden : 0);
+        stateSize = owner.length + columnHeight.length + lineQuarks.length + linePattern.length + threatCount.length + fourCount.length
+                + pluggedFives.length + 9 + (networkOn ? 2 * hidden : 0);
         clear();
 
         for (int ply = 0; ply < MAX_PLY; ply++) {
@@ -549,6 +574,7 @@ public class SerenaBot implements Algorithm {
             staticScore += lineValue(line);
             adjustThreat(line, FIND_GAP, +1);
             adjustFours(line, NO_CELL, +1);
+            adjustPlug(line, +1); // a line becomes full only by a quark added
         }
     }
 
@@ -563,6 +589,7 @@ public class SerenaBot implements Algorithm {
             int line = lines[k];
             adjustThreat(line, FIND_GAP, -1);
             adjustFours(line, NO_CELL, -1);
+            adjustPlug(line, -1); // ... and stops being full only by a quark removed
             staticScore -= lineValue(line);
             if (lineQuarks[2 * line + player]-- == LINE_LENGTH) completedLines[player]--;
             linePattern[line] -= (player + 1) * places[k];
@@ -621,6 +648,16 @@ public class SerenaBot implements Algorithm {
             if (owner[cell] == EMPTY || cell == alsoEmpty) fourCount[player * cellCount + cell] += delta;
     }
 
+    /** If the line is full with five quarks of one player, adds delta to the plug count of the other player's cell. */
+    private void adjustPlug(int line, int delta) {
+        int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1], player;
+        if (quarks0 + quarks1 != LINE_LENGTH) return;
+        if (quarks0 == LINE_LENGTH - 1) player = 0;
+        else if (quarks1 == LINE_LENGTH - 1) player = 1;
+        else return;
+        for (int cell : cellsOfLine[line]) if (owner[cell] == 1 - player) pluggedFives[player * cellCount + cell] += delta;
+    }
+
     /** The first empty cell of a line. */
     private int emptyCellOf(int line) {
         for (int cell : cellsOfLine[line]) if (owner[cell] == EMPTY) return cell;
@@ -637,6 +674,7 @@ public class SerenaBot implements Algorithm {
         Arrays.fill(linePattern, 0);
         Arrays.fill(threatCount, 0);
         Arrays.fill(fourCount, 0);
+        Arrays.fill(pluggedFives, 0);
         completedLines[0] = completedLines[1] = 0;
         bombCooldown[0] = bombCooldown[1] = FIRST_BOMB_WAIT;
         sideToMove = quarkCount = 0;
@@ -656,13 +694,14 @@ public class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ saving and restoring (to undo a bomb)
 
-    void saveState(int[] state) {
+    public void saveState(int[] state) {
         int at = copyInto(state, 0, owner);
         at = copyInto(state, at, columnHeight);
         at = copyInto(state, at, lineQuarks);
         at = copyInto(state, at, linePattern);
         at = copyInto(state, at, threatCount);
         at = copyInto(state, at, fourCount);
+        at = copyInto(state, at, pluggedFives);
         state[at] = completedLines[0];
         state[at + 1] = completedLines[1];
         state[at + 2] = bombCooldown[0];
@@ -675,13 +714,14 @@ public class SerenaBot implements Algorithm {
         if (networkOn) for (int i = 0; i < 2 * hidden; i++) state[at + 9 + i] = accumulator[i];
     }
 
-    void restoreState(int[] state) {
+    public void restoreState(int[] state) {
         int at = copyFrom(state, 0, owner);
         at = copyFrom(state, at, columnHeight);
         at = copyFrom(state, at, lineQuarks);
         at = copyFrom(state, at, linePattern);
         at = copyFrom(state, at, threatCount);
         at = copyFrom(state, at, fourCount);
+        at = copyFrom(state, at, pluggedFives);
         completedLines[0] = state[at];
         completedLines[1] = state[at + 1];
         bombCooldown[0] = state[at + 2];
@@ -1033,21 +1073,13 @@ public class SerenaBot implements Algorithm {
         if (hasLine()) return ply - WIN; // any line wins for the last mover: the opponent
         if (quarkCount == cellCount) return 0;
 
-        // Forced moves, from the playable threats (cells at a column's top that complete a line).
+        // Forced moves, from the threats: drops that complete a line, and bombs whose collapse forms one.
         int forced = NOT_FORCED;
         if (ply > 0) {
-            int opponentThreats = 0;
-            for (int column = 0; column < columns; column++) {
-                if (completesLine(mover, column)) return WIN - ply - 1; // we complete a line next move
-                if (completesLine(1 - mover, column)) {
-                    opponentThreats++;
-                    forced = column;
-                }
-            }
-            boolean mayBomb = bombCooldown[mover] == 0;
-            if (opponentThreats >= 2 && !mayBomb) return ply + 2 - WIN; // a drop blocks only one of them
-            if (opponentThreats >= 2) forced = BOMBS_ONLY;
-            if (opponentThreats == 1 && !mayBomb && depth == 0) depth = 1; // search the forced block, don't evaluate
+            int decided = threatAnalysis(ply);
+            if (decided != UNDECIDED) return decided;
+            forced = forcedAnswers;
+            if (forced >= 0 && bombCooldown[mover] > 0 && depth == 0) depth = 1; // search the forced blocks, don't evaluate
         }
         if (ply == MAX_PLY - 1) return evaluate();
         if (depth <= 0) return forcingLine(depth, alpha, beta, ply, forced);
@@ -1101,16 +1133,13 @@ public class SerenaBot implements Algorithm {
      * Past the search depth: follows only forcing moves, to {@link #forcingPlies} plies deep. A side
      * facing a threat without its bomb must block it. Any other side may take the evaluation instead
      * ("stand pat"), or play a drop that makes a threat to complete at once. A side facing a threat
-     * with its bomb ready stands pat: a bomb answers in too many ways to follow here.
+     * with its bomb ready blocks with a drop, or where no drop may answer or the blocks lose by force,
+     * tries the bombs that may ({@link #answerWithBomb}); with {@link #bombHorizon} below 2 it stands pat.
      */
     int forcingLine(int depth, int alpha, int beta, int ply, int forced) {
         int mover = sideToMove;
-        if (forced >= 0 && bombCooldown[mover] > 0) { // the one answer: block
-            int previousCooldown = drop(forced);
-            int score = -negamax(depth - 1, -beta, -alpha, ply + 1);
-            undoDrop(forced, previousCooldown);
-            return score;
-        }
+        if (forced >= 0 && bombCooldown[mover] > 0) return blockingDrops(depth, alpha, beta, ply, forced); // the only answers
+        if (forced != NOT_FORCED && bombHorizon >= 2 && depth > -forcingPlies) return answerWithBomb(depth, alpha, beta, ply, forced);
         int standPat = evaluate();
         if (forced != NOT_FORCED || depth <= -forcingPlies || standPat >= beta) return standPat;
         int bestScore = standPat;
@@ -1150,8 +1179,31 @@ public class SerenaBot implements Algorithm {
         return false;
     }
 
-    /** {@link #orderedLegalActions}'s {@code forced}: any drop may be played, none (bombs only), or only the column given. */
-    static final int NOT_FORCED = -1, BOMBS_ONLY = -2;
+    /**
+     * The answers left to a threatened side ({@link #threatAnalysis}): any drop may be played
+     * (NOT_FORCED), none (BOMBS_ONLY), or only drops in a range of columns, {@link #forcedRange}.
+     * Bombs are never ruled out.
+     */
+    public static final int NOT_FORCED = -1, BOMBS_ONLY = -2;
+    static final int FORCED_SPAN = 1 << 10;
+
+    /** The drops in columns low..high, as a {@code forced} value. */
+    static int forcedRange(int low, int high) {
+        return low * FORCED_SPAN + high;
+    }
+
+    static int forcedLow(int forced) {
+        return forced / FORCED_SPAN;
+    }
+
+    static int forcedHigh(int forced) {
+        return forced % FORCED_SPAN;
+    }
+
+    /** Whether a {@code forced} value allows a drop in this column. */
+    public static boolean allowsDrop(int forced, int column) {
+        return forced == NOT_FORCED || forced >= 0 && forcedLow(forced) <= column && column <= forcedHigh(forced);
+    }
 
     /** Fills {@code actions} with the legal actions, best guess first, and returns how many there are. */
     int orderedLegalActions(int[] actions, int preferred, int forced) {
@@ -1160,13 +1212,13 @@ public class SerenaBot implements Algorithm {
         int count = 0;
         for (int column : columnsCentreOut) {
             if (columnHeight[column] == rows) continue;
-            if (forced == NOT_FORCED && nearQuarks[column] || forced == column) actions[count++] = action(column, false);
+            if (forced == NOT_FORCED ? nearQuarks[column] : allowsDrop(forced, column)) actions[count++] = action(column, false);
             if (mayBomb && blastHitsQuark(column) && (bombLineQuarks == 0 || blastMovesLine(column))) actions[count++] = action(column, true);
         }
         if (count == 0) { // an empty board, or nothing near is playable: every legal action
             for (int column : columnsCentreOut) {
                 if (columnHeight[column] == rows) continue;
-                if (forced == NOT_FORCED || forced == column) actions[count++] = action(column, false);
+                if (allowsDrop(forced, column)) actions[count++] = action(column, false);
                 if (mayBomb) actions[count++] = action(column, true);
             }
         }
@@ -1221,6 +1273,192 @@ public class SerenaBot implements Algorithm {
             }
         }
         return false;
+    }
+
+    // ------------------------------------------------------------------ threats, with bombs
+
+    /** {@link #threatAnalysis}'s answer when the threats do not decide the position. */
+    static final int UNDECIDED = Integer.MIN_VALUE;
+    /** The answers {@link #threatAnalysis} leaves the side to move, as a {@code forced} value. */
+    public int forcedAnswers;
+
+    /**
+     * Reads the threats of a position inside the tree. Returns a win when the side to move completes a
+     * line next move, a loss when it cannot answer the opponent's threats, and otherwise UNDECIDED,
+     * with the answers left in {@link #forcedAnswers}.
+     *
+     * <p>A threat is a drop that completes a line, or with {@link #bombHorizon}, a bomb whose collapse
+     * forms one ({@link #blastFormsLine}); any line wins for the bomber, so such a bomb wins for either
+     * side. A drop answers a drop threat only in its column, and a bomb threat only in the bomb's
+     * column or next to it: anywhere else the bomb lands and collapses exactly as before. So the drops
+     * that may answer every threat are a range of columns. Where that range has no legal drop, only a
+     * bomb may answer, and a side without one has lost.
+     */
+    public int threatAnalysis(int ply) {
+        int mover = sideToMove, opponent = 1 - mover;
+        boolean mayBomb = bombCooldown[mover] == 0;
+        int threats = 0, low = 0, high = columns - 1;
+        for (int column = 0; column < columns; column++) {
+            if (completesLine(mover, column)) return WIN - ply - 1; // we complete a line next move
+            if (completesLine(opponent, column)) {
+                threats++;
+                low = Math.max(low, column);
+                high = Math.min(high, column);
+            }
+        }
+        if (bombHorizon > 0 && (mayBomb || bombCooldown[opponent] == 0)) {
+            for (int column = 0; column < columns; column++) {
+                if (!blastFormsLine(column)) continue;
+                if (mayBomb) return WIN - ply - 1; // our bomb forms a line
+                threats++; // and with the bomb ready, so would the opponent's
+                low = Math.max(low, column - 1);
+                high = Math.min(high, column + 1);
+            }
+        }
+        forcedAnswers = NOT_FORCED;
+        if (threats == 0) return UNDECIDED;
+        boolean dropAnswers = false;
+        for (int column = low; column <= high; column++) if (columnHeight[column] < rows) dropAnswers = true;
+        if (dropAnswers) forcedAnswers = forcedRange(low, high);
+        else if (mayBomb) forcedAnswers = BOMBS_ONLY;
+        else return ply + 2 - WIN; // no drop answers every threat
+        return UNDECIDED;
+    }
+
+    /**
+     * Whether a bomb in this column forms a line when the quarks above its blast fall. The blast
+     * clears heights from = h-1 to h+1 of the three columns around the drop, h being where the bomb
+     * lands, itself included; quarks above fall into the gap. A new line passes through a cell whose
+     * owner changed, and only a neighbouring column holds one: there, quarks stood above h+1 and fell.
+     * So a column is checked only when a neighbour stands at least three above its top, and then:
+     * <ul>
+     *   <li>vertically, the run across the height {@code from}, where the fallen quarks meet the
+     *       quarks below the blast; a run on one side only stood before;
+     *   <li>otherwise, the lines through a fallen quark that changed its cell's owner, holding five
+     *       of the new owner's quarks before the blast and no other cell in the blast: such a line
+     *       cannot cross the bomb's column, which is empty from {@code from} up, so its five quarks
+     *       stay, and the fallen quark completes it.
+     * </ul>
+     */
+    public boolean blastFormsLine(int column) {
+        int landing = columnHeight[column];
+        if (landing == rows) return false;
+        int from = Math.max(landing - 1, 0), fall = landing + 2 - from; // the blasted heights from..landing+1
+        for (int side = column - 1; side <= column + 1; side += 2) {
+            if (side < 0 || side >= columns || columnHeight[side] < landing + 3) continue; // nothing falls here
+            int bottom = side * rows, fallenTop = columnHeight[side] - fall;
+            if (verticalRunAcross(bottom, from, fall, fallenTop) >= LINE_LENGTH) return true;
+            for (int height = from; height < fallenTop; height++) {
+                int cell = bottom + height, player = owner[cell + fall];
+                if (player == owner[cell] || pluggedFives[player * cellCount + cell] == 0) continue; // no line through this cell is new
+                for (int line : linesThroughCell[cell]) {
+                    if (lineDirection[line] == VERTICAL || lineQuarks[2 * line + player] != LINE_LENGTH - 1) continue;
+                    boolean staysOutside = true; // the line's other cells lie outside the blast
+                    for (int other : cellsOfLine[line])
+                        if (other != cell && Math.abs(other / rows - column) <= 1 && other % rows >= from) staysOutside = false;
+                    if (staysOutside) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The longest vertical run of one owner across height {@code from} of a column after its quarks
+     * from {@code from + fall} fell to {@code from}: the quarks below {@code from} stay, the fallen
+     * ones now stand on them, up to {@code fallenTop}.
+     */
+    private int verticalRunAcross(int bottom, int from, int fall, int fallenTop) {
+        int player = owner[bottom + from + fall], run = 1;
+        for (int height = from - 1; height >= 0 && owner[bottom + height] == player && run < LINE_LENGTH; height--) run++;
+        for (int height = from + 1; height < fallenTop && owner[bottom + height + fall] == player && run < LINE_LENGTH; height++) run++;
+        return run;
+    }
+
+    /** The drops in the forced range, alpha-beta: the answers of a side that must block. */
+    private int blockingDrops(int depth, int alpha, int beta, int ply, int forced) {
+        int bestScore = -WIN - 1;
+        for (int column = forcedLow(forced); column <= forcedHigh(forced); column++) {
+            if (columnHeight[column] == rows) continue;
+            int previousCooldown = drop(column);
+            int score = -negamax(depth - 1, -beta, -alpha, ply + 1);
+            undoDrop(column, previousCooldown);
+            if (outOfTime) return 0;
+            if (score > bestScore) bestScore = score;
+            if (score > alpha) alpha = score;
+            if (alpha >= beta) break;
+        }
+        return bestScore;
+    }
+
+    /**
+     * A threatened side with its bomb ready, in the forcing line: blocks with a drop where one may
+     * answer; where none may, or the blocks lose by force (with {@link #bombHorizon} 3, where they
+     * fail low), tries the bombs that may answer ({@link #bombAnswers}). So a loss is claimed only
+     * after the bombs failed too. Its threats are drop threats only: a bomb that formed a line would
+     * have won for the side itself ({@link #threatAnalysis}).
+     */
+    private int answerWithBomb(int depth, int alpha, int beta, int ply, int forced) {
+        int bestScore = -WIN - 1;
+        if (forced >= 0) {
+            bestScore = blockingDrops(depth, alpha, beta, ply, forced);
+            if (outOfTime) return 0;
+            boolean blocksLose = bestScore < MAX_PLY - WIN; // a forced loss, which a bomb may yet avert
+            if (bombHorizon >= 3 ? bestScore > alpha : !blocksLose) return bestScore;
+        }
+        int[] actions = actionLists[ply];
+        int bombCount = bombAnswers(actions);
+        if (bombCount == 0 && forced == BOMBS_ONLY) return ply + 2 - WIN; // nothing answers every threat
+        if (bombCount > 0 && undoStates[ply] == null) undoStates[ply] = new int[stateSize];
+        for (int i = 0; i < bombCount; i++) {
+            saveState(undoStates[ply]);
+            play(actions[i]);
+            int score = -negamax(depth - 1, -beta, -alpha, ply + 1);
+            restoreState(undoStates[ply]);
+            if (outOfTime) return 0;
+            if (score > bestScore) bestScore = score;
+            if (score > alpha) alpha = score;
+            if (alpha >= beta) break;
+        }
+        return bestScore;
+    }
+
+    /**
+     * Fills {@code actions} with the bombs that may answer the opponent's drop threats, centre out,
+     * and returns how many. A bomb must reach each threat's column below its gap or a cell of every
+     * line the gap completes ({@link #blastMayBreak}); a bomb that reaches neither leaves the threat
+     * as it was, so a bomb left out never answers.
+     */
+    int bombAnswers(int[] actions) {
+        int opponent = 1 - sideToMove, gapCount = 0;
+        for (int column = 0; column < columns; column++)
+            if (completesLine(opponent, column)) threatGaps[gapCount++] = column * rows + columnHeight[column];
+        int count = 0;
+        for (int column : columnsCentreOut) {
+            if (columnHeight[column] == rows || !blastHitsQuark(column)) continue;
+            boolean mayAnswer = true;
+            for (int i = 0; i < gapCount && mayAnswer; i++) mayAnswer = blastMayBreak(column, threatGaps[i], opponent);
+            if (mayAnswer) actions[count++] = action(column, true);
+        }
+        return count;
+    }
+
+    /** Whether a bomb in this column may break the player's threat at this gap: it reaches the gap or every line the gap would complete. */
+    boolean blastMayBreak(int bombColumn, int gap, int player) {
+        if (blastReaches(bombColumn, gap)) return true;
+        for (int line : linesThroughCell[gap]) {
+            if (lineQuarks[2 * line + player] != LINE_LENGTH - 1 || lineQuarks[2 * line + 1 - player] != 0) continue;
+            boolean reached = false;
+            for (int cell : cellsOfLine[line]) if (blastReaches(bombColumn, cell)) reached = true;
+            if (!reached) return false;
+        }
+        return true;
+    }
+
+    /** Whether a bomb in this column clears or moves this cell: the blast and the fall reach heights h-1 and up of three columns. */
+    boolean blastReaches(int bombColumn, int cell) {
+        int column = cell / rows, height = cell % rows;
+        return Math.abs(column - bombColumn) <= 1 && height >= columnHeight[bombColumn] - 1;
     }
 
     // ------------------------------------------------------------------ transposition table
