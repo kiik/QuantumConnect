@@ -1,0 +1,19 @@
+{
+ "match_id": "d06f48dd-4843-432d-b1b1-d9804bbaeb6a",
+ "first": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "Tank-05-2359",
+  "bot_id": "5286645b-cfb8-48a6-86bb-0f5944d1ca79",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 262,
+ "moves": "f14 s16 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f16 s16 f16 s16 f16 s16 f16 s16 f16 s16 f15 s15 f15 s15 f14 s15 f15b s15 f15 s15 f15 s14 f16 s15 f16 s15 f14 s15 f9 s10 f14 s16 f16 s15 f15 s9 f9 s9 f9 s9 f9 s9 f9 s9 f9 s10 f10b s9 f9 s10 f10 s10 f10 s10 f10 s10 f10 s10 f10 s9 f10 s9 f10 s15 f14 s16 f11b s13 f10 s10 f9 s7 f14 s14 f7 s13 f7 s7 f16 s7 f7 s7 f7 s9 f13 s7 f7 s7 f13 s13 f7 s13 f13b s13 f14 s13 f20 s19 f19 s19 f19 s19 f20 s19 f19 s20 f20 s19 f20 s20 f20 s20 f11 s11 f11b s11 f10 s19 f19 s19 f10 s20 f20 s20 f7 s20 f21 s23 f21 s21 f21 s23 f8 s12 f21 s13 f10 s21 f21 s21 f19 s21 f21 s21 f10 s8 f8 s20 f19 s21 f19 s23 f23 s9 f23 s23 f23 s16 f23 s23 f23 s8 f8 s8 f8 s8 f8 s8 f8 s23 f8 s8 f21 s21 f23 s21 f24 s24 f24 s24 f24 s24 f24 s24 f24 s24 f24 s15 f7 s18 f6b s6 f13 s13 f7 s4 f13 s4 f13 s4 f13 s4 f7 s7 f4 s3 f18 s11 f11 s18 f18b s18 f19 s5 f5 s5 f19 s19 f4 s4 f5 s18 f5 s5 f5 s4 f11 s1 f2 s18 f4 s18 f4 s18 f18 s11 f4 s18 f4 s5 f4 s4 f18 s5 f5 s18b f11 s18 f11 s18 f11b",
+ "fetched_at": "2026-11-06T01:12:59"
+}

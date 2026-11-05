@@ -1,0 +1,19 @@
+{
+ "match_id": "703142d3-e854-4adf-9370-8ddf8b930d3c",
+ "first": {
+  "bot": "Random to rule all",
+  "bot_id": "78dacb2f-5c5e-4aaf-b0c9-aa96e98075d6",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074\\v2"
+ },
+ "second": {
+  "bot": "10101010",
+  "bot_id": "fd780349-0d78-4331-9315-a288b1a506d7",
+  "team": "WileyQuarks"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 23,
+ "moves": "f25 s14 f29 s14 f17 s13 f16 s13 f4 s16 f17 s15 f29 s13 f25 s15 f7 s16 f6 s11 f13 s10 f21 s12",
+ "fetched_at": "2026-11-06T01:13:15"
+}
