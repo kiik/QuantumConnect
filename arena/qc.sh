@@ -57,7 +57,8 @@ JDK=$(find_jdk); JDK_BIN=${JDK%|*}; EXT=${JDK#*|}
 JAVAC=$JDK_BIN/javac$EXT; JAVA=$JDK_BIN/java$EXT; JAR=$JDK_BIN/jar$EXT
 case "$EXT" in .exe) SEP=';' ;; *) SEP=':' ;; esac
 
-ENGINE_JAR=$(ls qc-starter/libs/core-*.jar 2>/dev/null | head -1 || true)
+# ENGINE_JAR may name another engine, e.g. one patched to another N in a row, for local games under other rules.
+ENGINE_JAR=${ENGINE_JAR:-$(ls qc-starter/libs/core-*.jar 2>/dev/null | head -1 || true)}
 [ -n "$ENGINE_JAR" ] || { echo "no engine library in qc-starter/libs" >&2; exit 1; }
 
 # The engine logs through slf4j; slf4j-simple prints its warnings (timeouts, invalid columns).
