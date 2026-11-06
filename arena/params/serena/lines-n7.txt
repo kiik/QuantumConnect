@@ -1,0 +1,13 @@
+# Tune --islands, 4 islands, migrate every 3, 24 generations x 8 genomes, 8 openings x 2 colours, 15x30, depth 4, penalty 0.0/MB, seed 7: fitness 0.750 (island 2, last generation), table 19 bits
+# horizontal [0, 25, 41, 78, 133, 295, 5480, 0]  vertical [0, 24, 55, 122, 122, 1253, 20946, 0]  diagonal [0, 10, 14, 51, 139, 358, 5766, 0]  bombReadyBonus 25
+# written 2026-11-06T02:58:22
+# SerenaBot's line weights and bomb bonus for seven in a row (LINE_LENGTH 7), branch cand/n7, engine out/engines/core-7.jar (patched to 7 in a row).
+# ENGINE_JAR=out/engines/core-7.jar ./qc.sh tune --islands 4 --migrate 3 --generations 24 --population 8 --openings 8 --size 15x30 --depth 4 --cap-ms 60 --penalty 0 --table-mutation 0 --threads 6 --seed 7
+#   the reference: SerenaBot at LINE_LENGTH 7 with the stretched six-in-a-row weights (lineWeightsFor), bombBonusPercent 600, no patterns, book or network
+#   island mean fitness stayed near 0.46-0.50 throughout: the stretched weights are close to what depth 4 can find
+# validation, ./qc.sh stats 300 4 -0 15x30 (real 40 ms, empty board): +17 Elo vs the stretched weights (95%: -20 to +53), 144-27-129 in 300 games, 1 late move
+#   (the first 150 games alone: +55, +9 to +116)
+# bomb check, the bomb bonus halved and doubled (bombBonusPercent 300 / 1200 equivalent), 150 games per pair, 6 threads, 450 games each:
+#   x1 +28 (-3 to +64), x0.5 +6 (-34 to +46), x2 +1 (-34 to +40): 600 is right
+# SerenaBot.LINE_WEIGHT_7 and BOMB_READY_BONUS_7 hold these weights.
+3.2336516960848685 3.707826628927967 4.350373926029788 4.893340673172187 5.6873299783003946 8.608782992221215 3.187419577090729 4.012679139987697 4.807616880653851 4.806806499017514 7.133000976881252 9.94969477983182 2.2530623757747574 2.6162377121527736 3.9348769458588304 4.931734720853369 5.879535215446371 8.65976104842114 3.2381030473060974 19.0
