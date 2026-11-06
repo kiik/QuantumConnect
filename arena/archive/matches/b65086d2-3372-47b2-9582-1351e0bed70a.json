@@ -1,0 +1,19 @@
+{
+ "match_id": "b65086d2-3372-47b2-9582-1351e0bed70a",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "GigaSaag",
+  "bot_id": "5ae02f1c-c4c3-44be-8dfa-4dd8430cf695",
+  "team": "Saag1"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 6,
+ "moves": "f6 s14 s14 s14 s14 s14 s14",
+ "fetched_at": "2026-11-06T07:40:41"
+}

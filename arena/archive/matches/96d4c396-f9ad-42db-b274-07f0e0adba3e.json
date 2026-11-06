@@ -1,0 +1,19 @@
+{
+ "match_id": "96d4c396-f9ad-42db-b274-07f0e0adba3e",
+ "first": {
+  "bot": "Hurt me plenty",
+  "bot_id": "60e93e85-375f-4124-be51-2604ed7bb5c6",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "MimimiTest",
+  "bot_id": "f018c523-40cc-4494-8e8b-2491d4937706",
+  "team": "Mimimi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 6,
+ "moves": "f6 s14 s14 s14 s14 s14 s14",
+ "fetched_at": "2026-11-06T07:40:45"
+}

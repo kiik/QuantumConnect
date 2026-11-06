@@ -1,0 +1,19 @@
+{
+ "match_id": "c391d2e2-823e-4fd2-a166-2337080eafc6",
+ "first": {
+  "bot": "GigaSaag",
+  "bot_id": "5ae02f1c-c4c3-44be-8dfa-4dd8430cf695",
+  "team": "Saag1"
+ },
+ "second": {
+  "bot": "Testing_v2",
+  "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+  "team": "LinMacWin"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 5,
+ "moves": "f14 f14 f14 f14 f14 f14",
+ "fetched_at": "2026-11-06T07:40:43"
+}

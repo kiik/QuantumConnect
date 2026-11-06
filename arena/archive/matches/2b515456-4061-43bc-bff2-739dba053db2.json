@@ -1,0 +1,19 @@
+{
+ "match_id": "2b515456-4061-43bc-bff2-739dba053db2",
+ "first": {
+  "bot": "Tank-06-0632",
+  "bot_id": "d9b50319-d47e-4c2a-b6b1-73ca6cb17d0b",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "OJ477",
+  "bot_id": "7a870c7f-a9a3-421a-8559-5f5e8c27fa6a",
+  "team": "Darknet_cracker"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 20,
+ "moves": "f13 s0 f13 s1 f13 s2 f13 s3 f5 s4 f12 s6 f14 s7 f14 s8 f14 s9 f13 s10 f13",
+ "fetched_at": "2026-11-06T07:40:36"
+}
