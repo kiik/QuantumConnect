@@ -366,6 +366,8 @@ public final class Arena {
                 case "lmr" -> bot.lateMoveReductions = value != 0;
                 case "lmrLog" -> bot.reductionLogDivisor = value;
                 case "lmrLogBase" -> bot.reductionLogBase = value;
+                case "forcingTable" -> bot.forcingTable = value != 0;
+                case "minBombDepth" -> bot.minBombDepth = value;
                 default -> throw new IllegalArgumentException("unknown SerenaBot setting " + name);
             }
         }

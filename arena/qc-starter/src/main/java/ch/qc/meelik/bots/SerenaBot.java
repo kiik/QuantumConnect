@@ -372,6 +372,8 @@ public class SerenaBot implements Algorithm {
     public int bombHorizon = 2;
     long deadlineNanos;
     public long nodesSearched;
+    /** Of the nodes searched: forcing-line nodes, their bomb answers tried, and nodes with a full bomb scan (for the tools). */
+    public long forcingNodes, answerNodes, bombAnswerNodes, threatScans, forcingTableHits, mainBombNodes, blastChecks;
     boolean outOfTime;
     /** Score and depth of the last completed iteration, for the side that was to move. */
     public int lastScore, depthReached;
@@ -1172,7 +1174,7 @@ public class SerenaBot implements Algorithm {
         long started = System.nanoTime();
         deadlineNanos = started + budget;
         outOfTime = false;
-        nodesSearched = 0;
+        nodesSearched = forcingNodes = answerNodes = bombAnswerNodes = threatScans = forcingTableHits = mainBombNodes = blastChecks = 0;
         depthReached = 0;
         threatNanosUsed = offenceNanosUsed = 0;
         refutedMoves = checkedMoves = abortedProofs = 0;
@@ -1529,7 +1531,7 @@ public class SerenaBot implements Algorithm {
             if (forced >= 0 && bombCooldown[mover] > 0 && depth == 0) depth = 1; // search the forced blocks, don't evaluate
         }
         if (ply == MAX_PLY - 1) return evaluate();
-        if (depth <= 0) return forcingLine(depth, alpha, beta, ply, forced);
+        if (depth <= 0) return forcingTable ? tabledForcingLine(depth, alpha, beta, ply, forced) : forcingLine(depth, alpha, beta, ply, forced);
 
         // With root moves refuted, the root's table entry describes the whole move list: neither use nor store it.
         boolean excluding = ply == 0 && rootExclusions > 0;
@@ -1546,7 +1548,8 @@ public class SerenaBot implements Algorithm {
 
         if (ply == 0 && refinedSearch && previousBestAction != NO_ACTION) tableAction = previousBestAction;
         int[] actions = actionLists[ply];
-        int actionCount = orderedLegalActions(actions, tableAction, forced, ply);
+        boolean bombsHere = ply == 0 || forced != NOT_FORCED || depth >= minBombDepth;
+        int actionCount = orderedLegalActions(actions, tableAction, forced, ply, bombsHere);
         int originalAlpha = alpha, bestScore = -WIN - 1, bestAction = NO_ACTION, searchedActions = 0;
         for (int i = 0; i < actionCount; i++) {
             int action = actions[i], score, column = columnOf(action), previousCooldown = 0;
@@ -1557,6 +1560,7 @@ public class SerenaBot implements Algorithm {
                 if (undoStates[ply] == null) undoStates[ply] = new int[stateSize];
                 saveAround(column, undoStates[ply]);
                 play(action);
+                mainBombNodes++;
             } else previousCooldown = drop(column);
 
             if (searchedActions++ == 0 || !refinedSearch) score = -negamax(depth - 1, -beta, -alpha, ply + 1);
@@ -1595,6 +1599,42 @@ public class SerenaBot implements Algorithm {
     }
 
     /**
+     * Whether the forcing line reads and fills the transposition table ({@link #tabledForcingLine}).
+     * Its threats and blocks reach the same positions in many orders: threat A, block, threat B,
+     * block is threat B, block, threat A, block. Off (the default): every forcing-line position is
+     * searched anew. On 15x30 sharp positions it answered 5-15% of forcing-line nodes, for no depth.
+     */
+    public boolean forcingTable = false;
+
+    /**
+     * The forcing line through the transposition table: a stored result at least as deep answers the
+     * position (a forcing-line depth is 0 or below: the plies of forcing moves left, negated), and the
+     * result is stored, unless the slot holds the same position searched deeper.
+     */
+    int tabledForcingLine(int depth, int alpha, int beta, int ply, int forced) {
+        long key = positionKey();
+        int slot = tableSlot(key);
+        boolean samePosition = tableKey[slot] == key;
+        if (samePosition) {
+            long entry = tableEntry[slot];
+            if (entryDepth(entry) >= depth) {
+                int score = scoreFromTable(entryScore(entry), ply), bound = entryBound(entry);
+                if (bound == EXACT || bound == LOWER_BOUND && score >= beta || bound == UPPER_BOUND && score <= alpha) {
+                    forcingTableHits++;
+                    return score;
+                }
+            }
+        }
+        int score = forcingLine(depth, alpha, beta, ply, forced);
+        if (outOfTime) return 0;
+        if (samePosition && tableKey[slot] == key && entryDepth(tableEntry[slot]) > depth) return score; // a deeper result stays
+        int bound = score <= alpha ? UPPER_BOUND : score >= beta ? LOWER_BOUND : EXACT;
+        tableKey[slot] = key;
+        tableEntry[slot] = packEntry(scoreToTable(score, ply), depth, bound, NO_ACTION);
+        return score;
+    }
+
+    /**
      * Past the search depth: follows only forcing moves, to {@link #forcingPlies} plies deep. A side
      * facing a threat without its bomb must block it. Any other side may take the evaluation instead
      * ("stand pat"), or play a drop that makes a threat to complete at once. A side facing a threat
@@ -1603,6 +1643,7 @@ public class SerenaBot implements Algorithm {
      */
     int forcingLine(int depth, int alpha, int beta, int ply, int forced) {
         int mover = sideToMove;
+        forcingNodes++;
         if (forced >= 0 && bombCooldown[mover] > 0) return blockingDrops(depth, alpha, beta, ply, forced); // the only answers
         if (forced != NOT_FORCED && bombHorizon >= 2 && depth > -forcingPlies) return answerWithBomb(depth, alpha, beta, ply, forced);
         int standPat = evaluate();
@@ -1671,6 +1712,17 @@ public class SerenaBot implements Algorithm {
         return forced == NOT_FORCED || forced >= 0 && forcedLow(forced) <= column && column <= forcedHigh(forced);
     }
 
+    /**
+     * The least depth at which a node of the search tries quiet bombs, below the root. A bomb is the
+     * dearest move to play and undo (a blast moves three columns' worth of quarks), and on 15x30, at
+     * nodes one ply above the forcing line, the bombs were a fifth of all nodes in sharp positions.
+     * A bomb that forms a line is seen at every node anyway ({@link #threatAnalysis}), and a side
+     * facing a threat still tries its bombs at any depth. 1 (or 0, the default 1): bombs at every
+     * node. 3 with {@link #forcingTable} reached a third of a ply deeper in sharp positions but lost
+     * by 82 Elo (95%: -122 to -39, 300 games at 40 ms on 15x30): the quiet bombs near the leaves matter.
+     */
+    public int minBombDepth = 1;
+
     /** Moves before this one in a node's order are searched in full; later quiet moves may be reduced. */
     static final int FIRST_LATE_MOVE = 3, FIRST_VERY_LATE_MOVE = 8;
 
@@ -1715,10 +1767,11 @@ public class SerenaBot implements Algorithm {
     /**
      * Fills {@code actions} with the legal actions, best guess first, and returns how many there are.
      * The guesses: the table's move, then (refined search) this ply's killer moves, then the others
-     * by their history, drops and bombs alike: a blast is often the move that refutes.
+     * by their history, drops and bombs alike: a blast is often the move that refutes. Without
+     * {@code bombsHere}, drops only ({@link #minBombDepth}).
      */
-    int orderedLegalActions(int[] actions, int preferred, int forced, int ply) {
-        boolean mayBomb = bombCooldown[sideToMove] == 0;
+    int orderedLegalActions(int[] actions, int preferred, int forced, int ply, boolean bombsHere) {
+        boolean mayBomb = bombsHere && bombCooldown[sideToMove] == 0;
         markColumnsNearQuarks();
         int count = 0;
         for (int column : columnsCentreOut) {
@@ -1831,8 +1884,11 @@ public class SerenaBot implements Algorithm {
                 }
             }
         if (bombHorizon > 0 && (mayBomb || bombCooldown[opponent] == 0)) {
+            threatScans++;
             for (int column = 0; column < columns; column++) {
-                if (!blastDropsQuarks(column) || !blastFormsLine(column)) continue; // the first is quick: no fall, no new line
+                if (!blastDropsQuarks(column)) continue; // quick: no fall, no new line
+                blastChecks++;
+                if (!blastFormsLine(column)) continue;
                 if (mayBomb) return WIN - ply - 1; // our bomb forms a line
                 threats++; // and with the bomb ready, so would the opponent's
                 low = Math.max(low, column - 1);
@@ -1929,6 +1985,7 @@ public class SerenaBot implements Algorithm {
      */
     private int answerWithBomb(int depth, int alpha, int beta, int ply, int forced) {
         int bestScore = -WIN - 1;
+        answerNodes++;
         if (forced >= 0) {
             bestScore = blockingDrops(depth, alpha, beta, ply, forced);
             if (outOfTime) return 0;
@@ -1943,6 +2000,7 @@ public class SerenaBot implements Algorithm {
             int column = columnOf(actions[i]);
             saveAround(column, undoStates[ply]);
             play(actions[i]);
+            bombAnswerNodes++;
             int score = -negamax(depth - 1, -beta, -alpha, ply + 1);
             restoreAround(column, undoStates[ply]);
             if (outOfTime) return 0;
@@ -2367,9 +2425,12 @@ public class SerenaBot implements Algorithm {
         return tableKey[slot] == key ? entryAction(tableEntry[slot]) : NO_ACTION;
     }
 
-    // An entry packs the score (32 bits), depth (8), bound (2) and action + 1 (the rest) into one long.
+    /** Added to an entry's depth, so that the forcing line's depths, 0 and below, pack into 8 bits. */
+    static final int TABLE_DEPTH_OFFSET = 64;
+
+    // An entry packs the score (32 bits), depth + offset (8), bound (2) and action + 1 (the rest) into one long.
     static long packEntry(int score, int depth, int bound, int action) {
-        return score & 0xffffffffL | (long) depth << 32 | (long) bound << 40 | (long) (action + 1) << 42;
+        return score & 0xffffffffL | (long) (depth + TABLE_DEPTH_OFFSET) << 32 | (long) bound << 40 | (long) (action + 1) << 42;
     }
 
     static int entryScore(long entry) {
@@ -2377,7 +2438,7 @@ public class SerenaBot implements Algorithm {
     }
 
     static int entryDepth(long entry) {
-        return (int) (entry >>> 32 & 0xff);
+        return (int) (entry >>> 32 & 0xff) - TABLE_DEPTH_OFFSET;
     }
 
     static int entryBound(long entry) {
