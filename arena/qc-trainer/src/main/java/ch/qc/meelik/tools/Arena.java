@@ -339,6 +339,7 @@ public final class Arena {
      * {@code threatParity} (threatParityWeight, 0: off), {@code deadThreats} (deadThreatPercent of a five, 0: off),
      * {@code threatMemo} (0 or 1, plays the same), {@code bombNear}
      * (bombNearThreats, 0 to 2), {@code farBomb} (farBombReduction, 0 prunes), {@code threatExt} (threatExtensions, per path),
+     * {@code bookMinQuarks} (the loss book only from this many quarks on),
      * {@code bombHorizon} (0 to 3), {@code tss} (threatSpaceSearch, 0 or 1), {@code tssShare}
      * (threatSharePercent), {@code tssPlies} (threatSearchPlies), {@code tssBombs} (bombThreats, 0 or 1);
      * for ThreatBot also {@code threat} (threatPlies). ThreatBot shares {@code refined} and {@code lmr}
@@ -376,6 +377,7 @@ public final class Arena {
                 case "bombNear" -> bot.bombNearThreats = value;
                 case "threatExt" -> bot.threatExtensions = value;
                 case "farBomb" -> bot.farBombReduction = value;
+                case "bookMinQuarks" -> bot.bookMinQuarks = value;
                 default -> throw new IllegalArgumentException("unknown SerenaBot setting " + name);
             }
         }
