@@ -336,7 +336,7 @@ public final class Arena {
      * {@code variety} (varietyNoise), {@code varietyQuarks}, {@code refined} (refinedSearch, 0 or 1:
      * 0 plays the plain alpha-beta search), {@code lmr} (lateMoveReductions, 0 or 1), {@code lmrLog} (reductionLogDivisor, 0: the steps),
      * {@code lmrLogBase} (reductionLogBase), {@code lowThreat} (lowestThreatWeight, 0: off),
-     * {@code lowThreatParity} (lowestThreatParity, 0 or 1),
+     * {@code threatParity} (threatParityWeight, 0: off), {@code deadThreats} (deadThreatPercent of a five, 0: off),
      * {@code bombHorizon} (0 to 3), {@code tss} (threatSpaceSearch, 0 or 1), {@code tssShare}
      * (threatSharePercent), {@code tssPlies} (threatSearchPlies), {@code tssBombs} (bombThreats, 0 or 1);
      * for ThreatBot also {@code threat} (threatPlies). ThreatBot shares {@code refined} and {@code lmr}
@@ -368,7 +368,8 @@ public final class Arena {
                 case "lmrLog" -> bot.reductionLogDivisor = value;
                 case "lmrLogBase" -> bot.reductionLogBase = value;
                 case "lowThreat" -> bot.lowestThreatWeight = value;
-                case "lowThreatParity" -> bot.lowestThreatParity = value != 0;
+                case "threatParity" -> bot.threatParityWeight = value;
+                case "deadThreats" -> bot.deadThreatPercent = value;
                 default -> throw new IllegalArgumentException("unknown SerenaBot setting " + name);
             }
         }

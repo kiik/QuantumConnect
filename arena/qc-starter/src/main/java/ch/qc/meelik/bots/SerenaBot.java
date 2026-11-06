@@ -275,7 +275,7 @@ public class SerenaBot implements Algorithm {
     int[] pluggedFives;
     /** The plug counts of each column, both players' together: where they are 0, no blast's fall forms a line through a plug. */
     int[] pluggedInColumn;
-    /** The threat counts of each column, both players' together: where they are 0, no cell of the column completes a line ({@link #lowestThreatBalance}). */
+    /** The threat counts of each column, both players' together: where they are 0, no cell of the column completes a line ({@link #threatStructureValue}). */
     int[] threatsInColumn;
     /**
      * Open lines of each player one quark short (threat lines) and two quarks short (four lines):
@@ -475,6 +475,7 @@ public class SerenaBot implements Algorithm {
         threatsInColumn = new int[columns];
         networkOn = withNetwork && LINE_LENGTH == TRAINED_LINE_LENGTH && loadNetwork();
         patternsOn = withPatterns && LINE_LENGTH == TRAINED_LINE_LENGTH && loadPatterns();
+        fiveValue = meanFiveValue();
         stateSize = owner.length + columnHeight.length + lineQuarks.length + linePattern.length + threatCount.length + fourCount.length
                 + pluggedFives.length + pluggedInColumn.length + threatsInColumn.length + STATE_SCALARS + (networkOn ? 2 * hidden : 0);
         clear();
@@ -1332,12 +1333,12 @@ public class SerenaBot implements Algorithm {
         if (networkOn) score = networkScore();
         else score = (sideToMove == 0 ? staticScore : -staticScore)
                 + bombReadyBonus * bombBonusPercent / 100 * (isBombReady(sideToMove) - isBombReady(1 - sideToMove)) + tempo
-                + bombHoldValue() + (lowestThreatWeight > 0 ? lowestThreatWeight * lowestThreatBalance() : 0);
+                + bombHoldValue() + ((lowestThreatWeight | threatParityWeight | deadThreatPercent) != 0 ? threatStructureValue() : 0);
         if (varietyNoise > 0 && quarkCount < varietyQuarks) score += varietyNoise();
         return score;
     }
 
-    // ------------------------------------------------------------------ lowest threats per column
+    // ------------------------------------------------------------------ the threat structure of the columns
 
     /*
      * Under gravity a threat cell (an empty cell that completes a line for a player) is filled only
@@ -1346,40 +1347,85 @@ public class SerenaBot implements Algorithm {
      * mostly dies with it, since the lower one is answered or wins first. The line values count every
      * "five" alike, playable or not, so in long games they can score a position high that is lost.
      *
-     * The balance counts, per column, whose threat is lowest. A cell that completes a line for both
-     * players counts for neither: whoever fills it blocks the other. Parity (Allis's zugzwang rule
-     * for Connect Four): the first mover's threats on odd rows from the bottom (row 1, 3, ...) and the
-     * second mover's on even rows come due in their favour when the board fills, so with
-     * {@link #lowestThreatParity} such a lowest threat counts double.
+     * Three terms read this structure, each off at 0 (play is then unchanged), all in one pass over
+     * the columns that hold a threat ({@link #threatsInColumn}):
+     *   - lowest threats: per column, whose threat is lowest. A cell that completes a line for both
+     *     players counts for neither: whoever fills it first wins there.
+     *   - parity (Allis's zugzwang rule for Connect Four): when the board fills, the first mover's
+     *     threats on odd rows from the bottom (row 1, 3, ...) and the second mover's on even rows come
+     *     due in their favour. A lowest threat on such a row adds the parity weight.
+     *   - dead threats: a player's threat cell above a lower threat cell of the opponent in the same
+     *     column is mostly worth nothing, yet the line values count it in full. Each such cell takes
+     *     back a percentage of a typical five's value ({@link #fiveValue}).
      */
 
-    /** Weight of a column whose lowest threat is a player's; 0 leaves the term out (and play unchanged). */
+    /** Weight of a column whose lowest threat is a player's; 0 leaves the term out. */
     public int lowestThreatWeight = 0;
-    /** Whether a lowest threat on a row whose parity favours its owner counts double. */
-    public boolean lowestThreatParity = true;
+    /** Extra weight of a lowest threat on a row whose parity favours its owner; 0 leaves the term out. */
+    public int threatParityWeight = 0;
+    /** Percent of {@link #fiveValue} each dead threat cell takes back; 0 leaves the term out. */
+    public int deadThreatPercent = 0;
+    /** The mean value of a line one quark short with one empty cell, over its directions and gap places; set with the board. */
+    public int fiveValue;
 
-    /** Columns whose lowest threat is the side to move's minus the opponent's (parity counting double). */
-    int lowestThreatBalance() {
-        if (threatLines[0] + threatLines[1] == 0) return 0;
-        int mover = sideToMove, other = 1 - mover, balance = 0;
-        for (int column = 0; column < columns; column++) {
-            if (threatsInColumn[column] == 0) continue;
-            int bottom = column * rows;
-            for (int height = columnHeight[column]; height < rows; height++) {
-                int cell = bottom + height;
-                boolean moverThreat = threatCount[mover * cellCount + cell] > 0, otherThreat = threatCount[other * cellCount + cell] > 0;
-                if (!moverThreat && !otherThreat) continue;
-                if (moverThreat != otherThreat) {
-                    int threatOwner = moverThreat ? mover : other;
-                    // height 0 is row 1: odd rows (even heights) favour the first mover
-                    boolean parityFavours = lowestThreatParity && ((height & 1) == 0) == (threatOwner == firstMover);
-                    int value = parityFavours ? 2 : 1;
-                    balance += moverThreat ? value : -value;
+    /** The mean value of a "five", from the pattern table or, without it, from the line weights. */
+    int meanFiveValue() {
+        long sum = 0;
+        int count = 0;
+        if (patternsOn) {
+            for (int pattern = 0; pattern < PATTERNS * 3; pattern++) {
+                int ownQuarks = 0, empties = 0;
+                for (int rest = pattern % PATTERNS, place = 0; place < TRAINED_LINE_LENGTH; place++, rest /= 3) {
+                    if (rest % 3 == 1) ownQuarks++;
+                    else if (rest % 3 == 0) empties++;
                 }
-                break;
+                if (ownQuarks != TRAINED_LINE_LENGTH - 1 || empties != 1) continue;
+                sum += patternValue[pattern];
+                count++;
+            }
+        } else {
+            for (int[] weights : lineWeight) {
+                sum += weights[LINE_LENGTH - 1];
+                count++;
             }
         }
-        return balance;
+        return count == 0 ? 0 : (int) (sum / count);
+    }
+
+    /** The three threat-structure terms for the side to move: its lowest threats, their parity, and its dead threats, each against the opponent's. */
+    int threatStructureValue() {
+        if (threatLines[0] + threatLines[1] == 0) return 0;
+        int mover = sideToMove, other = 1 - mover, value = 0;
+        int moverAt = mover * cellCount, otherAt = other * cellCount;
+        int deadWeight = deadThreatPercent * fiveValue / 100;
+        boolean scanAbove = deadWeight != 0;
+        for (int column = 0; column < columns; column++) {
+            int remaining = threatsInColumn[column]; // threat lines whose gap is still above in this column
+            if (remaining == 0) continue;
+            boolean lowestSeen = false, moverBelow = false, otherBelow = false;
+            for (int cell = column * rows + columnHeight[column], top = column * rows + rows; cell < top && remaining > 0; cell++) {
+                int moverLines = threatCount[moverAt + cell], otherLines = threatCount[otherAt + cell];
+                if (moverLines + otherLines == 0) continue;
+                remaining -= moverLines + otherLines;
+                if (!lowestSeen) {
+                    lowestSeen = true;
+                    if ((moverLines == 0) != (otherLines == 0)) { // one player's alone
+                        int threatOwner = moverLines > 0 ? mover : other;
+                        // height 0 is row 1: odd rows (even heights) favour the first mover
+                        boolean parityFavours = ((heightOfCell[cell] & 1) == 0) == (threatOwner == firstMover);
+                        int columnValue = lowestThreatWeight + (parityFavours ? threatParityWeight : 0);
+                        value += threatOwner == mover ? columnValue : -columnValue;
+                    }
+                    if (!scanAbove) break;
+                } else {
+                    if (moverLines > 0 && otherBelow) value -= deadWeight;
+                    if (otherLines > 0 && moverBelow) value += deadWeight;
+                }
+                moverBelow |= moverLines > 0;
+                otherBelow |= otherLines > 0;
+            }
+        }
+        return value;
     }
 
     // ------------------------------------------------------------------ the value of holding the bomb
