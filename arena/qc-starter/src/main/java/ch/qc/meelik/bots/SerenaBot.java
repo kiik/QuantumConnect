@@ -159,21 +159,40 @@ public class SerenaBot implements Algorithm {
             {0, 16, 532, 640, 24375, 0},
             {0, 40, 266, 2485, 4151, 0}};
     static final int BOMB_READY_BONUS_5 = 111;
+    /**
+     * Line weights (0..7 quarks) and bomb bonus evolved for seven in a row: island evolution at depth 4
+     * on 15x30 against the stretched six-in-a-row weights (params/serena/lines-n7.txt). At the real
+     * 40 ms on 15x30 they scored +17 Elo against the stretched weights (95%: -20 to +53, 300 games):
+     * no worse, perhaps a little better.
+     */
+    static final int[][] LINE_WEIGHT_7 = {
+            {0, 25, 41, 78, 133, 295, 5480, 0},
+            {0, 24, 55, 122, 122, 1253, 20946, 0},
+            {0, 10, 14, 51, 139, 358, 5766, 0}};
+    static final int BOMB_READY_BONUS_7 = 25;
     /** This bot's weights (0..LINE_LENGTH quarks) and bonus: the constants above, unless a tuning tool sets others. */
     public int[][] lineWeight = lineWeightsFor(LINE_LENGTH);
-    public int bombReadyBonus = LINE_LENGTH == 5 ? BOMB_READY_BONUS_5 : BOMB_READY_BONUS;
+    public int bombReadyBonus = bombReadyBonusFor(LINE_LENGTH);
+
+    /** The bomb bonus for lines of a length: the one evolved for it where there is one, else the trained one. */
+    static int bombReadyBonusFor(int lineLength) {
+        if (lineLength == 5) return BOMB_READY_BONUS_5;
+        if (lineLength == 7) return BOMB_READY_BONUS_7;
+        return BOMB_READY_BONUS;
+    }
 
     /**
-     * The weights for lines of a length: those evolved for it where there are some (five in a row),
+     * The weights for lines of a length: those evolved for it where there are some (five and seven in a row),
      * else the trained weights counted from the full end: a line one quark short of complete takes the
      * trained weight of a line one short (five quarks of six), two short the weight of two short, and
      * so on down. Counts with no trained match take the one-quark weight; an empty or complete line is
      * worth nothing. For the trained length these are the trained weights.
      */
     static int[][] lineWeightsFor(int lineLength) {
-        if (lineLength == 5) {
-            int[][] evolved = new int[LINE_WEIGHT_5.length][];
-            for (int d = 0; d < evolved.length; d++) evolved[d] = LINE_WEIGHT_5[d].clone();
+        int[][] evolvedWeights = lineLength == 5 ? LINE_WEIGHT_5 : lineLength == 7 ? LINE_WEIGHT_7 : null;
+        if (evolvedWeights != null) {
+            int[][] evolved = new int[evolvedWeights.length][];
+            for (int d = 0; d < evolved.length; d++) evolved[d] = evolvedWeights[d].clone();
             return evolved;
         }
         int[][] weights = new int[LINE_WEIGHT.length][lineLength + 1];
