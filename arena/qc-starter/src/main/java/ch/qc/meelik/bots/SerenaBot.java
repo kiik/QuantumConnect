@@ -275,6 +275,8 @@ public class SerenaBot implements Algorithm {
     int[] pluggedFives;
     /** The plug counts of each column, both players' together: where they are 0, no blast's fall forms a line through a plug. */
     int[] pluggedInColumn;
+    /** The threat counts of each column, both players' together: where they are 0, no cell of the column completes a line ({@link #lowestThreatBalance}). */
+    int[] threatsInColumn;
     /**
      * Open lines of each player one quark short (threat lines) and two quarks short (four lines):
      * lines holding LINE_LENGTH - 1 or LINE_LENGTH - 2 of the player's quarks ("fives" and "fours"
@@ -470,10 +472,11 @@ public class SerenaBot implements Algorithm {
         fourCount = new int[2 * cellCount];
         pluggedFives = new int[2 * cellCount];
         pluggedInColumn = new int[columns];
+        threatsInColumn = new int[columns];
         networkOn = withNetwork && LINE_LENGTH == TRAINED_LINE_LENGTH && loadNetwork();
         patternsOn = withPatterns && LINE_LENGTH == TRAINED_LINE_LENGTH && loadPatterns();
         stateSize = owner.length + columnHeight.length + lineQuarks.length + linePattern.length + threatCount.length + fourCount.length
-                + pluggedFives.length + pluggedInColumn.length + STATE_SCALARS + (networkOn ? 2 * hidden : 0);
+                + pluggedFives.length + pluggedInColumn.length + threatsInColumn.length + STATE_SCALARS + (networkOn ? 2 * hidden : 0);
         clear();
 
         for (int ply = 0; ply < MAX_PLY; ply++) {
@@ -887,6 +890,7 @@ public class SerenaBot implements Algorithm {
     private void changeThreat(int player, int gap, int delta) {
         threatLines[player] += delta;
         int count = threatCount[player * cellCount + gap] += delta;
+        threatsInColumn[columnOfCell[gap]] += delta;
         if (networkOn && count == (delta > 0 ? 1 : 0)) { // the cell became or stopped being a threat
             if (delta > 0) addRows(threatRows, (2 * gap + player) * 2 * hidden);
             else subtractRows(threatRows, (2 * gap + player) * 2 * hidden);
@@ -1002,6 +1006,7 @@ public class SerenaBot implements Algorithm {
         Arrays.fill(fourCount, 0);
         Arrays.fill(pluggedFives, 0);
         Arrays.fill(pluggedInColumn, 0);
+        Arrays.fill(threatsInColumn, 0);
         completedLines[0] = completedLines[1] = 0;
         threatLines[0] = threatLines[1] = fourLines[0] = fourLines[1] = 0;
         bombCooldown[0] = bombCooldown[1] = FIRST_BOMB_WAIT;
@@ -1034,6 +1039,7 @@ public class SerenaBot implements Algorithm {
         at = copyInto(state, at, fourCount);
         at = copyInto(state, at, pluggedFives);
         at = copyInto(state, at, pluggedInColumn);
+        at = copyInto(state, at, threatsInColumn);
         saveScalars(state, at);
     }
 
@@ -1046,6 +1052,7 @@ public class SerenaBot implements Algorithm {
         at = copyFrom(state, at, fourCount);
         at = copyFrom(state, at, pluggedFives);
         at = copyFrom(state, at, pluggedInColumn);
+        at = copyFrom(state, at, threatsInColumn);
         restoreScalars(state, at);
     }
 
@@ -1074,6 +1081,7 @@ public class SerenaBot implements Algorithm {
             at = copyInto(state, at, pluggedFives, offset + firstCell, offset + endCell);
         }
         at = copyInto(state, at, pluggedInColumn, reachLeft, reachRight + 1);
+        at = copyInto(state, at, threatsInColumn, reachLeft, reachRight + 1);
         saveScalars(state, at);
     }
 
@@ -1094,6 +1102,7 @@ public class SerenaBot implements Algorithm {
             at = copyFrom(state, at, pluggedFives, offset + firstCell, offset + endCell);
         }
         at = copyFrom(state, at, pluggedInColumn, reachLeft, reachRight + 1);
+        at = copyFrom(state, at, threatsInColumn, reachLeft, reachRight + 1);
         restoreScalars(state, at);
     }
 
@@ -1322,9 +1331,54 @@ public class SerenaBot implements Algorithm {
         if (networkOn) score = networkScore();
         else score = (sideToMove == 0 ? staticScore : -staticScore)
                 + bombReadyBonus * bombBonusPercent / 100 * (isBombReady(sideToMove) - isBombReady(1 - sideToMove)) + tempo
-                + bombHoldValue();
+                + bombHoldValue() + (lowestThreatWeight > 0 ? lowestThreatWeight * lowestThreatBalance() : 0);
         if (varietyNoise > 0 && quarkCount < varietyQuarks) score += varietyNoise();
         return score;
+    }
+
+    // ------------------------------------------------------------------ lowest threats per column
+
+    /*
+     * Under gravity a threat cell (an empty cell that completes a line for a player) is filled only
+     * when its column grows up to it. In each column the lowest threat cell is the one that comes due
+     * first: whoever must play just below it hands it over, and a threat higher in the same column
+     * mostly dies with it, since the lower one is answered or wins first. The line values count every
+     * "five" alike, playable or not, so in long games they can score a position high that is lost.
+     *
+     * The balance counts, per column, whose threat is lowest. A cell that completes a line for both
+     * players counts for neither: whoever fills it blocks the other. Parity (Allis's zugzwang rule
+     * for Connect Four): the first mover's threats on odd rows from the bottom (row 1, 3, ...) and the
+     * second mover's on even rows come due in their favour when the board fills, so with
+     * {@link #lowestThreatParity} such a lowest threat counts double.
+     */
+
+    /** Weight of a column whose lowest threat is a player's; 0 leaves the term out (and play unchanged). */
+    public int lowestThreatWeight = 0;
+    /** Whether a lowest threat on a row whose parity favours its owner counts double. */
+    public boolean lowestThreatParity = true;
+
+    /** Columns whose lowest threat is the side to move's minus the opponent's (parity counting double). */
+    int lowestThreatBalance() {
+        if (threatLines[0] + threatLines[1] == 0) return 0;
+        int mover = sideToMove, other = 1 - mover, balance = 0;
+        for (int column = 0; column < columns; column++) {
+            if (threatsInColumn[column] == 0) continue;
+            int bottom = column * rows;
+            for (int height = columnHeight[column]; height < rows; height++) {
+                int cell = bottom + height;
+                boolean moverThreat = threatCount[mover * cellCount + cell] > 0, otherThreat = threatCount[other * cellCount + cell] > 0;
+                if (!moverThreat && !otherThreat) continue;
+                if (moverThreat != otherThreat) {
+                    int threatOwner = moverThreat ? mover : other;
+                    // height 0 is row 1: odd rows (even heights) favour the first mover
+                    boolean parityFavours = lowestThreatParity && ((height & 1) == 0) == (threatOwner == firstMover);
+                    int value = parityFavours ? 2 : 1;
+                    balance += moverThreat ? value : -value;
+                }
+                break;
+            }
+        }
+        return balance;
     }
 
     // ------------------------------------------------------------------ the value of holding the bomb

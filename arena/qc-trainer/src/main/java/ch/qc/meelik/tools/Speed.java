@@ -54,8 +54,12 @@ public final class Speed {
 
     /** A position: its match, the move before which it stands, and the game to replay to it. */
     record Position(Network.ArchivedGame game, int end) {
+        /** The board at this position, with the SerenaBot settings of SPEED_SETTINGS (as in a field file's {@code #...}) if set. */
         SerenaBot board() {
-            return Network.replay(game, end);
+            SerenaBot board = Network.replay(game, end);
+            String settings = System.getenv("SPEED_SETTINGS");
+            if (board != null && settings != null && !settings.isEmpty()) Arena.applySettings(board, settings);
+            return board;
         }
     }
 
