@@ -2,7 +2,7 @@
 # Switches SerenaBot to the announced rules and packages it for upload.
 #   ./rules.sh N LIMIT_MS [ROWSxCOLUMNS]   e.g. ./rules.sh 5 50 15x30
 # Sets LINE_LENGTH = N in SerenaBot and QuarkBot (QuarkBot is the tools' board), SerenaBot's
-# budgetNanos to 80% of the limit and its ARENA_ROWS/ARENA_COLUMNS (the board built before the clock) to the size. Tests run on an engine patched to N (out/engines/core-N.jar) when
+# budgetNanos to 80% of the limit (at least 10 ms short of it) and its ARENA_ROWS/ARENA_COLUMNS (the board built before the clock) to the size. Tests run on an engine patched to N (out/engines/core-N.jar) when
 # N is not the stock engine's 6; the upload JAR is always built on the stock engine in qc-starter/libs,
 # since the JAR bundles the engine library. Smoke games against random, and for N=6 a 10-game gate
 # against the newest Tank JAR. Leaves the JAR as jars/Rules-N<N>-<ms>ms.jar; uploading is a separate step.
@@ -10,7 +10,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 N=${1:?N}; LIMIT_MS=${2:?limit in ms}; SIZE=${3:-15x30}
 BOTS=qc-starter/src/main/java/ch/qc/meelik/bots
-BUDGET_MS=$((LIMIT_MS * 8 / 10))
+# 80% of the limit, and at least 10 ms short of it: a move can overrun the budget by up to ~8 ms.
+BUDGET_MS=$((LIMIT_MS * 8 / 10 < LIMIT_MS - 10 ? LIMIT_MS * 8 / 10 : LIMIT_MS - 10))
+[ "$BUDGET_MS" -ge 2 ] || BUDGET_MS=$((LIMIT_MS / 2 > 0 ? LIMIT_MS / 2 : 1))
 export QC_JAVA_OPTS="-Dqc.limitMs=$LIMIT_MS" # late moves counted against the announced limit
 
 sed -i -E "s/public static final int LINE_LENGTH = [0-9]+;/public static final int LINE_LENGTH = $N;/" $BOTS/SerenaBot.java $BOTS/QuarkBot.java
