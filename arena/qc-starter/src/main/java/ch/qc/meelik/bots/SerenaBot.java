@@ -383,9 +383,18 @@ public class SerenaBot implements Algorithm {
 
     // ------------------------------------------------------------------ construction
 
-    /** The standard 8x12 board. The arena calls this one; the bot resizes to the arena's field. */
+    /** The tournament board, rows and columns; set by rules.sh to the announced one. */
+    static final int ARENA_ROWS = 15, ARENA_COLUMNS = 30;
+
+    /**
+     * The tournament board, with the book parsed. The arena calls this one, before any turn's clock
+     * runs, so the first turn no longer spends some 17 ms of a cold JVM building the board and parsing
+     * the book. On another field the bot resizes at its first turn.
+     */
+    @SuppressWarnings("this-escape")
     public SerenaBot() {
-        this(8, 12);
+        this(ARENA_ROWS, ARENA_COLUMNS);
+        bookAction(0);
     }
 
     /** An empty board of the given size. Sparring partners extend the bot but only add to its setup. */

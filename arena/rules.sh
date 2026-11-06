@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Switches SerenaBot to the announced rules and packages it for upload.
 #   ./rules.sh N LIMIT_MS [ROWSxCOLUMNS]   e.g. ./rules.sh 5 50 15x30
-# Sets LINE_LENGTH = N in SerenaBot and QuarkBot (QuarkBot is the tools' board) and SerenaBot's
-# budgetNanos to 80% of the limit. Tests run on an engine patched to N (out/engines/core-N.jar) when
+# Sets LINE_LENGTH = N in SerenaBot and QuarkBot (QuarkBot is the tools' board), SerenaBot's
+# budgetNanos to 80% of the limit and its ARENA_ROWS/ARENA_COLUMNS (the board built before the clock) to the size. Tests run on an engine patched to N (out/engines/core-N.jar) when
 # N is not the stock engine's 6; the upload JAR is always built on the stock engine in qc-starter/libs,
 # since the JAR bundles the engine library. Smoke games against random, and for N=6 a 10-game gate
 # against the newest Tank JAR. Leaves the JAR as jars/Rules-N<N>-<ms>ms.jar; uploading is a separate step.
@@ -14,7 +14,8 @@ BUDGET_MS=$((LIMIT_MS * 8 / 10))
 
 sed -i -E "s/public static final int LINE_LENGTH = [0-9]+;/public static final int LINE_LENGTH = $N;/" $BOTS/SerenaBot.java $BOTS/QuarkBot.java
 sed -i -E "s/public long budgetNanos = [0-9_]+L;/public long budgetNanos = ${BUDGET_MS}_000_000L;/" $BOTS/SerenaBot.java
-grep -n "LINE_LENGTH = \|public long budgetNanos" $BOTS/SerenaBot.java | head -3
+sed -i -E "s/static final int ARENA_ROWS = [0-9]+, ARENA_COLUMNS = [0-9]+;/static final int ARENA_ROWS = ${SIZE%x*}, ARENA_COLUMNS = ${SIZE#*x};/" $BOTS/SerenaBot.java
+grep -n "LINE_LENGTH = \|public long budgetNanos\|ARENA_ROWS = " $BOTS/SerenaBot.java | head -4
 
 TEST_ENGINE=""
 if [ "$N" != 6 ]; then
