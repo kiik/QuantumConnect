@@ -1,0 +1,19 @@
+{
+ "match_id": "6731d7f4-2210-4292-a51c-09afb4ec3fb6",
+ "first": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "second": {
+  "bot": "coffeeAt23",
+  "bot_id": "6bb8042e-eb3f-455c-91ea-e5c0138be0db",
+  "team": "coffee_break"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 506,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s18 f18 s18 f18 s18 f18 s18 f10 s18 f18b s18 f18 s18 f18 s18 f18 s10 f10 s10 f10 s10 f10 s10 f10 s10 f10 s10 f10 s15 f15b s17 f15 s19 f21 s17 f17 s17 f17 s17 f17 s17 f19 s17 f19 s17 f17 s19 f19 s19 f19b s19 f15 s19 f17 s19 f19 s19 f17 s20b f19 s19 f19 s15 f15 s15 f15 s15 f15 s15 f15b s14 f14 s15 f18 s15 f18 s15 f15 s18b f15 s14 f15 s19 f19 s22 f18 s18 f14 s14 f20b s19 f17 s17 f17 s19 f18 s19 f22 s22 f22 s22 f22 s22 f22 s22 f23 s22 f22 s22 f22 s23 f10 s23 f23b s22 f9 s22 f22 s23 f23 s23 f23 s23 f23 s23 f23 s23 f23 s9 f9 s9 f9 s21b f22 s24 f24 s22 f23 s22 f9 s9 f9 s9 f9 s9 f9 s9 f8 s8 f7 s11 f11 s7 f7b s11 f11 s11 f11 s21b f22 s6 f8 s8 f8 s8 f9 s24 f24 s22 f24 s24 f24 s11 f11 s11 f11 s11 f11 s11 f24 s24b f24 s24 f21b s24 f23 s8 f8 s8 f8 s8 f8 s24 f8 s22 f11 s24 f24 s23 f22 s10b f8 s23 f11 s8 f9 s14 f11 s24 f7 s15 f8 s17 f9 s18 f19 s24 f7 s22 f23 s6 f23 s21b f21b s22 f22 s22 f22 s12 f12 s12 f12 s12 f12 s12 f12 s13 f12 s12 f12 s13 f13 s25b f13 s12 f16 s16 f12 s12 f13 s13 f13 s13 f7b s7 f24 s7 f24 s7 f7 s6 f12 s8 f8 s10 f8 s10 f16 s16 f28 s13b f12 s13 f12 s6 f6 s6 f6 s6 f6 s14 f14 s6 f13 s6 f13 s12 f13 s13 f6 s14 f6 s16 f6 s6 f4 s20 f28 s20 f20b s19 f2 s16 f16 s19 f19 s21 f21 s5 f21 s20 f28 s5 f5 s5 f5 s5 f5 s4 f5 s5 f5b s5 f5 s6 f5 s5 f5 s2 f6 s5 f6 s5 f4 s4 f4 s28 f29 s28 f28 s28 f28 s28 f28 s28 f28 s28 f28 s28 f29 s29 f29 s29 f29 s29 f29 s29 f29 s29 f29 s29 f29 s29 f25 s1 f3 s4 f4 s4 f4 s3 f1 s4 f4 s4 f4 s4 f25 s25 f25 s27 f25 s25 f25b s25 f25 s27 f24 s25 f24 s25 f25 s25 f21 s21 f3 s3 f25 s25 f24 s25 f25 s3 f3 s3 f3 s4 f1 s2 f2 s2 f2 s3 f3 s3 f3 s3 f3 s3 f20 s20 f20 s27 f27 s27 f0 s27 f27 s27 f27 s27 f0 s27 f20 s27 f27 s0 f20 s20 f20 s20 f20 s20 f20 s20 f2 s2 f20 s27 f2 s27 f0 s1 f0 s0 f0 s0 f0 s0 f0 s0 f0 s26 f26 s26 f2 s2 f2 s2 f1 s1 f1b s1b f2 s0 f2 s0 f0 s0 f2 s2 f2 s2 f13 s13 f7 s7 f7 s7 f2 s13 f1b",
+ "fetched_at": "2026-11-06T01:17:44"
+}

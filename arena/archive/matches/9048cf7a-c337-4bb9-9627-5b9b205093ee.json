@@ -1,0 +1,19 @@
+{
+ "match_id": "9048cf7a-c337-4bb9-9627-5b9b205093ee",
+ "first": {
+  "bot": "Tank-06-0112",
+  "bot_id": "9ba3dcb0-0f88-4ca4-b806-647adf471504",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 184,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f15 s15 f15 s13 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f14 s14 f15 s18 f18 s18 f18 s18 f18 s18 f18 s18b f18 s18 f18 s18 f18 s18 f15 s9 f11 s11 f13 s13 f18 s11 f17 s11 f11 s11 f11 s11 f11 s11 f11 s11 f17 s11 f17 s16b f18 s17 f17 s17 f17 s17 f17 s17 f17 s17 f17 s17 f17 s17 f13 s13 f13 s13 f13 s13 f12 s15 f12 s11 f16 s16 f16 s11 f14 s17 f9 s9 f7 s9 f7 s9 f7 s7 f7 s9 f9 s7 f7 s7 f7 s9 f7 s9 f9 s9 f7 s9 f7 s9 f7 s7 f7 s9 f13 s13 f9 s13 f5 s13 f5 s13 f5 s5 f5 s5 f5 s5 f5 s5 f5 s5 f8 s5 f16 s5 f16 s5 f6 s6 f8 s6 f6 s6 f3 s4b f4 s3 f6 s6 f3 s3 f3 s6 f6 s6 f4 s5 f5 s12 f2 s2 f12 s4 f8 s12b f8 s11 f11 s13 f13 s6 f8 s8 f8b",
+ "fetched_at": "2026-11-06T05:36:04"
+}

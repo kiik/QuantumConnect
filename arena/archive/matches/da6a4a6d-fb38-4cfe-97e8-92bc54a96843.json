@@ -1,0 +1,19 @@
+{
+ "match_id": "da6a4a6d-fb38-4cfe-97e8-92bc54a96843",
+ "first": {
+  "bot": "back-to-safe",
+  "bot_id": "338037d5-cc64-41bd-89da-bd4590b40925",
+  "team": "KolmApelsini"
+ },
+ "second": {
+  "bot": "Tank-06-0112",
+  "bot_id": "9ba3dcb0-0f88-4ca4-b806-647adf471504",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 61,
+ "moves": "f14 s16 f14 s14 f14 s14 f14 s14 f14 s14 f14 s18 f14 s15 f14 s15 f14 s15 f14 s14 f15 s15 f15 s18 f13 s16 f13 s16 f13 s13 f13 s13 f16 s16 f16 s17 f16 s17 f16 s19 f20 s19 f20 s21b f20b s15 f15 s13 f15 s13 f15 s17 f15 s18 f15 s15 f13 s20 f19 s19 f19 s20",
+ "fetched_at": "2026-11-06T05:35:51"
+}

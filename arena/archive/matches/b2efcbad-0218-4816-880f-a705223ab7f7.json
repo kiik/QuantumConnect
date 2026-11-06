@@ -1,0 +1,19 @@
+{
+ "match_id": "b2efcbad-0218-4816-880f-a705223ab7f7",
+ "first": {
+  "bot": "GigaSaag",
+  "bot_id": "5ae02f1c-c4c3-44be-8dfa-4dd8430cf695",
+  "team": "Saag1"
+ },
+ "second": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 54,
+ "moves": "f14 f14 s14 s12 f14 f14 s14 s14 f14 f14 s14 s14 f14 f14 s14 s14 f14 f14 s10 s16 f14 f14 s14 s14 f15 f15 s16 s15 f15 f15 s15 s15 f15 f15 s15 s16 f15 f15 s14 s15 f15b f15b s14 s15b f14 f14 s15 s15 f14 f14 s15 s15 f14 f14 s15 s14 f14 f14 s15 s15 f14 f15 s15b s15 f14 f15 s15 s14 f15 f15 s14 s15 f15 f14 s13 s14 f13 f15 s11 s13 f13b f15b s16 s12 f13 f15 s12 s15 f13 f15 s10 s16 f13 f16 s15 s13 f13 f13 s16 s10 f13 f13 s16 s13 f13 f13 s16b s12 f13 s13b f14 s9 f14 s13 f14b s11 f8 s11",
+ "fetched_at": "2026-11-06T05:36:21"
+}

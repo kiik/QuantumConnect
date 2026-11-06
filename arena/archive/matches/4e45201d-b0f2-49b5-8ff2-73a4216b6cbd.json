@@ -1,0 +1,19 @@
+{
+ "match_id": "4e45201d-b0f2-49b5-8ff2-73a4216b6cbd",
+ "first": {
+  "bot": "Tank-06-0112",
+  "bot_id": "9ba3dcb0-0f88-4ca4-b806-647adf471504",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "coffeeAt23",
+  "bot_id": "6bb8042e-eb3f-455c-91ea-e5c0138be0db",
+  "team": "coffee_break"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 433,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f15 s13 f13 s13 f13 s13 f13 s13 f13 s13 f13 s13 f13 s15 f17 s15 f15 s15 f17 s18 f15 s15 f15 s15 f15 s15 f18 s15 f18 s17b f18 s13 f17 s18 f18 s18 f18 s18 f18 s18 f18 s18 f17 s17 f17 s17 f18 s17 f18 s17 f18 s17 f17 s17 f17 s17b f18 s17 f17 s15 f18 s10 f10 s15 f15 s17 f10 s10 f18 s10 f10 s10 f10 s10 f10 s10 f10 s13 f11 s11 f10 s11 f10 s14 f9 s10 f11 s11 f9 s11 f9 s11 f11 s11 f8 s11 f11 s11 f8 s9 f8 s9 f8 s9 f18 s8 f8 s8 f8 s8 f8 s7b f6 s8 f9 s9 f6 s8 f13 s11 f6 s6 f7 s4 f7 s12 f6 s6 f4 s6 f4 s7b f12 s6 f6 s4 f5 s3 f8 s8 f8 s6 f6 s6 f5 s6 f6 s5 f12 s5 f5b s5 f6 s7 f5 s5 f5 s9 f9 s5b f4 s4 f4 s5 f5 s6 f6 s3 f6 s6 f6 s8 f6 s8 f5 s5 f5 s8 f4 s4 f4 s4 f4 s5b f6 s5 f5 s4 f6 s4 f5 s4 f4 s11 f9 s9 f17 s9 f1 s8 f1 s24 f3 s3 f11 s8 f2 s5 f24 s24 f24 s24 f24 s24 f24 s24 f24 s24 f23 s24 f24 s24 f24 s5 f23 s23 f23 s23 f23 s23 f23 s23 f16 s23 f16 s16 f23 s23 f16 s23 f19 s19 f16 s19 f4 s23 f20 s20 f19 s19 f19 s19 f19 s19 f19 s19 f20 s20 f20 s19 f22 s19 f22 s23 f22 s22 f22 s20 f20 s20 f20 s20 f22 s20 f25 s25 f22 s22 f22 s20 f25 s25 f20 s25 f25 s25 f25 s20 f25 s20 f25 s6 f6 s6 f22 s25 f19 s25 f1 s25 f1 s1 f21 s25 f26 s19 f25 s21 f26 s26 f26 s26 f26 s26 f26 s26 f28 s26 f28 s2 f12 s12 f12 s26 f26 s12 f21 s26 f21 s26 f22 s22 f2 s1 f2 s2 f2 s2 f21 s21 f28 s2 f1 s2 f2 s2 f1 s1 f1 s2 f1 s2 f2 s2 f28 s12 f12 s27 f28 s27b f26 s26 f12 s12 f12 s26 f1 s26 f1 s1 f28 s29 f28 s29 f29 s0 f29 s29 f29 s29 f29 s29 f29 s29 f0 s28 f16 s27 f16 s16 f0 s29 f28 s0 f1 s0 f0 s0 f0 s29 f0 s29 f0 s27 f27 s27 f27 s27 f27 s29 f0 s0 f28 s27 f27 s27 f21 s28b f12 s28",
+ "fetched_at": "2026-11-06T05:35:54"
+}
