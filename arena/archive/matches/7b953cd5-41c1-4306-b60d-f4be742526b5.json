@@ -1,0 +1,19 @@
+{
+ "match_id": "7b953cd5-41c1-4306-b60d-f4be742526b5",
+ "first": {
+  "bot": "1104-1-1105-4",
+  "bot_id": "b04bb4fc-3b81-4f60-aa54-c20b67907011",
+  "team": "kristoma"
+ },
+ "second": {
+  "bot": "OJ477",
+  "bot_id": "7a870c7f-a9a3-421a-8559-5f5e8c27fa6a",
+  "team": "Darknet_cracker"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 19,
+ "moves": "s0 f0 s1 f1 s2 f1 s3 f5 s4 f5 s6 f5 s7 f7 s8 f5 s9 f5 s10 f5",
+ "fetched_at": "2026-11-06T10:09:38"
+}

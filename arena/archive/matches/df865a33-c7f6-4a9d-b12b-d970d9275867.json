@@ -1,0 +1,19 @@
+{
+ "match_id": "df865a33-c7f6-4a9d-b12b-d970d9275867",
+ "first": {
+  "bot": "Siuuuuuuu2",
+  "bot_id": "d668230e-49a7-411b-8611-aa6cb0105a75",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "Tank-06-0734",
+  "bot_id": "c3998e0b-6f65-4f58-a7ce-341af8246b3a",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 6,
+ "moves": "s3 s3 s3 s3 s2 s3 s3",
+ "fetched_at": "2026-11-06T10:09:22"
+}

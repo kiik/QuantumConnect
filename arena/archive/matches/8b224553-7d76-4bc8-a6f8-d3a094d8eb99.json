@@ -1,0 +1,19 @@
+{
+ "match_id": "8b224553-7d76-4bc8-a6f8-d3a094d8eb99",
+ "first": {
+  "bot": "QuantiniConnectini6",
+  "bot_id": "2669a1a3-2b2d-4a1d-987b-66144cee293a",
+  "team": "cristi"
+ },
+ "second": {
+  "bot": "1104-1-1105-4",
+  "bot_id": "b04bb4fc-3b81-4f60-aa54-c20b67907011",
+  "team": "kristoma"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 17,
+ "moves": "f4 s5 f4 s5 f4 s4 f4 s4 f4 s4 f7 s5 f7 s5 f7 s5 f7 s5",
+ "fetched_at": "2026-11-06T10:09:43"
+}

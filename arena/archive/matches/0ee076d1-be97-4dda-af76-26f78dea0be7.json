@@ -1,0 +1,19 @@
+{
+ "match_id": "0ee076d1-be97-4dda-af76-26f78dea0be7",
+ "first": {
+  "bot": "coffeeAtMidNight",
+  "bot_id": "c3e75457-aef7-49f5-a04b-af8eeea60b33",
+  "team": "coffee_break"
+ },
+ "second": {
+  "bot": "anysize11054",
+  "bot_id": "f87316f1-67b0-4020-a46b-e843c356de0a",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 470,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s16 f16 s14 f16 s16 f16 s16 f16 s16 f16 s16 f16 s16 f16 s14 f16 s16 f14 s14 f12 s12 f12 s12 f12 s12 f12 s12 f12 s12 f12 s12 f12 s12 f13 s11 f11 s12 f11 s11 f11 s11 f11 s11 f11 s11 f11 s11 f13 s11 f18 s13 f13 s13 f13 s13 f13 s13 f13 s13 f13 s13 f18 s18 f18 s11 f18 s11 f18 s18 f18 s18 f18 s18 f18 s18 f22 s18 f22 s18 f23 s23 f22 s10 f22 s22 f22 s21 f22 s21 f21 s23 f22 s22 f22 s22 f22 s22 f21 s21 f10 s23 f23 s22 f10 s21 f21 s21 f21 s21 f21 s21 f13b s12 f13 s21 f13 s21 f22 s13 f14 s21 f10 s10 f10 s10 f10 s10 f10 s12 f10 s12 f10 s19 f14 s14 f6 s6 f6 s10 f10b s11 f6 s6 f6 s6 f6 s10 f6 s10 f6 s10 f6 s6 f6 s6 f11 s23 f23 s23 f11b s10 f23 s23 f23 s23 f23 s23 f19 s11 f19 s11 f12 s12 f10 s7 f7 s7 f7 s23 f6 s20 f24 s25 f19 s20 f19 s25 f24b s7 f7 s7 f7 s7 f7 s20b f7 s7 f24 s21 f21 s23 f24 s7 f24 s7 f7 s24 f24 s24 f24 s23 f23 s21 f20 s24 f24 s24 f24 s24 f24 s24 f24 s4 f20 s9 f9 s8 f20 s20 f9 s9 f9 s8 f9 s9 f8b s9 f9 s9 f9 s9 f4 s9 f4 s9 f4 s9 f9 s9 f9 s20 f20 s7 f4 s7 f4 s4 f7 s4 f20 s20 f20b s20 f4 s8b f7 s7 f8 s9 f4 s21 f21 s21 f7 s4 f4 s3 f3 s20 f20 s9 f9 s2 f3 s3 f3 s2 f20 s20 f20 s20 f4 s4 f5 s4 f2 s2 f2 s0 f28 s28 f2 s2 f2 s2 f5 s2 f17 s17 f5 s5 f1 s2 f2 s25 f28 s25 f28 s2 f2 s8 f28 s28 f28 s28 f28 s28 f28 s28 f28 s28 f2 s15 f26 s15 f17 s17 f15 s27 f27 s27 f27 s29 f28 s29 f29 s27 f27 s27 f27 s27 f27 s27 f27 s27 f27 s27 f29 s29 f29 s29 f29 s29 f29 s29 f17 s17 f17 s17 f17 s17 f17 s29 f17 s17 f17 s17 f29 s29 f29 s0 f0 s0 f0 s0 f0 s0 f0 s0 f0 s0 f0 s0 f0 f26 s26 f26 s26 f26 s26 f26 s26 f26 s26 f19 s19 f26 s26 f19 s25 f26 s19 f26 f1 s1 f1 s1 f1 s1 f1 s1 f1 s1 f3b s4 f1 s1 f4 s4 f3 s3 f3 s3 f3 s3 f3 s3 f3 s1 f1 s8 f8 s25 f25 s8 f2 s25 f3 s25 f3 s2 f2 f5b s5 f6 s5 f4 s5b f15 s5",
+ "fetched_at": "2026-11-06T10:10:04"
+}

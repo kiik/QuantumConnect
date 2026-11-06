@@ -1,0 +1,19 @@
+{
+ "match_id": "0022b408-efaa-4b56-9b21-8cbfd47dd601",
+ "first": {
+  "bot": "anysize11054",
+  "bot_id": "f87316f1-67b0-4020-a46b-e843c356de0a",
+  "team": "Tiim566779"
+ },
+ "second": {
+  "bot": "Siuuuuuuu2",
+  "bot_id": "d668230e-49a7-411b-8611-aa6cb0105a75",
+  "team": "cristi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 9,
+ "moves": "f14 f15 f14 f15 f14 f15 f14 f15 f15 f15",
+ "fetched_at": "2026-11-06T10:10:16"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "6e030ab0-9971-4133-81d3-ea0aed977716",
+ "first": {
+  "bot": "Tank-06-0734",
+  "bot_id": "c3998e0b-6f65-4f58-a7ce-341af8246b3a",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "GigaSaag",
+  "bot_id": "5ae02f1c-c4c3-44be-8dfa-4dd8430cf695",
+  "team": "Saag1"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 42,
+ "moves": "f3 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s15 f14 s15 f15 s15 f15 s15 f15 s15 f15 s15b f14 s14 f15 s14 f15 s14 f12 s14 f3 s14 f14 s13 f10 s13 f15 s13 f16 s13 f13 s13b f13b",
+ "fetched_at": "2026-11-06T10:09:13"
+}

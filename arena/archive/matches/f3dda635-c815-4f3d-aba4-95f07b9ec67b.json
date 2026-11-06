@@ -1,0 +1,19 @@
+{
+ "match_id": "f3dda635-c815-4f3d-aba4-95f07b9ec67b",
+ "first": {
+  "bot": "Tank-06-0734",
+  "bot_id": "c3998e0b-6f65-4f58-a7ce-341af8246b3a",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "Savi24 - \"The King\"",
+  "bot_id": "0da29a50-0883-45a6-8d60-fa94397cb3b6",
+  "team": "Savi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 475,
+ "moves": "f3 s2 f4 s4 f4 s4 f4 s4 f4 s6 f4 s4 f4 s6 f6 s2 f6 s8 f6 s6 f6 s3 f6 s3 f6 s2 f4 s6 f6 s4 f6 s6 f6 s4 f4 s10 f9 s10 f10 s10 f10 s10 f10 s10 f10 s10 f10 s8 f9 s9 f9 s3 f9 s9 f9 s9 f9 s9 f9 s12 f9 s10 f9 s14 f15 s1 f3 s1 f7 s6 f2 s3 f15 s10 f15 s15 f15 s0 f15 s0 f14 s14 f14 s14 f14 s14 f14 s14 f14 s15 f15 s15 f15 s14 f15 s15 f14 s2 f9 s13 f13 s11 f15 s8 f8 s12 f8 s11 f15 s1 f11 s7 f13 s2 f7b s13 f12 s8 f6 s13 f13 s13 f13 s13 f13 s14 f12 s6 f13 s14 f11 s10 f6 s9 f8b s8 f12 s9 f11 s12 f1 s9 f15 s12 f12 s14 f12 s12 f12 s11 f11 s11 f9 s11 f12 s12 f0b s12 f13 s4 f1 s10 f17 s17 f17 s19 f18 s20 f18 s18 f11 s11 f18 s13 f18 s8 f5 s18 f18 s18 f13b s14 f18 s18 f18 s11 f18 s8 f18 s14 f17 s17 f17 s13 f17 s17 f11 s16 f16 s11 f19b s13 f17 s17 f18 s19 f18 s18 f17 s19 f16 s19 f19 s19 f19 s19 f19 s19 f19 s19 f19 s17 f17 s16 f17 s18 f17 s19 f16b s17 f16 s16b f20 s11 f15 s14 f22 s13 f22 s15 f15 s15 f18 s19 f20 s22 f17 s15 f15 s17 f17 s17 f17 s19 f20 s20 f5 s21 f20 s20 f22 s22 f21 s22 f21 s0 f23 s23 f21 s21 f20 s20 f21 s21 f20 s21 f21 s21 f20 s20 f22 s22 f22 s21 f21 s21 f22 s21 f22 s22 f7 s23 f25 s27 f25 s25 f24 s25 f7 s7 f7 s7 f24 s25 f25 s25 f25 s25 f5 s25 f25 s5 f5 s5 f7 s7 f7 s7 f7 s7 f5 s2 f5 s5 f5 s5 f5 s5 f1 s5 f25 s25 f25 s2 f2 s2 f25 s21 f27 s27 f22 s24 f24 s22 f24 s24 f26 s27 f22 s0 f1 s29 f1 s26 f26 s26 f1 s1 f1 s1 f27 s27 f26 s27 f26 s26 f26 s24 f24 s24 f24 s0 f24 s27 f27 s23 f23 s24 f0 s24 f0 s24 f0 s0 f26 s24 f0 s3 f3 s26 f3 s3 f3b s3b f3 s3 f1 s3 f1 s26 f4 s5 f27 s3 f27 s27 f27 s26 f26 s4 f4 s0 f27 s3 f3 s23 f23 s28 f28 s23 f28 s4 f1 s7 f1 s7 f0 s0 f7 s1 f4 s28 f3 s28 f1 s28 f28 s28 f28 s28 f4 s28 f8 s8 f8b s8b f8 s7 f9 s7 f27 s7 f7 s7 f9 s8 f29 s9 f9 s29 f8 s8 f26 s8 f23 s23 f2 s2 f23 s8 f8 s12 f12b s16 f13 s16",
+ "fetched_at": "2026-11-06T10:09:29"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "6df1557b-060c-4b3c-aa01-20a854e577da",
+ "first": {
+  "bot": "coffeeAtMidNight",
+  "bot_id": "c3e75457-aef7-49f5-a04b-af8eeea60b33",
+  "team": "coffee_break"
+ },
+ "second": {
+  "bot": "1104-1-1105-4",
+  "bot_id": "b04bb4fc-3b81-4f60-aa54-c20b67907011",
+  "team": "kristoma"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 397,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s16 f16 s14 f16 s16 f16 s16 f16 s16 f16 s16 f16 s16 f16 s14 f16 s14 f14 s16 f12 s12 f12 s12 f12 s12 f12 s12 f12 s12 f12 s12 f12 s12 f13 s13 f13 s13 f13b s15 f13 s15 f15 s17b f13 s13 f15 s13 f13 s12 f13 s14 f9 s13 f10 s11 f11 s11 f11 s13 f12 s15 f10 s15 f15 s13 f11 s13 f9 s9 f9 s9 f9 s9 f9 s11 f9 s11 f11 s11 f9 s14 f9 s9 f7 s13 f13 s12 f8 s5 f8 s11 f11 s8 f7 s15 f15 s15 f7 s11 f7 s7 f8 s7 f8 s7 f7 s7 f5 s4 f8 s8 f6 s6 f8 s6 f6 s8 f15 s15 f11 s11 f9 s9 f8 s16 f8 s8 f8 s8 f7 s7 f7 s7 f7 s6 f16 s5 f14 s5 f5 s12 f5 s5 f5 s5 f5 s5 f5 s9 f8 s5 f5 s2 f4 s4 f4 s6 f6 s6 f6 s6 f6 s7 f5 s1 f0 s0 f21 s11 f22 s20 f22 s1 f22 s1 f21 s21 f22 s22 f22 s21 f22 s20 f21 s21 f22 s20 f21 s20 f21 s1 f22 s22 f21 s21 f20 s20 f22 s20 f20 s20 f20 s21 f21 s21 f22 s22 f22 s18 f20 s20 f20 s18 f20 s18 f18 s21 f20 s18 f18 s18 f18 s0 f18 s18 f18 s18 f18 s18 f18 s21 f22 s23 f23 s19 f19 s19 f1 s1 f24 s1 f24 s24 f24 s19 f24 s24 f24 s24 f24 s24 f24 s19 f24 s19 f24 s1 f24 s0 f24 s2 f2 s2 f2 s2 f2 s0 f2 s2 f2 s2 f2 s2 f1 s2 f0 s2 f0 s19 f19 s19 f0 s19 f19 s0 f0 f1 s1 f1 s0 f19 s1 f19 s19 f27 s19 f27 s27 f0 s28 f28 s27 f28 s27 f27 s27 f27 s27 f27 s27 f27 s27 f27 s28 f6 s6 f6 s27 f28 s28 f28 s0 f28 s28 f28 s29 f28 s6 f28 s29 f28 s28 f28 s1 f29 s1 f29 s29 f29 s29 f29 s0 f0 s29 f29 f29 s29 f29 s29 f29 f25 s25 f25 s26 f26 s25 f25 s3 f3 s15 f15 s15 f3 s3 f3 s3 f3 s3 f26 s3 f3 s26 f25 s25 f3 s3 f3 f3 s3 f26 s26 f26 s26b f26 f25 s25 f25b",
+ "fetched_at": "2026-11-06T10:10:01"
+}

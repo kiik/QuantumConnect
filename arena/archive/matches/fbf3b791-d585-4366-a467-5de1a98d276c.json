@@ -1,0 +1,19 @@
+{
+ "match_id": "fbf3b791-d585-4366-a467-5de1a98d276c",
+ "first": {
+  "bot": "Tank-06-0734",
+  "bot_id": "c3998e0b-6f65-4f58-a7ce-341af8246b3a",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "Testing_v2",
+  "bot_id": "e6094de5-7199-41f3-a66c-1580d7b3effc",
+  "team": "LinMacWin"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 9,
+ "moves": "f3 f5 f5 f5 f5 f6 f4 f7 s8 f2",
+ "fetched_at": "2026-11-06T10:09:18"
+}

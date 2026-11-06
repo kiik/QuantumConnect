@@ -1,0 +1,19 @@
+{
+ "match_id": "793f8bd2-b79c-4c65-b3fc-e0d920dd4938",
+ "first": {
+  "bot": "1104-1-1105-4",
+  "bot_id": "b04bb4fc-3b81-4f60-aa54-c20b67907011",
+  "team": "kristoma"
+ },
+ "second": {
+  "bot": "FunkyMelodyBot",
+  "bot_id": "2cbaae00-d6a8-4a21-8e82-b464eee70d1b",
+  "team": "FunkyMelody"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 85,
+ "moves": "s15 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f15 s15 f13 s15 f15 s6 f13 s14 f14 s6 f14 s12 f13 s13 f12 s13 f13 s13 f13 s13 f13 s13 f13 s13 f14 s13 f13 s12b f13 s14 f14 s6 f14 s6 f14 s14 f6 s7 f13 s13 f14 s7 f16 s7 f7 s6 f7 s7b f12b s16 f6 s12 f11 s6 f14 s6 f8 s6 f8 s6 f7 s6 f6 s6 f8 s8 f7 s9b f5 s7 f5 s6 f5 s5 f5b",
+ "fetched_at": "2026-11-06T10:09:50"
+}
