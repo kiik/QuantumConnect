@@ -245,6 +245,8 @@ public class SerenaBot implements Algorithm {
     int[] firstLineOfColumn;
     /** Columns ordered from the centre outwards. */
     int[] columnsCentreOut;
+    /** The column and the height of each cell: cell / rows and cell % rows, without dividing. */
+    int[] columnOfCell, heightOfCell;
 
     // ------------------------------------------------------------------ position
 
@@ -445,6 +447,12 @@ public class SerenaBot implements Algorithm {
             for (int k = 0; k < placeInLine[cell].length; k++) placeInLine[cell][k] = placeOf(cell, cellsOfLine[linesThroughCell[cell][k]]);
         }
         columnsCentreOut = centreOut(columns);
+        columnOfCell = new int[cellCount];
+        heightOfCell = new int[cellCount];
+        for (int cell = 0; cell < cellCount; cell++) {
+            columnOfCell[cell] = cell / rows;
+            heightOfCell[cell] = cell % rows;
+        }
         nearQuarks = new boolean[columns];
         threatGaps = new int[columns];
 
@@ -762,25 +770,26 @@ public class SerenaBot implements Algorithm {
         for (int k = 0; k < lines.length; k++) {
             int line = lines[k], at = 2 * line + player;
             int own = lineQuarks[at], other = lineQuarks[at ^ 1]; // before the quark
-            int valueBefore = lineValue(line);
+            int valueBefore = patternsOn ? 0 : lineValue(line);
             lineQuarks[at] = own + 1;
-            linePattern[line] += (player + 1) * places[k];
-            staticScore += lineValue(line) - valueBefore;
+            int patternBefore = linePattern[line], pattern = patternBefore + (player + 1) * places[k];
+            linePattern[line] = pattern;
+            staticScore += patternsOn ? patternValue[pattern] - patternValue[patternBefore] : lineValue(line) - valueBefore;
             if (other == 0) { // open to the player: one step up
                 if (own == LINE_LENGTH - 1) { // the threat, this cell its gap, is complete
                     changeThreat(player, cell, -1);
                     completedLines[player]++;
                 } else if (own == LINE_LENGTH - 2) { // the four becomes a threat at its other empty cell
-                    changeFours(line, player, cell, -1);
-                    changeThreat(player, emptyCellOf(line), +1);
-                } else if (own == LINE_LENGTH - 3) changeFours(line, player, NO_CELL, +1);
+                    changeFours(line, player, cell, patternBefore, -1);
+                    changeThreat(player, emptyCellOf(line, pattern), +1);
+                } else if (own == LINE_LENGTH - 3) changeFours(line, player, NO_CELL, pattern, +1);
             } else if (own == 0) { // open to the opponent: now blocked
                 if (other == LINE_LENGTH - 1) { // its threat is plugged, by this quark
                     changeThreat(opponent, cell, -1);
                     changePlug(opponent, cell, +1);
-                } else if (other == LINE_LENGTH - 2) changeFours(line, opponent, cell, -1);
+                } else if (other == LINE_LENGTH - 2) changeFours(line, opponent, cell, patternBefore, -1);
             } else if (own == LINE_LENGTH - 2 && other == 1) { // full now: the player's five, plugged by the opponent's one quark
-                changePlug(player, cellOfOwner(line, opponent), +1);
+                changePlug(player, loneCellOf(line, player, pattern, NO_CELL), +1);
             }
         }
     }
@@ -795,25 +804,26 @@ public class SerenaBot implements Algorithm {
         for (int k = 0; k < lines.length; k++) {
             int line = lines[k], at = 2 * line + player;
             int own = lineQuarks[at], other = lineQuarks[at ^ 1]; // before, this quark included
-            int valueBefore = lineValue(line);
+            int valueBefore = patternsOn ? 0 : lineValue(line);
             lineQuarks[at] = own - 1;
-            linePattern[line] -= (player + 1) * places[k];
-            staticScore += lineValue(line) - valueBefore;
+            int patternBefore = linePattern[line], pattern = patternBefore - (player + 1) * places[k];
+            linePattern[line] = pattern;
+            staticScore += patternsOn ? patternValue[pattern] - patternValue[patternBefore] : lineValue(line) - valueBefore;
             if (other == 0) { // open to the player: one step down
                 if (own == LINE_LENGTH) { // complete no longer: a threat, this cell its gap
                     completedLines[player]--;
                     changeThreat(player, cell, +1);
                 } else if (own == LINE_LENGTH - 1) { // the threat becomes a four (the cell is still marked as the player's)
-                    changeThreat(player, emptyCellOf(line), -1);
-                    changeFours(line, player, cell, +1);
-                } else if (own == LINE_LENGTH - 2) changeFours(line, player, NO_CELL, -1);
+                    changeThreat(player, emptyCellOf(line, patternBefore), -1);
+                    changeFours(line, player, cell, pattern, +1);
+                } else if (own == LINE_LENGTH - 2) changeFours(line, player, NO_CELL, patternBefore, -1);
             } else if (own == 1) { // blocked by this quark only: open to the opponent again
                 if (other == LINE_LENGTH - 1) { // its plugged five is a threat again
                     changePlug(opponent, cell, -1);
                     changeThreat(opponent, cell, +1);
-                } else if (other == LINE_LENGTH - 2) changeFours(line, opponent, cell, +1);
+                } else if (other == LINE_LENGTH - 2) changeFours(line, opponent, cell, pattern, +1);
             } else if (own == LINE_LENGTH - 1 && other == 1) { // full no longer: the player's plugged five
-                changePlug(player, cellOfOwner(line, opponent), -1);
+                changePlug(player, loneCellOf(line, player, patternBefore, NO_CELL), -1);
             }
         }
         owner[cell] = EMPTY;
@@ -837,26 +847,27 @@ public class SerenaBot implements Algorithm {
         for (int k = 0; k < lines.length; k++) { // the cell keeps its old owner until the end
             int line = lines[k], at = 2 * line + player;
             int own = lineQuarks[at], others = lineQuarks[at ^ 1]; // before, the old owner's and the new owner's
+            int patternBefore = linePattern[line], pattern = patternBefore + (other - player) * places[k];
             if (others == 0) { // what the line was for the old owner
                 if (own == LINE_LENGTH) completedLines[player]--;
-                else if (own == LINE_LENGTH - 1) changeThreat(player, emptyCellOf(line), -1);
-                else if (own == LINE_LENGTH - 2) changeFours(line, player, NO_CELL, -1);
+                else if (own == LINE_LENGTH - 1) changeThreat(player, emptyCellOf(line, patternBefore), -1);
+                else if (own == LINE_LENGTH - 2) changeFours(line, player, NO_CELL, patternBefore, -1);
             } else if (own + others == LINE_LENGTH) { // a full line: a plugged five?
                 if (others == LINE_LENGTH - 1) changePlug(other, cell, -1); // the new owner's, plugged by this cell
-                else if (own == LINE_LENGTH - 1) changePlug(player, cellOfOwner(line, other), -1); // the old owner's, plugged elsewhere
+                else if (own == LINE_LENGTH - 1) changePlug(player, loneCellOf(line, player, patternBefore, NO_CELL), -1); // the old owner's, plugged elsewhere
             }
-            int valueBefore = lineValue(line);
+            int valueBefore = patternsOn ? 0 : lineValue(line);
             lineQuarks[at] = --own;
             lineQuarks[at ^ 1] = ++others;
-            linePattern[line] += (other - player) * places[k];
-            staticScore += lineValue(line) - valueBefore;
+            linePattern[line] = pattern;
+            staticScore += patternsOn ? patternValue[pattern] - patternValue[patternBefore] : lineValue(line) - valueBefore;
             if (own == 0) { // what the line is now for the new owner
                 if (others == LINE_LENGTH) completedLines[other]++;
-                else if (others == LINE_LENGTH - 1) changeThreat(other, emptyCellOf(line), +1);
-                else if (others == LINE_LENGTH - 2) changeFours(line, other, NO_CELL, +1);
+                else if (others == LINE_LENGTH - 1) changeThreat(other, emptyCellOf(line, pattern), +1);
+                else if (others == LINE_LENGTH - 2) changeFours(line, other, NO_CELL, pattern, +1);
             } else if (own + others == LINE_LENGTH) {
                 if (own == LINE_LENGTH - 1) changePlug(player, cell, +1); // the old owner's five, plugged by this cell
-                else if (others == LINE_LENGTH - 1) changePlug(other, otherCellOfOwner(line, player, cell), +1); // the new owner's, plugged elsewhere
+                else if (others == LINE_LENGTH - 1) changePlug(other, loneCellOf(line, other, pattern, cell), +1); // the new owner's, plugged elsewhere
             }
         }
         owner[cell] = other;
@@ -886,34 +897,95 @@ public class SerenaBot implements Algorithm {
 
     /**
      * Adds delta to the four lines of a player and to the four count of the line's empty cells. The
-     * cell given counts as empty though its quark is on the board.
+     * cell given counts as empty though its quark is on the board; {@code pattern} is the line's
+     * pattern with exactly those cells empty, whose empty places {@link #EMPTY_PLACES} gives at once.
      */
-    private void changeFours(int line, int player, int alsoEmpty, int delta) {
+    private void changeFours(int line, int player, int alsoEmpty, int pattern, int delta) {
         fourLines[player] += delta;
-        for (int cell : cellsOfLine[line])
-            if (owner[cell] == EMPTY || cell == alsoEmpty) fourCount[player * cellCount + cell] += delta;
+        int[] cells = cellsOfLine[line];
+        int at = player * cellCount;
+        if (EMPTY_PLACES != null) {
+            for (int empty = EMPTY_PLACES[pattern - lineDirection[line] * PATTERNS]; empty != 0; empty &= empty - 1)
+                fourCount[at + cells[Integer.numberOfTrailingZeros(empty)]] += delta;
+            return;
+        }
+        for (int cell : cells) if (owner[cell] == EMPTY || cell == alsoEmpty) fourCount[at + cell] += delta;
     }
 
     /** Adds delta to the plug count of a cell that plugs a five of the player, and to its column's ({@link #pluggedInColumn}). */
     private void changePlug(int player, int cell, int delta) {
         pluggedFives[player * cellCount + cell] += delta;
-        pluggedInColumn[cell / rows] += delta;
+        pluggedInColumn[columnOfCell[cell]] += delta;
     }
 
-    /** The cell of a line that holds a quark of this player (the first, if several). */
-    private int cellOfOwner(int line, int player) {
-        for (int cell : cellsOfLine[line]) if (owner[cell] == player) return cell;
+    /*
+     * The cells an update needs are read off the line's pattern, not found by walking the line's cells
+     * and their owners. Over its base (direction class times PATTERNS), a pattern is the line's cells
+     * as base-3 digits, 0 for an empty cell. The empty cells of the four and threat lines come from a
+     * table over every pattern (EMPTY_PLACES). The plug of a plugged five comes from arithmetic: every
+     * cell of a full line holds a quark, so the pattern is (majority + 1) * (1 + 3 + ... + 3^(L-1)) +
+     * (minority - majority) * 3^place, and the minority quark's place value falls out with a
+     * subtraction and a sign. 3 has order 16 modulo 17, so the place values of up to 16 cells leave
+     * distinct remainders, and a table of 17 gives the place's index. Past the tables' lengths the
+     * cells are walked as before.
+     */
+
+    /** Lines up to this long have an {@link #EMPTY_PLACES} table (3^9 patterns). */
+    private static final int EMPTY_PLACES_MAX_LENGTH = 9;
+    /** The empty places of every pattern (base excluded), a bit per place; null past EMPTY_PLACES_MAX_LENGTH. */
+    private static final int[] EMPTY_PLACES = emptyPlacesTable();
+
+    private static int[] emptyPlacesTable() {
+        if (LINE_LENGTH > EMPTY_PLACES_MAX_LENGTH) return null;
+        int patterns = 1;
+        for (int i = 0; i < LINE_LENGTH; i++) patterns *= 3;
+        int[] empty = new int[patterns];
+        for (int pattern = 0; pattern < patterns; pattern++) {
+            int digits = pattern;
+            for (int place = 0; place < LINE_LENGTH; place++, digits /= 3) if (digits % 3 == 0) empty[pattern] |= 1 << place;
+        }
+        return empty;
+    }
+
+    /** The sum of the place values of a line, 1 + 3 + ... + 3^(LINE_LENGTH - 1). */
+    private static final int ALL_PLACES = allPlaces();
+    /** The modulus that tells the place values of a line apart, while LINE_LENGTH is at most 16. */
+    private static final int PLACE_MODULUS = 17;
+    /** The index in its line of each place value, at {@code place % PLACE_MODULUS}; null past 16 in a row. */
+    private static final int[] PLACE_INDEX = placeIndexTable();
+
+    private static int allPlaces() {
+        int sum = 0, place = 1;
+        for (int i = 0; i < LINE_LENGTH; i++, place *= 3) sum += place;
+        return sum;
+    }
+
+    private static int[] placeIndexTable() {
+        if (LINE_LENGTH > PLACE_MODULUS - 1) return null;
+        int[] index = new int[PLACE_MODULUS];
+        int place = 1;
+        for (int i = 0; i < LINE_LENGTH; i++, place *= 3) index[place % PLACE_MODULUS] = i;
+        return index;
+    }
+
+    /**
+     * The one cell of a full line that holds the minority player's quark, all its other cells holding
+     * the majority's. {@code pattern} is the line's pattern as the full line (a caller that has taken
+     * a quark out of the pattern already adds it back); {@code except} is a cell whose owner is not
+     * updated yet and is not the one sought.
+     */
+    private int loneCellOf(int line, int majority, int pattern, int except) {
+        if (PLACE_INDEX != null) {
+            int place = (pattern - lineDirection[line] * PATTERNS - (majority + 1) * ALL_PLACES) * (1 - 2 * majority);
+            return cellsOfLine[line][PLACE_INDEX[place % PLACE_MODULUS]];
+        }
+        for (int cell : cellsOfLine[line]) if (owner[cell] == 1 - majority && cell != except) return cell;
         return -1;
     }
 
-    /** The cell of a line, other than the one given, that holds a quark of this player (the first, if several). */
-    private int otherCellOfOwner(int line, int player, int except) {
-        for (int cell : cellsOfLine[line]) if (owner[cell] == player && cell != except) return cell;
-        return -1;
-    }
-
-    /** The first empty cell of a line. */
-    private int emptyCellOf(int line) {
+    /** The first empty cell of a line whose pattern is given (the owners agree with it but for a cell not empty in either). */
+    private int emptyCellOf(int line, int pattern) {
+        if (EMPTY_PLACES != null) return cellsOfLine[line][Integer.numberOfTrailingZeros(EMPTY_PLACES[pattern - lineDirection[line] * PATTERNS])];
         for (int cell : cellsOfLine[line]) if (owner[cell] == EMPTY) return cell;
         return -1;
     }
@@ -1327,7 +1399,8 @@ public class SerenaBot implements Algorithm {
     public boolean withPatterns = usePatterns;
     /**
      * Patterns of a line of the trained length, 3^6. The table is used only at that length; at others
-     * {@link #linePattern} is still kept (3^LINE_LENGTH, wrapping harmlessly past 20) but never read.
+     * {@link #linePattern} is still kept (3^LINE_LENGTH, wrapping harmlessly past 20), read only for
+     * the plug of a plugged five ({@link #loneCellOf}).
      */
     public static final int PATTERNS = 729;
     public boolean patternsOn;
@@ -1638,7 +1711,7 @@ public class SerenaBot implements Algorithm {
             if (lineQuarks[2 * line + player] != LINE_LENGTH - 2 || lineQuarks[2 * line + opponent] != 0) continue;
             for (int gap : cellsOfLine[line]) {
                 if (gap == cell || owner[gap] != EMPTY) continue;
-                int gapColumn = gap / rows, gapHeight = gap % rows;
+                int gapColumn = columnOfCell[gap], gapHeight = heightOfCell[gap];
                 if (gapHeight == (gapColumn == column ? height + 1 : columnHeight[gapColumn])) return true;
             }
         }
@@ -1871,7 +1944,7 @@ public class SerenaBot implements Algorithm {
         for (int side = column - 1; side <= column + 1; side += 2) {
             if (side < 0 || side >= columns || columnHeight[side] < landing + 3) continue; // nothing falls here
             int bottom = side * rows, fallenTop = columnHeight[side] - fall;
-            if (verticalRunAcross(bottom, from, fall, fallenTop) >= LINE_LENGTH) return true;
+            if (fallenTop >= LINE_LENGTH && verticalRunAcross(bottom, from, fall, fallenTop) >= LINE_LENGTH) return true; // a shorter column holds no run
             if (pluggedInColumn[side] == 0) continue; // no cell of this column plugs a five
             for (int height = from; height < fallenTop; height++) {
                 int cell = bottom + height, player = owner[cell + fall];
@@ -1882,7 +1955,10 @@ public class SerenaBot implements Algorithm {
                     if (lineDirection[line] != VERTICAL) {
                         boolean staysOutside = true; // the line's other cells lie outside the blast
                         for (int other : cellsOfLine[line])
-                            if (other != cell && Math.abs(other / rows - column) <= 1 && other % rows >= from) staysOutside = false;
+                            if (other != cell && Math.abs(columnOfCell[other] - column) <= 1 && heightOfCell[other] >= from) {
+                                staysOutside = false;
+                                break;
+                            }
                         if (staysOutside) return true;
                     }
                     if (--plugs == 0) break; // the cell plugs no other line
@@ -1987,7 +2063,7 @@ public class SerenaBot implements Algorithm {
 
     /** Whether a bomb in this column clears or moves this cell: the blast and the fall reach heights h-1 and up of three columns. */
     boolean blastReaches(int bombColumn, int cell) {
-        int column = cell / rows, height = cell % rows;
+        int column = columnOfCell[cell], height = heightOfCell[cell];
         return Math.abs(column - bombColumn) <= 1 && height >= columnHeight[bombColumn] - 1;
     }
 
