@@ -578,7 +578,7 @@ public class SerenaBot implements Algorithm {
         bombCooldown[ME] = myCooldown;
         bombCooldown[OPPONENT] = opponentCooldown;
 
-        int booked = bookAction(positionKey());
+        int booked = quarkCount >= bookMinQuarks ? bookAction(positionKey()) : NO_ACTION;
         boolean bookPlayable = booked != NO_ACTION && isLegal(booked);
         long budget = Math.min(matchBudgetNanos, timeUsedNanos > MATCH_TIME_GUARD_NANOS ? budgetNanos / 8 : budgetNanos);
         if (myTurns <= COLD_TURNS) budget /= 4;
@@ -1168,6 +1168,13 @@ public class SerenaBot implements Algorithm {
             "15x30 632914059cf2c141 21;15x30 5a6daa622c5cccd8 9;15x30 1d802fed58f0c65d 9;15x30 e8f199dffdc4e2d0 20;15x30 278227d967e96a45 13;15x30 85fd753fc7464271 9;15x30 025c0177c250f439 9;15x30 db12b9865f9c8a0a 10;15x30 27b072aef757b432 10;15x30 f6cd1566eb3973fd 17;15x30 6db9af550f3aaa1d 17;15x30 4e236ec32608745a 6;15x30 e54b4cc7fc86b865 9;15x30 5c5b6a179082bb46 16;15x30 9bd89f5717bcdead 5;15x30 08196a96e2501a35 20;15x30 209a15ce5829e13c 9;15x30 1c9664c400442c1f 29;15x30 7ae9a0b4d7c8c727 3;15x30 4370d814e4957e4b 20;15x30 9f45dd04b97e99ee 26;15x30 9366ab55d199a3ff 20;15x30 6627d63c1e61a3c8 22;15x30 a8ddae56f292801b 20;15x30 a9efff99a2286740 22;15x30 81fb08aa900ac6d7 20;15x30 54fd15498fc4534e 7;15x30 3fbe7cd53f12337a 7;15x30 fd0bf985ead2a1ca 9;15x30 7afe1d3d6874b725 10;15x30 01d2be18f1b5d5b7 10;15x30 bdd8e1c126ba2ad1 3;15x30 072f413b03285b67 7;15x30 ea329c19ca8e7cf7 6;15x30 0d522d8fdc97b056 23;15x30 7ff8baa589f55a6b 4;15x30 3080b03c553cdbcd 4;15x30 f0614d0db4f5243d 4;15x30 d8f3c71152ea8145 10;15x30 fc8624c0efd6ebb7 9;15x30 e655991e54120a51 9;15x30 dbcfd1858f4109ed 9;15x30 2c71637f0a89c2c0 12;15x30 a9b70bcfd57b5415 6;",
     };
     // LOSS BOOK END
+
+    /**
+     * The book is consulted only while the board holds at least this many quarks. 0: always. Above 0,
+     * the opening is left to the search: an early entry is one game's lesson, and the empty board's
+     * entry changed with each re-learning.
+     */
+    public int bookMinQuarks = 0;
 
     /** This board size's entries, sorted by key for binary search; parsed on first use. */
     long[] bookKeys = new long[0];

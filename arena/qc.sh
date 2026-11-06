@@ -29,6 +29,9 @@
 #   ./qc.sh speed fixed [depth] [RxC] [every] [limit] [out] [reference]   SerenaBot at a fixed depth on archived
 #                                            positions: nodes/s, and actions, scores, nodes against a reference
 #   ./qc.sh speed timed [ms] [RxC] [every] [limit]   the same positions in a time budget: mean depth, slowest search
+#   ./qc.sh agree [spec...] [--threads 3] [--deep 2000] [--window 12] [--size 15x30] [--opponent name]...
+#                                            our last moves in 15x30 losses to the top bots: how often each spec's
+#                                            40 ms move is a deep SerenaBot search's (cached in out/agree/), and walks into a forced loss
 #   ./qc.sh conformance [games] [size]       replay engine games on our Board: same boards, same winners
 #   ./qc.sh watch [A] [B]                    one game in the engine's window, as qc-starter runs it
 # The bots live in the starter project (qc-starter/src/main/java/ch/qc/meelik), whose build.gradle packages
@@ -200,6 +203,7 @@ case "$cmd" in
     dataset) run Network dataset "$@" ;;
     network) run Network bench "$@" ;;
     speed) run Speed "$@" ;;
+    agree) run Agreement "$@" ;;
     train)
         grep -v '^[[:space:]]*\(#\|$\)' "${1:-training.txt}" | while read -r name gens depth pairs openings seed start bot field; do
             if [ -f "params/$name.txt" ]; then echo "params/$name.txt exists; skipping"; continue; fi
@@ -213,5 +217,5 @@ case "$cmd" in
         DOT=$(command -v dot || ls /mnt/c/Program\ Files/Graphviz/bin/dot.exe 2>/dev/null || true)
         if [ -n "$DOT" ]; then "$DOT" -Tsvg out/tree.dot -o out/tree.svg && echo "rendered out/tree.svg"; fi
         ;;
-    *) sed -n '2,37p' "$0"; exit 1 ;;
+    *) sed -n '2,40p' "$0"; exit 1 ;;
 esac
