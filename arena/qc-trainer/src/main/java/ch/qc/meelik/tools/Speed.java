@@ -23,8 +23,11 @@ import java.util.List;
  *       file. Given a reference file written before a change, it reports every position whose
  *       action, score or node count differs: a change that only makes the search faster changes none.
  *   <li>{@code timed}: a search of each position within a time budget, as in a game. It prints the
- *       mean depth reached, the nodes per second and the slowest search.
+ *       mean depth reached, the nodes per second and the slowest search, and writes one line per
+ *       position to out/speed-timed.txt: match, move, action, score, depth, nodes, microseconds.
  * </ul>
+ * The environment variable {@code SERENA} may give settings for every searched bot, as a field line
+ * does ({@code SERENA=bombNear=1 ./qc.sh speed timed}), to measure a toggle against its default.
  * The first positions are searched once beforehand, untimed, so that the JVM has compiled the search.
  *
  * <p>Usage: {@code Speed fixed [depth] [RxC] [every n] [limit] [out file] [reference file]} and
@@ -57,11 +60,13 @@ public final class Speed {
         /** The board at this position, with the SerenaBot settings of SPEED_SETTINGS (as in a field file's {@code #...}) if set. */
         SerenaBot board() {
             SerenaBot board = Network.replay(game, end);
-            String settings = System.getenv("SPEED_SETTINGS");
-            if (board != null && settings != null && !settings.isEmpty()) Arena.applySettings(board, settings);
+            if (board != null && SETTINGS != null && !SETTINGS.isBlank()) Arena.applySettings(board, SETTINGS);
             return board;
         }
     }
+
+    /** SerenaBot settings for every searched board, as in a field line ({@link Arena#applySettings}): environment variable SERENA (or SPEED_SETTINGS). */
+    static final String SETTINGS = System.getenv("SERENA") != null ? System.getenv("SERENA") : System.getenv("SPEED_SETTINGS");
 
     static List<Position> positions(int[] size, int every, int limit) throws Exception {
         List<Position> positions = new ArrayList<>();
@@ -111,19 +116,23 @@ public final class Speed {
 
     // ------------------------------------------------------------------ timed
 
-    static void timed(List<Position> positions, long budget) {
+    static void timed(List<Position> positions, long budget) throws Exception {
         for (int i = 0; i < Math.min(WARM_UP_POSITIONS, positions.size()); i++) search(positions.get(i), SerenaBot.MAX_PLY - 2, budget);
         long nodes = 0, nanos = 0, slowest = 0, depths = 0;
+        List<String> lines = new ArrayList<>();
         for (Position position : positions) {
             SerenaBot board = position.board();
             long started = System.nanoTime();
-            board.chooseAction(budget);
+            int action = board.chooseAction(budget);
             long took = System.nanoTime() - started;
             nodes += board.nodesSearched;
             nanos += took;
             slowest = Math.max(slowest, took);
             depths += board.depthReached;
+            lines.add(String.format("%s %d %d %d %d %d %d", position.game().matchId(), position.end(), action, board.lastScore,
+                    board.depthReached, board.nodesSearched, took / 1000));
         }
+        Files.write(Path.of("out/speed-timed.txt"), lines, StandardCharsets.UTF_8); // match, move, action, score, depth, nodes, microseconds
         System.out.printf("timed %d ms: mean depth %.3f, %.0fk nodes/s, %.0f nodes per move, slowest %.1f ms%n",
                 budget / 1_000_000, (double) depths / positions.size(), nodes / (nanos / 1e6), (double) nodes / positions.size(), slowest / 1e6);
     }

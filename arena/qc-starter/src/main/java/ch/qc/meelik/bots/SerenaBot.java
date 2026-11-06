@@ -374,6 +374,28 @@ public class SerenaBot implements Algorithm {
      * quarter of a ply on 15x30).
      */
     public int bombHorizon = 2;
+    /**
+     * Which bombs the search tries below the root ({@link #markThreatHeights}). 0: every blast that hits
+     * a quark (as before). 1: only blasts whose clearing or fall reaches a threat's gap, a quark of a
+     * five (a line one quark short, open) or a plug of either player. 2: also a four's empty cell.
+     * The table's move is always tried. The root tries every bomb. Level 1 reaches about a third of a
+     * ply deeper on archived 15x30 positions at 40 ms, half a ply in the sharpest.
+     */
+    public int bombNearThreats = 0;
+    /**
+     * With {@link #bombNearThreats}: 0 leaves the other bombs out; above 0 searches them this many
+     * plies shallower than the late move reductions would (in full again only if they then look better).
+     */
+    public int farBombReduction = 0;
+    /**
+     * Threat extensions: a drop that makes a threat to complete at once is searched one ply deeper,
+     * at most this many times on one path from the root. 0 extends nothing (as before).
+     */
+    public int threatExtensions = 0;
+    /** Threat extensions on the path to the current node. */
+    int extensionsOnPath;
+    /** Per ply, per column: the highest cell near a threat ({@link #markThreatHeights}), or -1. */
+    final int[][] threatHeights = new int[MAX_PLY][];
     long deadlineNanos;
     public long nodesSearched;
     boolean outOfTime;
@@ -457,6 +479,7 @@ public class SerenaBot implements Algorithm {
         }
         nearQuarks = new boolean[columns];
         threatGaps = new int[columns];
+        for (int ply = 0; ply < MAX_PLY; ply++) threatHeights[ply] = new int[columns];
 
         // A fixed seed: the loss book stores position hashes, so they must not change between runs.
         Random random = new Random(20261102L);
@@ -488,6 +511,7 @@ public class SerenaBot implements Algorithm {
         reductionTableDivisor = -1;
         actionPriority = new long[2 * columns];
         Arrays.fill(tableKey, 0);
+        Arrays.fill(threatMemoKey, 0);
 
         for (int ply = 0; ply < MAX_PLY; ply++) {
             proofActionLists[ply] = new int[2 * columns];
@@ -1257,6 +1281,7 @@ public class SerenaBot implements Algorithm {
         outOfTime = false;
         nodesSearched = 0;
         depthReached = 0;
+        extensionsOnPath = 0;
         threatNanosUsed = offenceNanosUsed = 0;
         refutedMoves = checkedMoves = abortedProofs = 0;
         for (int[] scores : historyScore) for (int a = 0; a < scores.length; a++) scores[a] >>= 2; // age old knowledge
@@ -1695,9 +1720,10 @@ public class SerenaBot implements Algorithm {
         if (quarkCount == cellCount) return 0;
 
         // Forced moves, from the threats: drops that complete a line, and bombs whose collapse forms one.
+        long key = positionKey();
         int forced = NOT_FORCED;
         if (ply > 0) {
-            int decided = threatAnalysis(ply);
+            int decided = threatsOf(key, ply);
             if (decided != UNDECIDED) return decided;
             forced = forcedAnswers;
             if (forced >= 0 && bombCooldown[mover] > 0 && depth == 0) depth = 1; // search the forced blocks, don't evaluate
@@ -1707,7 +1733,6 @@ public class SerenaBot implements Algorithm {
 
         // With root moves refuted, the root's table entry describes the whole move list: neither use nor store it.
         boolean excluding = ply == 0 && rootExclusions > 0;
-        long key = positionKey();
         int slot = tableSlot(key), tableAction = NO_ACTION;
         if (tableKey[slot] == key) {
             long entry = tableEntry[slot];
@@ -1722,24 +1747,49 @@ public class SerenaBot implements Algorithm {
         int[] actions = actionLists[ply];
         int actionCount = orderedLegalActions(actions, tableAction, forced, ply);
         int originalAlpha = alpha, bestScore = -WIN - 1, bestAction = NO_ACTION, searchedActions = 0;
+        // Bombs near threats only ({@link #bombNearThreats}): the threat heights are marked at the first bomb reached, if any.
+        boolean bombsNearThreatsOnly = bombNearThreats > 0 && ply > 0, threatHeightsMarked = false;
+        int prunedBombs = 0;
         for (int i = 0; i < actionCount; i++) {
             int action = actions[i], score, column = columnOf(action), previousCooldown = 0;
             if (excluding && rootExcluded[action]) continue;
-            boolean bomb = isBomb(action);
-            int reduction = refinedSearch ? lateMoveReduction(i, depth, action, tableAction, forced, ply) : 0;
+            boolean bomb = isBomb(action), farBomb = false;
+            if (bomb && bombsNearThreatsOnly && action != tableAction) {
+                if (!threatHeightsMarked) {
+                    markThreatHeights(threatHeights[ply]);
+                    threatHeightsMarked = true;
+                }
+                if (!blastNearThreat(column, threatHeights[ply])) {
+                    if (farBombReduction == 0) {
+                        prunedBombs++; // and the later moves keep their places as if it had never been listed
+                        continue;
+                    }
+                    farBomb = true;
+                }
+            }
+            int reduction = refinedSearch ? lateMoveReduction(i - prunedBombs, depth, action, tableAction, forced, ply) : 0;
+            // A threat extension: a drop that makes a threat is searched a ply deeper, a few times per path.
+            boolean extended = !bomb && extensionsOnPath < threatExtensions && makesThreat(mover, column);
+            int childDepth = extended ? depth : depth - 1;
+            if (extended) {
+                extensionsOnPath++;
+                reduction = 0;
+            }
+            if (farBomb) reduction = Math.min(reduction + farBombReduction, Math.max(0, childDepth)); // never past the forcing line's start
             if (bomb) { // a blast rearranges three columns: save what it can change
                 if (undoStates[ply] == null) undoStates[ply] = new int[stateSize];
                 saveAround(column, undoStates[ply]);
                 play(action);
             } else previousCooldown = drop(column);
 
-            if (searchedActions++ == 0 || !refinedSearch) score = -negamax(depth - 1, -beta, -alpha, ply + 1);
+            if (searchedActions++ == 0 || !refinedSearch) score = -negamax(childDepth, -beta, -alpha, ply + 1);
             else { // principal variation search: is this move better than the best so far?
-                score = -negamax(depth - 1 - reduction, -alpha - 1, -alpha, ply + 1);
-                if (score > alpha && reduction > 0) score = -negamax(depth - 1, -alpha - 1, -alpha, ply + 1);
-                if (score > alpha && score < beta) score = -negamax(depth - 1, -beta, -alpha, ply + 1); // yes: by how much?
+                score = -negamax(childDepth - reduction, -alpha - 1, -alpha, ply + 1);
+                if (score > alpha && reduction > 0) score = -negamax(childDepth, -alpha - 1, -alpha, ply + 1);
+                if (score > alpha && score < beta) score = -negamax(childDepth, -beta, -alpha, ply + 1); // yes: by how much?
             }
 
+            if (extended) extensionsOnPath--;
             if (bomb) restoreAround(column, undoStates[ply]);
             else undoDrop(column, previousCooldown);
             if (outOfTime) return 0;
@@ -1971,6 +2021,55 @@ public class SerenaBot implements Algorithm {
         return false;
     }
 
+    /*
+     * Bombs near threats. Below the root, a node with the bomb ready tries a blast in nearly every
+     * column, each costing a save, a blast and a restore, and doubling the node's moves. A blast far
+     * from every threat seldom matters while threats stand: it neither makes nor breaks one. With
+     * {@link #bombNearThreats}, a blast is tried only where its clearing or its fall (the three
+     * columns from one below its landing up) reaches a cell near a threat of either player: a
+     * threat's gap, a quark of the five it completes, a plug of a five, and at level 2 a four's empty cell.
+     */
+
+    /** Fills {@code threatHeight}: per column, the highest cell near a threat, or -1. */
+    void markThreatHeights(int[] threatHeight) {
+        Arrays.fill(threatHeight, -1);
+        boolean threats = threatLines[0] + threatLines[1] > 0, fours = bombNearThreats >= 2 && fourLines[0] + fourLines[1] > 0;
+        if (threats || fours)
+            for (int column = 0; column < columns; column++) {
+                for (int height = columnHeight[column], cell = column * rows + height; height < rows; height++, cell++) {
+                    for (int player = 0; player < 2; player++) {
+                        int at = player * cellCount + cell;
+                        if (fours && fourCount[at] > 0) raiseThreatHeight(threatHeight, column, height);
+                        if (!threats || threatCount[at] == 0) continue;
+                        raiseThreatHeight(threatHeight, column, height); // a gap, and the quarks of its fives
+                        for (int line : linesThroughCell[cell]) {
+                            if (lineQuarks[2 * line + player] != LINE_LENGTH - 1 || lineQuarks[2 * line + 1 - player] != 0) continue;
+                            for (int quark : cellsOfLine[line]) raiseThreatHeight(threatHeight, columnOfCell[quark], heightOfCell[quark]);
+                        }
+                    }
+                }
+            }
+        for (int column = 0; column < columns; column++) {
+            if (pluggedInColumn[column] == 0) continue;
+            for (int height = columnHeight[column] - 1, cell = column * rows + height; height >= 0; height--, cell--)
+                if (pluggedFives[cell] + pluggedFives[cellCount + cell] > 0) {
+                    raiseThreatHeight(threatHeight, column, height); // the highest plug in the column
+                    break;
+                }
+        }
+    }
+
+    private static void raiseThreatHeight(int[] threatHeight, int column, int height) {
+        if (height > threatHeight[column]) threatHeight[column] = height;
+    }
+
+    /** Whether a bomb in this column clears or moves a cell near a threat, by the heights {@link #markThreatHeights} marked. */
+    boolean blastNearThreat(int column, int[] threatHeight) {
+        int from = columnHeight[column] - 1;
+        for (int c = Math.max(0, column - 1); c <= Math.min(columns - 1, column + 1); c++) if (threatHeight[c] >= from) return true;
+        return false;
+    }
+
     // ------------------------------------------------------------------ threats, with bombs
 
     /** {@link #threatAnalysis}'s answer when the threats do not decide the position. */
@@ -2021,6 +2120,41 @@ public class SerenaBot implements Algorithm {
         else if (mayBomb) forcedAnswers = BOMBS_ONLY;
         else return ply + 2 - WIN; // no drop answers every threat
         return UNDECIDED;
+    }
+
+    /*
+     * The threat memory. A position's threats depend on the position alone (its quarks, the side to
+     * move and the cooldowns, all in its key), and iterative deepening visits the positions of the
+     * last iteration again, the forcing line's included. Scanning every column for drop and bomb
+     * threats is a third of the search's time, so the verdict and the forced answers of each
+     * position are remembered by its key: a win, a loss or undecided (the win and loss scores count
+     * from the root, so the ply is added back), and forcedAnswers. Most leaves are new to each
+     * iteration, so it saves less than that: 3 to 4% more nodes per second on 15x30, same moves.
+     */
+
+    /** Entries of the threat memory, a power of two; 2^16 take 768 KB. */
+    public static final int THREAT_MEMO_BITS = 16;
+    long[] threatMemoKey = new long[1 << THREAT_MEMO_BITS];
+    /** Per entry: {@code (forcedAnswers + 2) << 2 | verdict}, the verdict MEMO_UNDECIDED, MEMO_WIN or MEMO_LOSS. */
+    int[] threatMemoValue = new int[1 << THREAT_MEMO_BITS];
+    static final int MEMO_UNDECIDED = 0, MEMO_WIN = 1, MEMO_LOSS = 2;
+    /** Whether the search remembers threats; it plays the same either way, only faster with it. */
+    public boolean threatMemo = true;
+
+    /** {@link #threatAnalysis} for the position with this key, from the threat memory where it is there. */
+    int threatsOf(long key, int ply) {
+        if (!threatMemo) return threatAnalysis(ply);
+        int slot = (int) key & threatMemoKey.length - 1;
+        if (threatMemoKey[slot] == key) {
+            int memo = threatMemoValue[slot], verdict = memo & 3;
+            forcedAnswers = (memo >> 2) - 2;
+            return verdict == MEMO_WIN ? WIN - ply - 1 : verdict == MEMO_LOSS ? ply + 2 - WIN : UNDECIDED;
+        }
+        int decided = threatAnalysis(ply);
+        int verdict = decided == UNDECIDED ? MEMO_UNDECIDED : decided > 0 ? MEMO_WIN : MEMO_LOSS;
+        threatMemoKey[slot] = key;
+        threatMemoValue[slot] = (forcedAnswers + 2) << 2 | verdict;
+        return decided;
     }
 
     /**
