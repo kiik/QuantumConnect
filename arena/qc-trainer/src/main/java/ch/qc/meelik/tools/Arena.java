@@ -335,6 +335,10 @@ public final class Arena {
      * {@code forcing} (forcingPlies), {@code reach} (dropReach),
      * {@code variety} (varietyNoise), {@code varietyQuarks}, {@code refined} (refinedSearch, 0 or 1:
      * 0 plays the plain alpha-beta search), {@code lmr} (lateMoveReductions, 0 or 1),
+     * {@code lmrFirst}, {@code lmrVeryLate}, {@code lmrDepth} (firstLateMove, firstVeryLateMove,
+     * reductionMinDepth), {@code lmrLog}, {@code lmrLogBase} (reductionLogDivisor, reductionLogBase,
+     * in hundredths), {@code counter} (counterMoves, 0 or 1), {@code threatOrder} (threatOrdering),
+     * {@code malus} (historyMalus, 0 or 1), {@code rfp} (futilityMargin), {@code asp} (aspirationWindow),
      * {@code bombHorizon} (0 to 3), {@code tss} (threatSpaceSearch, 0 or 1), {@code tssShare}
      * (threatSharePercent), {@code tssPlies} (threatSearchPlies), {@code tssBombs} (bombThreats, 0 or 1);
      * for ThreatBot also {@code threat} (threatPlies). ThreatBot shares {@code refined} and {@code lmr}
@@ -363,6 +367,16 @@ public final class Arena {
                 case "threat" -> ((ThreatBot) bot).threatPlies = value;
                 case "refined" -> bot.refinedSearch = value != 0;
                 case "lmr" -> bot.lateMoveReductions = value != 0;
+                case "lmrFirst" -> bot.firstLateMove = value;
+                case "lmrVeryLate" -> bot.firstVeryLateMove = value;
+                case "lmrDepth" -> bot.reductionMinDepth = value;
+                case "lmrLogBase" -> bot.reductionLogBase = value;
+                case "lmrLog" -> bot.reductionLogDivisor = value;
+                case "counter" -> bot.counterMoves = value != 0;
+                case "threatOrder" -> bot.threatOrdering = value;
+                case "malus" -> bot.historyMalus = value != 0;
+                case "rfp" -> bot.futilityMargin = value;
+                case "asp" -> bot.aspirationWindow = value;
                 default -> throw new IllegalArgumentException("unknown SerenaBot setting " + name);
             }
         }

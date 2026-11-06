@@ -58,7 +58,8 @@ import java.util.Random;
  * <p>The refinements of game engines make the search reach about one ply further in the same time
  * ({@link #refinedSearch}): principal variation search (after the first move of a node, the others
  * only ask "is it better?" with a null window, and are searched in full only when it is), late move
- * reductions (quiet moves late in the order are searched shallower first, in full only if they then
+ * reductions (quiet moves late in the order are searched shallower first, the later and the deeper
+ * the node the shallower, in full only if they then
  * look better), and two killer moves per ply. A root move found better in an unfinished iteration is
  * played. Bombs keep their place by history: ordered after the drops, they cost twice the nodes, as
  * a blast is often the move that refutes.
@@ -344,8 +345,65 @@ public class SerenaBot implements Algorithm {
     public boolean refinedSearch = true;
     /** Late move reductions, part of the refined search; off, the refined search reduces nothing. */
     public boolean lateMoveReductions = true;
+    /**
+     * Which moves the late move reductions reduce ({@link #lateMoveReduction}): moves from this
+     * index of a node's order on, at nodes this deep or deeper, by one ply, and by two from the
+     * very late index on at depth 4 or more (unless the logarithmic formula below decides). At 40 ms
+     * on 15x30, reducing from depth 2 scored -48 Elo and two plies from index 5 -55 (100 games each).
+     */
+    public int firstLateMove = 3, firstVeryLateMove = 8, reductionMinDepth = 3;
+    /**
+     * The logarithmic reduction formula, in hundredths: a late move is reduced by
+     * {@code (base + ln(depth) * ln(index) * 100 / divisor) / 100} plies, as chess engines do, so
+     * the deeper the node and the later the move, the more. A divisor of 0 keeps the one-or-two
+     * steps above. A divisor of 100 reaches depth 7 on 15x30 positions in 43% of the nodes of the
+     * steps, and scored +17 Elo against them at 40 ms (95%: -28 to +73, 200 games; 150 scored +6
+     * over 300 and 225 +27 over 100): no worse, perhaps a little better.
+     */
+    public int reductionLogBase = 75, reductionLogDivisor = 100;
+    /** The plies of the logarithmic formula by depth and move index, built for {@link #reductionTableDivisor}. */
+    int[][] reductionTable;
+    int reductionTableDivisor = -1, reductionTableBase = -1;
     /** Two killer moves per ply: drops that caused a cut-off at that ply in a sibling position. */
     final int[][] killerActions = new int[MAX_PLY][2];
+    /**
+     * Counter moves (off by default): for each player and each action of the other, the action that
+     * last refuted it, tried right after the killers. A reply that refuted a move once often does
+     * again in a sibling line. The action that led to each ply is kept in {@link #actionAtPly}.
+     * At 40 ms on 15x30 it scored +0 Elo (95%: -62 to +69, 100 games).
+     */
+    public boolean counterMoves = false;
+    int[] counterAction;
+    final int[] actionAtPly = new int[MAX_PLY];
+    /**
+     * The threat ordering's weight (0: off). Among the moves history does not tell apart, a drop is
+     * tried earlier the more fours (lines two quarks short) of either side it fills, its own counting
+     * twice, and last when it lets the opponent complete a line in the cell above. Weight 8 scored
+     * -27 Elo (95%: -98 to +34, 100 games).
+     */
+    public int threatOrdering = 0;
+    /**
+     * History malus (off by default): at a cut-off, the moves tried before the refuting one lose the
+     * history the refuting move gains, so a move that keeps failing sinks in the order. It scored
+     * -27 Elo (95%: -98 to +41, 100 games).
+     */
+    public boolean historyMalus = false;
+    /**
+     * Reverse futility pruning, margin per ply (0: off). At a quiet node one or two plies above the
+     * depth, outside the principal variation, an evaluation this far above beta per ply remaining is
+     * trusted as a cut-off. It assumes the side to move could at least keep its evaluation, the
+     * assumption null-move pruning makes, so it is kept to the last two plies. Margin 300 scored
+     * +7 Elo (95%: -55 to +83, 100 games).
+     */
+    public int futilityMargin = 0;
+    /**
+     * Aspiration windows (0: off): from depth 3 on, each iteration first searches a window this wide
+     * on either side of the previous iteration's score; a score outside it is searched again with the
+     * window on that side four times wider, and then open. The searches again cost more than the
+     * narrow windows save: 9% more nodes to depth 6; 100 scored +7 Elo (95%: -55 to +69), 300 -27
+     * (95%: -91 to +27), 100 games each.
+     */
+    public int aspirationWindow = 0;
     /** Scratch space for {@link #orderedLegalActions}: the sort priority of each action in the list. */
     long[] actionPriority;
     /**
@@ -462,6 +520,9 @@ public class SerenaBot implements Algorithm {
             undoStates[ply] = null;
         }
         historyScore = new int[2][2 * columns];
+        counterAction = new int[2 * 2 * columns];
+        Arrays.fill(counterAction, NO_ACTION);
+        reductionTableDivisor = -1;
         actionPriority = new long[2 * columns];
         Arrays.fill(tableKey, 0);
 
@@ -1027,9 +1088,13 @@ public class SerenaBot implements Algorithm {
         int best = firstLegalDrop(), lastUnrefuted = NO_ACTION;
         boolean bestRefuted = false;
         previousBestAction = NO_ACTION;
+        if (reductionLogDivisor > 0 && (reductionLogDivisor != reductionTableDivisor || reductionLogBase != reductionTableBase))
+            buildReductionTable();
+        boolean scoreKnown = false; // whether lastScore is this search's, from the last finished iteration
         for (int depth = 1; depth <= maxDepth; depth++) {
             rootBestAction = NO_ACTION;
-            int score = negamax(depth, -WIN - 1, WIN + 1, 0);
+            int score = aspirationWindow > 0 && scoreKnown && depth >= 3 ? aspirationSearch(depth, lastScore)
+                    : negamax(depth, -WIN - 1, WIN + 1, 0);
             if (outOfTime) {
                 // The unfinished iteration searched the previous best first: a root move that beat it in full is better still.
                 if (refinedSearch && rootBestAction != NO_ACTION) best = rootBestAction;
@@ -1051,6 +1116,7 @@ public class SerenaBot implements Algorithm {
             previousBestAction = best;
             bestRefuted = false;
             lastScore = score;
+            scoreKnown = true;
             depthReached = depth;
             if (Math.abs(score) > WIN - MAX_PLY) break; // a forced result: deeper search can't change it
             if (threatAllowanceNanos > 0 && refutedByThreats(best)) {
@@ -1065,6 +1131,42 @@ public class SerenaBot implements Algorithm {
             else if (lastUnrefuted != NO_ACTION) best = lastUnrefuted;
         }
         return best;
+    }
+
+    /**
+     * One iteration with aspiration windows ({@link #aspirationWindow}): the window around the
+     * expected score first; a score at or below its bottom (fail low) or at or above its top (fail
+     * high) is only a bound, so that side of the window widens four times, then opens, and the depth
+     * is searched again. After a fail high the move that failed high is tried first, and stays the
+     * root's best should time run out. A forced result is searched with the open window at once.
+     */
+    int aspirationSearch(int depth, int expected) {
+        if (Math.abs(expected) > WIN - MAX_PLY) return negamax(depth, -WIN - 1, WIN + 1, 0);
+        int lowWidth = aspirationWindow, highWidth = aspirationWindow;
+        int alpha = Math.max(-WIN - 1, expected - lowWidth), beta = Math.min(WIN + 1, expected + highWidth);
+        while (true) {
+            int score = negamax(depth, alpha, beta, 0);
+            if (outOfTime) return score;
+            if (score <= alpha && alpha > -WIN - 1) {
+                lowWidth *= 4;
+                alpha = lowWidth > 16 * aspirationWindow ? -WIN - 1 : Math.max(-WIN - 1, score - lowWidth);
+                rootBestAction = NO_ACTION;
+            } else if (score >= beta && beta < WIN + 1) {
+                highWidth *= 4;
+                beta = highWidth > 16 * aspirationWindow ? WIN + 1 : Math.min(WIN + 1, score + highWidth);
+                if (rootBestAction != NO_ACTION) previousBestAction = rootBestAction;
+            } else return score;
+        }
+    }
+
+    /** Fills {@link #reductionTable}: the logarithmic reduction by depth and move index. */
+    void buildReductionTable() {
+        reductionTable = new int[MAX_PLY][2 * columns + 1];
+        for (int depth = 1; depth < MAX_PLY; depth++)
+            for (int index = 1; index <= 2 * columns; index++)
+                reductionTable[depth][index] = (int) ((reductionLogBase + Math.log(depth) * Math.log(index) * 100 * 100 / reductionLogDivisor) / 100);
+        reductionTableDivisor = reductionLogDivisor;
+        reductionTableBase = reductionLogBase;
     }
 
     private int firstLegalDrop() {
@@ -1372,6 +1474,12 @@ public class SerenaBot implements Algorithm {
             }
         }
 
+        // Reverse futility pruning: near the depth, far enough above beta, a quiet node outside the principal variation cuts off.
+        if (futilityMargin > 0 && ply > 0 && depth <= 2 && forced == NOT_FORCED && beta - alpha == 1 && Math.abs(beta) < WIN - MAX_PLY) {
+            int standing = evaluate();
+            if (standing - futilityMargin * depth >= beta) return standing;
+        }
+
         if (ply == 0 && refinedSearch && previousBestAction != NO_ACTION) tableAction = previousBestAction;
         int[] actions = actionLists[ply];
         int actionCount = orderedLegalActions(actions, tableAction, forced, ply);
@@ -1386,6 +1494,7 @@ public class SerenaBot implements Algorithm {
                 saveState(undoStates[ply]);
                 play(action);
             } else previousCooldown = drop(column);
+            actionAtPly[ply] = action;
 
             if (searchedActions++ == 0 || !refinedSearch) score = -negamax(depth - 1, -beta, -alpha, ply + 1);
             else { // principal variation search: is this move better than the best so far?
@@ -1407,10 +1516,12 @@ public class SerenaBot implements Algorithm {
             }
             if (alpha >= beta) {
                 historyScore[mover][action] += depth * depth;
+                if (historyMalus) for (int j = 0; j < i; j++) historyScore[mover][actions[j]] -= depth * depth;
                 if (!bomb && killerActions[ply][0] != action) {
                     killerActions[ply][1] = killerActions[ply][0];
                     killerActions[ply][0] = action;
                 }
+                if (counterMoves && ply > 0) counterAction[counterSlot(mover, actionAtPly[ply - 1])] = action;
                 break;
             }
         }
@@ -1498,9 +1609,6 @@ public class SerenaBot implements Algorithm {
         return forced == NOT_FORCED || forced >= 0 && forcedLow(forced) <= column && column <= forcedHigh(forced);
     }
 
-    /** Moves before this one in a node's order are searched in full; later quiet moves may be reduced. */
-    static final int FIRST_LATE_MOVE = 3, FIRST_VERY_LATE_MOVE = 8;
-
     /**
      * Late move reductions: with the best guesses first, a move far down the order rarely turns out
      * best, so it is first searched one ply shallower, two if very late, and in full only if it then
@@ -1508,10 +1616,37 @@ public class SerenaBot implements Algorithm {
      * and drops that make a threat to complete at once. Returns the plies to reduce by.
      */
     int lateMoveReduction(int index, int depth, int action, int tableAction, int forced, int ply) {
-        if (!lateMoveReductions || index < FIRST_LATE_MOVE || depth < 3 || forced != NOT_FORCED || action == tableAction) return 0;
+        if (!lateMoveReductions || index < firstLateMove || depth < reductionMinDepth || forced != NOT_FORCED || action == tableAction) return 0;
         if (action == killerActions[ply][0] || action == killerActions[ply][1]) return 0;
+        if (counterMoves && action == counterMove(ply)) return 0;
         if (!isBomb(action) && makesThreat(sideToMove, columnOf(action))) return 0;
-        return index >= FIRST_VERY_LATE_MOVE && depth >= 4 ? 2 : 1;
+        if (reductionLogDivisor > 0) { // at least one ply, and never into the forcing line at once
+            int reduction = Math.max(1, reductionTable[Math.min(depth, MAX_PLY - 1)][Math.min(index + 1, 2 * columns)]);
+            return Math.min(reduction, Math.max(1, depth - 2));
+        }
+        return index >= firstVeryLateMove && depth >= 4 ? 2 : 1;
+    }
+
+    /** The slot of {@link #counterAction} for a player's reply to an action of the other. */
+    int counterSlot(int player, int previousAction) {
+        return player * 2 * columns + previousAction;
+    }
+
+    /** The counter move to the action that led to this ply, or NO_ACTION. */
+    int counterMove(int ply) {
+        if (ply == 0) return NO_ACTION;
+        return counterAction[counterSlot(sideToMove, actionAtPly[ply - 1])];
+    }
+
+    /**
+     * The threat ordering's guess for a drop ({@link #threatOrdering}): the fours of the mover it
+     * fills, twice, and the opponent's, once; far below zero when the cell above completes a line of
+     * the opponent's.
+     */
+    int threatGuess(int column) {
+        int height = columnHeight[column], cell = column * rows + height, mover = sideToMove, opponent = 1 - mover;
+        if (height + 1 < rows && threatCount[opponent * cellCount + cell + 1] > 0) return -16;
+        return 2 * fourCount[mover * cellCount + cell] + fourCount[opponent * cellCount + cell];
     }
 
     /**
@@ -1537,11 +1672,14 @@ public class SerenaBot implements Algorithm {
         }
         int[] history = historyScore[sideToMove];
         int firstKiller = refinedSearch ? killerActions[ply][0] : NO_ACTION, secondKiller = refinedSearch ? killerActions[ply][1] : NO_ACTION;
+        int counter = refinedSearch && counterMoves ? counterMove(ply) : NO_ACTION;
         for (int i = 0; i < count; i++) {
             int action = actions[i];
             if (action == preferred) actionPriority[i] = Long.MAX_VALUE;
             else if (action == firstKiller) actionPriority[i] = Long.MAX_VALUE - 1;
             else if (action == secondKiller) actionPriority[i] = Long.MAX_VALUE - 2;
+            else if (action == counter) actionPriority[i] = Long.MAX_VALUE - 3;
+            else if (threatOrdering > 0 && !isBomb(action)) actionPriority[i] = history[action] + (long) threatOrdering * threatGuess(columnOf(action));
             else actionPriority[i] = history[action];
         }
         for (int i = 1; i < count; i++) { // insertion sort: stable, so ties stay centre-out
