@@ -26,6 +26,9 @@
 #   ./qc.sh dataset [out dir] [--size RxC] [--search ms] [--self-play games] [--threads n]
 #                                            archived matches (+ self-play) -> input planes, results, search scores under out/dataset/
 #   ./qc.sh network [every n] [ms] [RxC]     SerenaBot's network and pattern table: incremental == rebuilt, nodes/s and depth of each
+#   ./qc.sh speed fixed [depth] [RxC] [every] [limit] [out] [reference]   SerenaBot at a fixed depth on archived
+#                                            positions: nodes/s, and actions, scores, nodes against a reference
+#   ./qc.sh speed timed [ms] [RxC] [every] [limit]   the same positions in a time budget: mean depth, slowest search
 #   ./qc.sh conformance [games] [size]       replay engine games on our Board: same boards, same winners
 #   ./qc.sh watch [A] [B]                    one game in the engine's window, as qc-starter runs it
 # The bots live in the starter project (qc-starter/src/main/java/ch/qc/meelik), whose build.gradle packages
@@ -196,6 +199,7 @@ case "$cmd" in
     learn) run Learn "$@" ;;
     dataset) run Network dataset "$@" ;;
     network) run Network bench "$@" ;;
+    speed) run Speed "$@" ;;
     train)
         grep -v '^[[:space:]]*\(#\|$\)' "${1:-training.txt}" | while read -r name gens depth pairs openings seed start bot field; do
             if [ -f "params/$name.txt" ]; then echo "params/$name.txt exists; skipping"; continue; fi
@@ -209,5 +213,5 @@ case "$cmd" in
         DOT=$(command -v dot || ls /mnt/c/Program\ Files/Graphviz/bin/dot.exe 2>/dev/null || true)
         if [ -n "$DOT" ]; then "$DOT" -Tsvg out/tree.dot -o out/tree.svg && echo "rendered out/tree.svg"; fi
         ;;
-    *) sed -n '2,34p' "$0"; exit 1 ;;
+    *) sed -n '2,37p' "$0"; exit 1 ;;
 esac

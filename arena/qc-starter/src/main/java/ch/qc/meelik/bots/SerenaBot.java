@@ -41,7 +41,9 @@ import java.util.Random;
  *   <li>the value of holding the bomb: each player's open threat and four lines, their danger, which
  *       the other's bomb answers ({@link #bombHoldValue}).
  * </ul>
- * A bomb is carried out as single-quark removals and additions, so it needs no bookkeeping of its own.
+ * A bomb is carried out cell by cell, as quarks removed and quarks changing colour where they fall,
+ * so it needs no bookkeeping of its own; the search undoes it by restoring the few columns' worth of
+ * state it can change ({@link #saveAround}).
  *
  * <h2>The search</h2>
  * Negamax with alpha-beta pruning, deepened one ply at a time until the time budget runs out. A
@@ -221,7 +223,7 @@ public class SerenaBot implements Algorithm {
     static final long MIN_BUDGET_NANOS = 2_000_000L, RECOVERY_NANOS = 500_000L;
     /**
      * The search reads the clock once per this many nodes (a power of two). On a wide board a node
-     * with a bomb ready tries a blast in every column, each saving and restoring the whole state,
+     * with a bomb ready tries a blast in every column, each saving and restoring what it may change,
      * so 1024 nodes could overrun the budget by 50 ms. A clock read costs about as much as 1% of a node.
      */
     static final int CLOCK_CHECK_NODES = 16;
@@ -239,6 +241,8 @@ public class SerenaBot implements Algorithm {
     /** The place value of each cell in each line through it, 3^(index in the line), parallel to linesThroughCell. */
     int[][] placeInLine;
     int[] lineDirection;
+    /** The first line whose leftmost cell lies in each column; lines are numbered column by column, and the last entry is lineCount. */
+    int[] firstLineOfColumn;
     /** Columns ordered from the centre outwards. */
     int[] columnsCentreOut;
 
@@ -267,6 +271,8 @@ public class SerenaBot implements Algorithm {
      * drops the player's quark into the cell completes such a line ({@link #blastFormsLine}).
      */
     int[] pluggedFives;
+    /** The plug counts of each column, both players' together: where they are 0, no blast's fall forms a line through a plug. */
+    int[] pluggedInColumn;
     /**
      * Open lines of each player one quark short (threat lines) and two quarks short (four lines):
      * lines holding LINE_LENGTH - 1 or LINE_LENGTH - 2 of the player's quarks ("fives" and "fours"
@@ -276,7 +282,10 @@ public class SerenaBot implements Algorithm {
     final int[] threatLines = new int[2], fourLines = new int[2];
     public int sideToMove;
     int quarkCount;
-    /** Pattern of each line: the sum over its cells of 0 (empty), 1 (player 0) or 2 (player 1) times 3^place. */
+    /**
+     * Pattern of each line: the sum over its cells of 0 (empty), 1 (player 0) or 2 (player 1) times
+     * 3^place, plus its direction class times PATTERNS, so that it is the line's index into {@link #patternValue}.
+     */
     int[] linePattern;
     /** Sum of the line values, from player 0's point of view. */
     int staticScore;
@@ -285,8 +294,6 @@ public class SerenaBot implements Algorithm {
 
     long[] zobristQuark, zobristCooldown;
     long zobristSideToMove, boardHash;
-    /** Scratch space for the quarks above a blast. */
-    int[] fallingQuarks;
     /** Length of a saved state ({@link #saveState}). */
     public int stateSize;
 
@@ -414,7 +421,9 @@ public class SerenaBot implements Algorithm {
 
         List<int[]> lines = new ArrayList<>();
         List<Integer> directions = new ArrayList<>();
-        for (int column = 0; column < columns; column++)
+        firstLineOfColumn = new int[columns + 1];
+        for (int column = 0; column < columns; column++) {
+            firstLineOfColumn[column] = lines.size();
             for (int height = 0; height < rows; height++)
                 for (int d = 0; d < DIRECTIONS.length; d++) {
                     int[] line = lineFrom(column, height, DIRECTIONS[d]);
@@ -423,7 +432,9 @@ public class SerenaBot implements Algorithm {
                     lines.add(line);
                     directions.add(Math.min(d, DIAGONAL));
                 }
+        }
         lineCount = lines.size();
+        firstLineOfColumn[columns] = lineCount;
         cellsOfLine = lines.toArray(new int[0][]);
         lineDirection = new int[lineCount];
         for (int line = 0; line < lineCount; line++) lineDirection[line] = directions.get(line);
@@ -450,11 +461,11 @@ public class SerenaBot implements Algorithm {
         threatCount = new int[2 * cellCount];
         fourCount = new int[2 * cellCount];
         pluggedFives = new int[2 * cellCount];
-        fallingQuarks = new int[rows];
+        pluggedInColumn = new int[columns];
         networkOn = withNetwork && LINE_LENGTH == TRAINED_LINE_LENGTH && loadNetwork();
         patternsOn = withPatterns && LINE_LENGTH == TRAINED_LINE_LENGTH && loadPatterns();
         stateSize = owner.length + columnHeight.length + lineQuarks.length + linePattern.length + threatCount.length + fourCount.length
-                + pluggedFives.length + STATE_SCALARS + (networkOn ? 2 * hidden : 0);
+                + pluggedFives.length + pluggedInColumn.length + STATE_SCALARS + (networkOn ? 2 * hidden : 0);
         clear();
 
         for (int ply = 0; ply < MAX_PLY; ply++) {
@@ -665,22 +676,23 @@ public class SerenaBot implements Algorithm {
             drop(columnOf(action));
             return;
         }
-        int player = sideToMove, column = columnOf(action), height = columnHeight[column];
-        addQuark(column, player); // the bomb is decided before the drop, so it blasts even a winning quark
-        for (int c = Math.max(0, column - 1); c <= Math.min(columns - 1, column + 1); c++) blast(c, height - 1, height + 1);
+        int player = sideToMove, column = columnOf(action), landing = columnHeight[column];
+        // The bomb is decided before the drop, so it blasts even a winning quark: its own quark lands
+        // and is cleared at once, which leaves the board as if it had never landed.
+        for (int c = Math.max(0, column - 1); c <= Math.min(columns - 1, column + 1); c++) blast(c, landing - 1, landing + 1);
         bombCooldown[player] = BOMB_COOLDOWN;
         endTurn(player);
     }
 
     /** A plain drop for the side to move. Returns the mover's previous cooldown, for {@link #undoDrop}. */
-    int drop(int column) {
+    public int drop(int column) {
         int player = sideToMove, previousCooldown = bombCooldown[player];
         addQuark(column, player);
         endTurn(player);
         return previousCooldown;
     }
 
-    void undoDrop(int column, int previousCooldown) {
+    public void undoDrop(int column, int previousCooldown) {
         sideToMove = 1 - sideToMove;
         bombCooldown[sideToMove] = previousCooldown;
         removeTopQuark(column);
@@ -696,67 +708,162 @@ public class SerenaBot implements Algorithm {
         sideToMove = 1 - player;
     }
 
-    /** Removes the quarks at heights from..to of a column; the quarks above fall down. */
+    /**
+     * Removes the quarks at heights from..to of a column; the quarks above fall down. Every cell from
+     * {@code from} up takes the owner of the cell {@code fall} above it, or is emptied, and only the
+     * cells whose owner changes are updated: a quark falling onto a cell of its own colour changes no
+     * line, one of the other colour changes its owner. The counts depend only on the quarks on the
+     * board, not on the order they came and went.
+     */
     private void blast(int column, int from, int to) {
+        int top = columnHeight[column];
         from = Math.max(from, 0);
-        to = Math.min(to, columnHeight[column] - 1);
+        to = Math.min(to, top - 1);
         if (from > to) return;
-        int above = columnHeight[column] - 1 - to;
-        for (int i = 0; i < above; i++) fallingQuarks[i] = removeTopQuark(column);
-        for (int i = from; i <= to; i++) removeTopQuark(column);
-        for (int i = above - 1; i >= 0; i--) addQuark(column, fallingQuarks[i]);
+        int fall = to - from + 1, newTop = top - fall, bottom = column * rows;
+        for (int height = from; height < top; height++) { // upwards, so the cell fall above is read before it changes
+            int cell = bottom + height, fallen = height < newTop ? owner[cell + fall] : EMPTY;
+            if (fallen == owner[cell]) continue;
+            if (fallen == EMPTY) removeQuarkAt(cell);
+            else changeOwnerAt(cell, fallen);
+        }
+        columnHeight[column] = newTop;
     }
 
     // ------------------------------------------------------------------ the two incremental updates
 
+    /*
+     * Each update reads a line's two counts once and, from them alone, knows what the quark changes:
+     * a line still open to the player (none of the other's quarks) moves up or down the ladder empty,
+     * ..., four, threat, complete; a line open to the other player is blocked or unblocked by it; and
+     * a line holding both players' quarks only changes its pattern, unless it becomes or stops being
+     * full with a plugged five. Most lines on a busy board hold both players' quarks.
+     */
+
     /** Puts a quark on top of a column and updates every line through its cell. */
     void addQuark(int column, int player) {
-        int cell = column * rows + columnHeight[column]++;
+        addQuarkAt(column * rows + columnHeight[column]++, player);
+    }
+
+    /** Takes the top quark off a column, updates every line through its cell, and returns its owner. */
+    int removeTopQuark(int column) {
+        return removeQuarkAt(column * rows + --columnHeight[column]);
+    }
+
+    /** Puts a quark into an empty cell and updates every line through it; the column height is the caller's. */
+    void addQuarkAt(int cell, int player) {
+        int opponent = 1 - player;
         owner[cell] = player;
         quarkCount++;
         boardHash ^= zobristQuark[2 * cell + player];
         if (networkOn) addRows(quarkRows, (2 * cell + player) * 2 * hidden);
         int[] lines = linesThroughCell[cell], places = placeInLine[cell];
         for (int k = 0; k < lines.length; k++) {
-            int line = lines[k];
-            adjustThreat(line, cell, -1); // this cell was the line's gap
-            adjustFours(line, cell, -1); // ... or one of its two empty cells
-            staticScore -= lineValue(line);
-            if (++lineQuarks[2 * line + player] == LINE_LENGTH) completedLines[player]++;
+            int line = lines[k], at = 2 * line + player;
+            int own = lineQuarks[at], other = lineQuarks[at ^ 1]; // before the quark
+            int valueBefore = lineValue(line);
+            lineQuarks[at] = own + 1;
             linePattern[line] += (player + 1) * places[k];
-            staticScore += lineValue(line);
-            adjustThreat(line, FIND_GAP, +1);
-            adjustFours(line, NO_CELL, +1);
-            adjustPlug(line, +1); // a line becomes full only by a quark added
+            staticScore += lineValue(line) - valueBefore;
+            if (other == 0) { // open to the player: one step up
+                if (own == LINE_LENGTH - 1) { // the threat, this cell its gap, is complete
+                    changeThreat(player, cell, -1);
+                    completedLines[player]++;
+                } else if (own == LINE_LENGTH - 2) { // the four becomes a threat at its other empty cell
+                    changeFours(line, player, cell, -1);
+                    changeThreat(player, emptyCellOf(line), +1);
+                } else if (own == LINE_LENGTH - 3) changeFours(line, player, NO_CELL, +1);
+            } else if (own == 0) { // open to the opponent: now blocked
+                if (other == LINE_LENGTH - 1) { // its threat is plugged, by this quark
+                    changeThreat(opponent, cell, -1);
+                    changePlug(opponent, cell, +1);
+                } else if (other == LINE_LENGTH - 2) changeFours(line, opponent, cell, -1);
+            } else if (own == LINE_LENGTH - 2 && other == 1) { // full now: the player's five, plugged by the opponent's one quark
+                changePlug(player, cellOfOwner(line, opponent), +1);
+            }
         }
     }
 
-    /** Takes the top quark off a column, updates every line through its cell, and returns its owner. */
-    int removeTopQuark(int column) {
-        int cell = column * rows + --columnHeight[column], player = owner[cell];
+    /** Takes the quark out of a cell, updates every line through it, and returns its owner; the column height is the caller's. */
+    int removeQuarkAt(int cell) {
+        int player = owner[cell], opponent = 1 - player;
         quarkCount--;
         boardHash ^= zobristQuark[2 * cell + player];
         if (networkOn) subtractRows(quarkRows, (2 * cell + player) * 2 * hidden);
         int[] lines = linesThroughCell[cell], places = placeInLine[cell];
         for (int k = 0; k < lines.length; k++) {
-            int line = lines[k];
-            adjustThreat(line, FIND_GAP, -1);
-            adjustFours(line, NO_CELL, -1);
-            adjustPlug(line, -1); // ... and stops being full only by a quark removed
-            staticScore -= lineValue(line);
-            if (lineQuarks[2 * line + player]-- == LINE_LENGTH) completedLines[player]--;
+            int line = lines[k], at = 2 * line + player;
+            int own = lineQuarks[at], other = lineQuarks[at ^ 1]; // before, this quark included
+            int valueBefore = lineValue(line);
+            lineQuarks[at] = own - 1;
             linePattern[line] -= (player + 1) * places[k];
-            staticScore += lineValue(line);
-            adjustThreat(line, cell, +1); // this cell becomes the line's gap
-            adjustFours(line, cell, +1); // ... or one of its two empty cells
+            staticScore += lineValue(line) - valueBefore;
+            if (other == 0) { // open to the player: one step down
+                if (own == LINE_LENGTH) { // complete no longer: a threat, this cell its gap
+                    completedLines[player]--;
+                    changeThreat(player, cell, +1);
+                } else if (own == LINE_LENGTH - 1) { // the threat becomes a four (the cell is still marked as the player's)
+                    changeThreat(player, emptyCellOf(line), -1);
+                    changeFours(line, player, cell, +1);
+                } else if (own == LINE_LENGTH - 2) changeFours(line, player, NO_CELL, -1);
+            } else if (own == 1) { // blocked by this quark only: open to the opponent again
+                if (other == LINE_LENGTH - 1) { // its plugged five is a threat again
+                    changePlug(opponent, cell, -1);
+                    changeThreat(opponent, cell, +1);
+                } else if (other == LINE_LENGTH - 2) changeFours(line, opponent, cell, +1);
+            } else if (own == LINE_LENGTH - 1 && other == 1) { // full no longer: the player's plugged five
+                changePlug(player, cellOfOwner(line, opponent), -1);
+            }
         }
         owner[cell] = EMPTY;
         return player;
     }
 
+    /**
+     * Gives a cell's quark to the other player, as a fall does where a quark of one colour lands on a
+     * cell of the other: one pass over the lines through it instead of a removal and an addition. The
+     * quarks in each line stay as many; what the line was for its old owner it stops being, and what it
+     * is for the new owner it becomes.
+     */
+    void changeOwnerAt(int cell, int newOwner) {
+        int player = owner[cell], other = newOwner; // the old owner, the new one
+        boardHash ^= zobristQuark[2 * cell + player] ^ zobristQuark[2 * cell + other];
+        if (networkOn) {
+            subtractRows(quarkRows, (2 * cell + player) * 2 * hidden);
+            addRows(quarkRows, (2 * cell + other) * 2 * hidden);
+        }
+        int[] lines = linesThroughCell[cell], places = placeInLine[cell];
+        for (int k = 0; k < lines.length; k++) { // the cell keeps its old owner until the end
+            int line = lines[k], at = 2 * line + player;
+            int own = lineQuarks[at], others = lineQuarks[at ^ 1]; // before, the old owner's and the new owner's
+            if (others == 0) { // what the line was for the old owner
+                if (own == LINE_LENGTH) completedLines[player]--;
+                else if (own == LINE_LENGTH - 1) changeThreat(player, emptyCellOf(line), -1);
+                else if (own == LINE_LENGTH - 2) changeFours(line, player, NO_CELL, -1);
+            } else if (own + others == LINE_LENGTH) { // a full line: a plugged five?
+                if (others == LINE_LENGTH - 1) changePlug(other, cell, -1); // the new owner's, plugged by this cell
+                else if (own == LINE_LENGTH - 1) changePlug(player, cellOfOwner(line, other), -1); // the old owner's, plugged elsewhere
+            }
+            int valueBefore = lineValue(line);
+            lineQuarks[at] = --own;
+            lineQuarks[at ^ 1] = ++others;
+            linePattern[line] += (other - player) * places[k];
+            staticScore += lineValue(line) - valueBefore;
+            if (own == 0) { // what the line is now for the new owner
+                if (others == LINE_LENGTH) completedLines[other]++;
+                else if (others == LINE_LENGTH - 1) changeThreat(other, emptyCellOf(line), +1);
+                else if (others == LINE_LENGTH - 2) changeFours(line, other, NO_CELL, +1);
+            } else if (own + others == LINE_LENGTH) {
+                if (own == LINE_LENGTH - 1) changePlug(player, cell, +1); // the old owner's five, plugged by this cell
+                else if (others == LINE_LENGTH - 1) changePlug(other, otherCellOfOwner(line, player, cell), +1); // the new owner's, plugged elsewhere
+            }
+        }
+        owner[cell] = other;
+    }
+
     /** Value of a line from player 0's point of view: its pattern's, or with the line weights, only a line open to one player counts. */
     int lineValue(int line) {
-        if (patternsOn) return patternValue[lineDirection[line] * PATTERNS + linePattern[line]];
+        if (patternsOn) return patternValue[linePattern[line]];
         int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1];
         int[] weights = lineWeight[lineDirection[line]];
         if (quarks1 == 0) return weights[quarks0];
@@ -764,22 +871,9 @@ public class SerenaBot implements Algorithm {
         return 0;
     }
 
-    /** The player for whom this line is one quark short and still open, or -1. */
-    private int threatenedBy(int line) {
-        int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1];
-        if (quarks0 == LINE_LENGTH - 1 && quarks1 == 0) return 0;
-        if (quarks1 == LINE_LENGTH - 1 && quarks0 == 0) return 1;
-        return -1;
-    }
-
-    private static final int FIND_GAP = -1;
-
-    /** If the line is a threat, adds delta to its gap's threat count (the gap is looked up if not given). */
-    private void adjustThreat(int line, int gap, int delta) {
-        int player = threatenedBy(line);
-        if (player < 0) return;
+    /** Adds delta to the threat lines of a player and to the threat count of their gap. */
+    private void changeThreat(int player, int gap, int delta) {
         threatLines[player] += delta;
-        if (gap == FIND_GAP) gap = emptyCellOf(line);
         int count = threatCount[player * cellCount + gap] += delta;
         if (networkOn && count == (delta > 0 ? 1 : 0)) { // the cell became or stopped being a threat
             if (delta > 0) addRows(threatRows, (2 * gap + player) * 2 * hidden);
@@ -790,27 +884,31 @@ public class SerenaBot implements Algorithm {
     private static final int NO_CELL = -1;
 
     /**
-     * If the line holds LINE_LENGTH - 2 quarks of one player and none of the other, adds delta to the four count
-     * of its empty cells. The cell given counts as empty though its quark is still on the board.
+     * Adds delta to the four lines of a player and to the four count of the line's empty cells. The
+     * cell given counts as empty though its quark is on the board.
      */
-    private void adjustFours(int line, int alsoEmpty, int delta) {
-        int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1], player;
-        if (quarks0 == LINE_LENGTH - 2 && quarks1 == 0) player = 0;
-        else if (quarks1 == LINE_LENGTH - 2 && quarks0 == 0) player = 1;
-        else return;
+    private void changeFours(int line, int player, int alsoEmpty, int delta) {
         fourLines[player] += delta;
         for (int cell : cellsOfLine[line])
             if (owner[cell] == EMPTY || cell == alsoEmpty) fourCount[player * cellCount + cell] += delta;
     }
 
-    /** If the line is full with LINE_LENGTH - 1 quarks of one player ("five"), adds delta to the plug count of the other player's cell. */
-    private void adjustPlug(int line, int delta) {
-        int quarks0 = lineQuarks[2 * line], quarks1 = lineQuarks[2 * line + 1], player;
-        if (quarks0 + quarks1 != LINE_LENGTH) return;
-        if (quarks0 == LINE_LENGTH - 1) player = 0;
-        else if (quarks1 == LINE_LENGTH - 1) player = 1;
-        else return;
-        for (int cell : cellsOfLine[line]) if (owner[cell] == 1 - player) pluggedFives[player * cellCount + cell] += delta;
+    /** Adds delta to the plug count of a cell that plugs a five of the player, and to its column's ({@link #pluggedInColumn}). */
+    private void changePlug(int player, int cell, int delta) {
+        pluggedFives[player * cellCount + cell] += delta;
+        pluggedInColumn[cell / rows] += delta;
+    }
+
+    /** The cell of a line that holds a quark of this player (the first, if several). */
+    private int cellOfOwner(int line, int player) {
+        for (int cell : cellsOfLine[line]) if (owner[cell] == player) return cell;
+        return -1;
+    }
+
+    /** The cell of a line, other than the one given, that holds a quark of this player (the first, if several). */
+    private int otherCellOfOwner(int line, int player, int except) {
+        for (int cell : cellsOfLine[line]) if (owner[cell] == player && cell != except) return cell;
+        return -1;
     }
 
     /** The first empty cell of a line. */
@@ -826,10 +924,11 @@ public class SerenaBot implements Algorithm {
         Arrays.fill(owner, EMPTY);
         Arrays.fill(columnHeight, 0);
         Arrays.fill(lineQuarks, 0);
-        Arrays.fill(linePattern, 0);
+        for (int line = 0; line < lineCount; line++) linePattern[line] = lineDirection[line] * PATTERNS; // the empty pattern
         Arrays.fill(threatCount, 0);
         Arrays.fill(fourCount, 0);
         Arrays.fill(pluggedFives, 0);
+        Arrays.fill(pluggedInColumn, 0);
         completedLines[0] = completedLines[1] = 0;
         threatLines[0] = threatLines[1] = fourLines[0] = fourLines[1] = 0;
         bombCooldown[0] = bombCooldown[1] = FIRST_BOMB_WAIT;
@@ -861,6 +960,71 @@ public class SerenaBot implements Algorithm {
         at = copyInto(state, at, threatCount);
         at = copyInto(state, at, fourCount);
         at = copyInto(state, at, pluggedFives);
+        at = copyInto(state, at, pluggedInColumn);
+        saveScalars(state, at);
+    }
+
+    public void restoreState(int[] state) {
+        int at = copyFrom(state, 0, owner);
+        at = copyFrom(state, at, columnHeight);
+        at = copyFrom(state, at, lineQuarks);
+        at = copyFrom(state, at, linePattern);
+        at = copyFrom(state, at, threatCount);
+        at = copyFrom(state, at, fourCount);
+        at = copyFrom(state, at, pluggedFives);
+        at = copyFrom(state, at, pluggedInColumn);
+        restoreScalars(state, at);
+    }
+
+    /*
+     * A bomb changes only the three columns around it: their quarks, the lines through them, and the
+     * counts of the cells on those lines, at most LINE_LENGTH columns either side of the bomb. Lines
+     * are numbered by their leftmost column ({@link #firstLineOfColumn}) and cells column by column,
+     * so each of these is one run of its array, and saving only the runs, besides the single values,
+     * undoes the bomb at a fraction of the whole state's cost on a wide board.
+     */
+
+    /** Saves what a bomb in this column can change, for {@link #restoreAround} with the same column. */
+    public void saveAround(int column, int[] state) {
+        int left = Math.max(0, column - 1), right = Math.min(columns - 1, column + 1);
+        int reachLeft = Math.max(0, column - LINE_LENGTH), reachRight = Math.min(columns - 1, column + LINE_LENGTH);
+        int firstLine = firstLineOfColumn[reachLeft], endLine = firstLineOfColumn[right + 1];
+        int firstCell = reachLeft * rows, endCell = (reachRight + 1) * rows;
+        int at = copyInto(state, 0, owner, left * rows, (right + 1) * rows);
+        at = copyInto(state, at, columnHeight, left, right + 1);
+        at = copyInto(state, at, lineQuarks, 2 * firstLine, 2 * endLine);
+        at = copyInto(state, at, linePattern, firstLine, endLine);
+        for (int player = 0; player < 2; player++) {
+            int offset = player * cellCount;
+            at = copyInto(state, at, threatCount, offset + firstCell, offset + endCell);
+            at = copyInto(state, at, fourCount, offset + firstCell, offset + endCell);
+            at = copyInto(state, at, pluggedFives, offset + firstCell, offset + endCell);
+        }
+        at = copyInto(state, at, pluggedInColumn, reachLeft, reachRight + 1);
+        saveScalars(state, at);
+    }
+
+    /** Restores what {@link #saveAround} saved for a bomb in this column. */
+    public void restoreAround(int column, int[] state) {
+        int left = Math.max(0, column - 1), right = Math.min(columns - 1, column + 1);
+        int reachLeft = Math.max(0, column - LINE_LENGTH), reachRight = Math.min(columns - 1, column + LINE_LENGTH);
+        int firstLine = firstLineOfColumn[reachLeft], endLine = firstLineOfColumn[right + 1];
+        int firstCell = reachLeft * rows, endCell = (reachRight + 1) * rows;
+        int at = copyFrom(state, 0, owner, left * rows, (right + 1) * rows);
+        at = copyFrom(state, at, columnHeight, left, right + 1);
+        at = copyFrom(state, at, lineQuarks, 2 * firstLine, 2 * endLine);
+        at = copyFrom(state, at, linePattern, firstLine, endLine);
+        for (int player = 0; player < 2; player++) {
+            int offset = player * cellCount;
+            at = copyFrom(state, at, threatCount, offset + firstCell, offset + endCell);
+            at = copyFrom(state, at, fourCount, offset + firstCell, offset + endCell);
+            at = copyFrom(state, at, pluggedFives, offset + firstCell, offset + endCell);
+        }
+        at = copyFrom(state, at, pluggedInColumn, reachLeft, reachRight + 1);
+        restoreScalars(state, at);
+    }
+
+    private void saveScalars(int[] state, int at) {
         state[at] = completedLines[0];
         state[at + 1] = completedLines[1];
         state[at + 2] = bombCooldown[0];
@@ -877,14 +1041,7 @@ public class SerenaBot implements Algorithm {
         if (networkOn) for (int i = 0; i < 2 * hidden; i++) state[at + STATE_SCALARS + i] = accumulator[i];
     }
 
-    public void restoreState(int[] state) {
-        int at = copyFrom(state, 0, owner);
-        at = copyFrom(state, at, columnHeight);
-        at = copyFrom(state, at, lineQuarks);
-        at = copyFrom(state, at, linePattern);
-        at = copyFrom(state, at, threatCount);
-        at = copyFrom(state, at, fourCount);
-        at = copyFrom(state, at, pluggedFives);
+    private void restoreScalars(int[] state, int at) {
         completedLines[0] = state[at];
         completedLines[1] = state[at + 1];
         bombCooldown[0] = state[at + 2];
@@ -908,6 +1065,17 @@ public class SerenaBot implements Algorithm {
     private static int copyFrom(int[] state, int at, int[] part) {
         System.arraycopy(state, at, part, 0, part.length);
         return at + part.length;
+    }
+
+    /** Copies part[from..to) into the state at {@code at}; returns where the state continues. */
+    private static int copyInto(int[] state, int at, int[] part, int from, int to) {
+        System.arraycopy(part, from, state, at, to - from);
+        return at + to - from;
+    }
+
+    private static int copyFrom(int[] state, int at, int[] part, int from, int to) {
+        System.arraycopy(state, at, part, from, to - from);
+        return at + to - from;
     }
 
     // ------------------------------------------------------------------ the loss book
@@ -1381,9 +1549,9 @@ public class SerenaBot implements Algorithm {
             if (excluding && rootExcluded[action]) continue;
             boolean bomb = isBomb(action);
             int reduction = refinedSearch ? lateMoveReduction(i, depth, action, tableAction, forced, ply) : 0;
-            if (bomb) { // a blast rearranges several columns: save the whole state
+            if (bomb) { // a blast rearranges three columns: save what it can change
                 if (undoStates[ply] == null) undoStates[ply] = new int[stateSize];
-                saveState(undoStates[ply]);
+                saveAround(column, undoStates[ply]);
                 play(action);
             } else previousCooldown = drop(column);
 
@@ -1394,7 +1562,7 @@ public class SerenaBot implements Algorithm {
                 if (score > alpha && score < beta) score = -negamax(depth - 1, -beta, -alpha, ply + 1); // yes: by how much?
             }
 
-            if (bomb) restoreState(undoStates[ply]);
+            if (bomb) restoreAround(column, undoStates[ply]);
             else undoDrop(column, previousCooldown);
             if (outOfTime) return 0;
             if (score > bestScore) {
@@ -1437,6 +1605,7 @@ public class SerenaBot implements Algorithm {
         if (forced != NOT_FORCED || depth <= -forcingPlies || standPat >= beta) return standPat;
         int bestScore = standPat;
         if (standPat > alpha) alpha = standPat;
+        if (threatLines[mover] + fourLines[mover] == 0) return bestScore; // without threat or four lines no drop makes a threat
         for (int column : columnsCentreOut) {
             if (!makesThreat(mover, column)) continue;
             int previousCooldown = drop(column);
@@ -1622,17 +1791,19 @@ public class SerenaBot implements Algorithm {
         int mover = sideToMove, opponent = 1 - mover;
         boolean mayBomb = bombCooldown[mover] == 0;
         int threats = 0, low = 0, high = columns - 1;
-        for (int column = 0; column < columns; column++) {
-            if (completesLine(mover, column)) return WIN - ply - 1; // we complete a line next move
-            if (completesLine(opponent, column)) {
-                threats++;
-                low = Math.max(low, column);
-                high = Math.min(high, column);
+        boolean moverThreatens = threatLines[mover] > 0, opponentThreatens = threatLines[opponent] > 0; // a player without threat lines completes nothing
+        if (moverThreatens || opponentThreatens)
+            for (int column = 0; column < columns; column++) {
+                if (moverThreatens && completesLine(mover, column)) return WIN - ply - 1; // we complete a line next move
+                if (opponentThreatens && completesLine(opponent, column)) {
+                    threats++;
+                    low = Math.max(low, column);
+                    high = Math.min(high, column);
+                }
             }
-        }
         if (bombHorizon > 0 && (mayBomb || bombCooldown[opponent] == 0)) {
             for (int column = 0; column < columns; column++) {
-                if (!blastFormsLine(column)) continue;
+                if (!blastDropsQuarks(column) || !blastFormsLine(column)) continue; // the first is quick: no fall, no new line
                 if (mayBomb) return WIN - ply - 1; // our bomb forms a line
                 threats++; // and with the bomb ready, so would the opponent's
                 low = Math.max(low, column - 1);
@@ -1672,15 +1843,20 @@ public class SerenaBot implements Algorithm {
             if (side < 0 || side >= columns || columnHeight[side] < landing + 3) continue; // nothing falls here
             int bottom = side * rows, fallenTop = columnHeight[side] - fall;
             if (verticalRunAcross(bottom, from, fall, fallenTop) >= LINE_LENGTH) return true;
+            if (pluggedInColumn[side] == 0) continue; // no cell of this column plugs a five
             for (int height = from; height < fallenTop; height++) {
                 int cell = bottom + height, player = owner[cell + fall];
-                if (player == owner[cell] || pluggedFives[player * cellCount + cell] == 0) continue; // no line through this cell is new
+                int plugs = player == owner[cell] ? 0 : pluggedFives[player * cellCount + cell];
+                if (plugs == 0) continue; // no line through this cell is new
                 for (int line : linesThroughCell[cell]) {
-                    if (lineDirection[line] == VERTICAL || lineQuarks[2 * line + player] != LINE_LENGTH - 1) continue;
-                    boolean staysOutside = true; // the line's other cells lie outside the blast
-                    for (int other : cellsOfLine[line])
-                        if (other != cell && Math.abs(other / rows - column) <= 1 && other % rows >= from) staysOutside = false;
-                    if (staysOutside) return true;
+                    if (lineQuarks[2 * line + player] != LINE_LENGTH - 1) continue; // with this cell's quark, a plugged five
+                    if (lineDirection[line] != VERTICAL) {
+                        boolean staysOutside = true; // the line's other cells lie outside the blast
+                        for (int other : cellsOfLine[line])
+                            if (other != cell && Math.abs(other / rows - column) <= 1 && other % rows >= from) staysOutside = false;
+                        if (staysOutside) return true;
+                    }
+                    if (--plugs == 0) break; // the cell plugs no other line
                 }
             }
         }
@@ -1735,10 +1911,11 @@ public class SerenaBot implements Algorithm {
         if (bombCount == 0 && forced == BOMBS_ONLY) return ply + 2 - WIN; // nothing answers every threat
         if (bombCount > 0 && undoStates[ply] == null) undoStates[ply] = new int[stateSize];
         for (int i = 0; i < bombCount; i++) {
-            saveState(undoStates[ply]);
+            int column = columnOf(actions[i]);
+            saveAround(column, undoStates[ply]);
             play(actions[i]);
             int score = -negamax(depth - 1, -beta, -alpha, ply + 1);
-            restoreState(undoStates[ply]);
+            restoreAround(column, undoStates[ply]);
             if (outOfTime) return 0;
             if (score > bestScore) bestScore = score;
             if (score > alpha) alpha = score;

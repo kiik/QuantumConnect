@@ -19,7 +19,9 @@ import java.util.Random;
  *       small boards equal plain solves without either;
  *   <li>search speed on the real board (a measurement, not a check);
  *   <li>SerenaBot: a bomb's predicted line ({@code blastFormsLine}) equals the bomb played;
- *   <li>SerenaBot: the threat analysis's wins, losses and ruled-out drops equal the replies played out.
+ *   <li>SerenaBot: the threat analysis's wins, losses and ruled-out drops equal the replies played out;
+ *   <li>SerenaBot: the incrementally updated state equals the board loaded afresh, and undoing a drop
+ *       or a bomb (its area restored) gives back the state before it.
  * </ol>
  *
  * <p>Usage: SelfTest, or SelfTest speed to measure only the speed, in a fresh JVM.
@@ -42,6 +44,7 @@ public final class SelfTest {
         measureSpeed(random);
         serenaBombLinesMatchBlasts(random);
         serenaThreatsMatchReplies(random);
+        serenaIncrementalMatchesRebuild(random);
         System.out.println(failures == 0 ? "ALL PASSED" : failures + " FAILURE(S)");
     }
 
@@ -290,6 +293,63 @@ public final class SelfTest {
             }
         }
         System.out.printf("7. SerenaBot threat analysis == replies: %d positions, %d wins, %d losses, %d with forced answers%n", positions, wins, losses, forced);
+    }
+
+    // ------------------------------------------------------------------ 8. SerenaBot: incremental state
+
+    /** SerenaBot's board as an arena field, row 0 at the top, player 0 as the first player. */
+    static SpaceOwnership[][] serenaField(SerenaBot board) {
+        SpaceOwnership[][] field = new SpaceOwnership[board.rows][board.columns];
+        for (int column = 0; column < board.columns; column++)
+            for (int height = 0; height < board.rows; height++) {
+                int owner = board.owner[column * board.rows + height];
+                field[board.rows - 1 - height][column] = owner == SerenaBot.EMPTY ? SpaceOwnership.EMPTY
+                        : owner == 0 ? SpaceOwnership.FIRST_PLAYER : SpaceOwnership.SECOND_PLAYER;
+            }
+        return field;
+    }
+
+    /**
+     * Random SerenaBot games with bombs on both board sizes: after every action, the board equals
+     * QuarkBot's after the same actions, the whole state kept up to date quark by quark (counts,
+     * patterns, threats, fours, plugs, score, hash) equals the state of the same board loaded afresh,
+     * and undoing the action restores the state before it.
+     */
+    static void serenaIncrementalMatchesRebuild(Random random) {
+        int actions = 0, bombs = 0;
+        for (int game = 0; game < 120; game++) {
+            SerenaBot board = game % 2 == 0 ? new SerenaBot(8, 12) : new SerenaBot(15, 30), rebuilt = new SerenaBot(board.rows, board.columns);
+            int[] before = new int[board.stateSize], after = new int[board.stateSize], fresh = new int[board.stateSize], undone = new int[board.stateSize];
+            int[] area = new int[board.stateSize];
+            QuarkBot referee = new QuarkBot(board.rows, board.columns, SerenaBot.LINE_LENGTH, true, false); // the rules checked by ./qc.sh conformance
+            for (int ply = 0; ply < 300 && !board.hasLine(); ply++) {
+                int action = randomSerenaAction(board, random), column = SerenaBot.columnOf(action);
+                if (action == SerenaBot.NO_ACTION) break;
+                board.saveState(before);
+                if (SerenaBot.isBomb(action)) board.saveAround(column, area);
+                int previousCooldown = board.bombCooldown[board.sideToMove];
+                board.play(action);
+                actions++;
+                if (SerenaBot.isBomb(action)) bombs++;
+
+                rebuilt.load(serenaField(board), SpaceOwnership.FIRST_PLAYER);
+                rebuilt.sideToMove = board.sideToMove;
+                rebuilt.bombCooldown[0] = board.bombCooldown[0];
+                rebuilt.bombCooldown[1] = board.bombCooldown[1];
+                board.saveState(after);
+                rebuilt.saveState(fresh);
+                check(Arrays.equals(after, fresh), board.rows + "x" + board.columns + " incremental state after " + action);
+                referee.play(action);
+                check(Arrays.equals(board.owner, referee.owner), board.rows + "x" + board.columns + " board after " + action + " differs from QuarkBot's");
+
+                if (SerenaBot.isBomb(action)) board.restoreAround(column, area);
+                else board.undoDrop(column, previousCooldown);
+                board.saveState(undone);
+                check(Arrays.equals(before, undone), board.rows + "x" + board.columns + " undoing action " + action);
+                board.play(action);
+            }
+        }
+        System.out.printf("8. SerenaBot incremental == rebuilt: %d actions, %d of them bombs%n", actions, bombs);
     }
 
     // ------------------------------------------------------------------ 5. speed
