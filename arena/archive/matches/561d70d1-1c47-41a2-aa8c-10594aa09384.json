@@ -1,0 +1,19 @@
+{
+ "match_id": "561d70d1-1c47-41a2-aa8c-10594aa09384",
+ "first": {
+  "bot": "1104-1-1105-4",
+  "bot_id": "b04bb4fc-3b81-4f60-aa54-c20b67907011",
+  "team": "kristoma"
+ },
+ "second": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 238,
+ "moves": "f14 s13 f13 s14 f14 s12 f13 s13 f13 s14 f14 s9 f13 s13 f13 s14 f14 s14 f14 s13 f13 s14 f14 s13 f13 s14 f13 s8 f14 s5 f10 s8 f9 s9 f9 s8 f9 s7 f9 s8 f9 s9 f9 s4 f6 s10 f10 s10 f13 s10 f9 s11 f14 s10 f10 s8 f8 s9 f10 s10 f8 s10 f10 s9 f13 s14 f8 s8 f8 s0 f8 s8 f9 s3 f10 s10 f10 s9 f2 s4 f10 s3 f2 s3 f9 s4 f3 s2 f4 s2 f3 s6 f6 s6 f5 s5 f3 s3 f3 s2 f2 s2 f2 s18 f3 s3 f8 s19 f8 s8 f17 s23 f3 s18 f2 s18 f2 s2 f18 s19 f17 s17 f17 s19 f19 s22 f18 s18 f20 s17 f17 s17 f18 s17 f18 s19 f19 s22 f22 s23 f20 s19 f19 s24 f20 s20 f26 s18 f17 s24 f26 s23 f23 s22 f18 s25 f26 s26 f17 s17 f18 s18 f17 s18 f23 s24 f23 s23 f17 s26 f24 s24 f24 s27 f24 s24 f17 s26 f18 s26 f26 s26 f23 s23 f24 s26 f24 s26 f21 s26 f23 s26 f26 s23 f15 s15 f15 s15 f15 s24 f15 s23 f24 s20 f20 s20 f20 s20 f20 s19 f19 s20 f25 s25 f25 s19 f19 s19 f19 s20 f20 s20 f18 s24 f24 s23 f20 s23 f19 s17 f23 s24 f2 s26 f3 s25 f2 s25 f25b",
+ "fetched_at": "2026-11-06T10:09:36"
+}

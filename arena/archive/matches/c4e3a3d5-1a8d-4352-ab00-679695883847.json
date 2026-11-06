@@ -1,0 +1,19 @@
+{
+ "match_id": "c4e3a3d5-1a8d-4352-ab00-679695883847",
+ "first": {
+  "bot": "1104-1-1105-4",
+  "bot_id": "b04bb4fc-3b81-4f60-aa54-c20b67907011",
+  "team": "kristoma"
+ },
+ "second": {
+  "bot": "GitHub CHET45",
+  "bot_id": "c08f67b3-74f4-46ea-9d5b-7196f84473ed",
+  "team": "No beaches?"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 433,
+ "moves": "s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f16 s14 f14 s16 f16 s16 f16 s16 f16 s16b f16 s16 f16 s16 f16 s16 f16 s16 f14 s16 f14 s8 f8 s8 f8 s8 f8 s8 f9 s8 f8 s8b f15 s8 f15 s15 f15 s8 f8 s15 f15 s15 f15 s9 f15 s8 f15 s9 f9 s15 f15 s15 f15 s8 f9 s9b f15 s8 f8 s8 f13 s13 f13 s13 f13 s13 f13 s22 f13 s24 f13 s23 f21 s23 f17 s24 f21 s21 f20 s21 f20 s19b f20 s21 f13 s21 f25 s21 f21 s25 f13 s13 f17 s24 f17b s25 f23 s23 f24 s16 f13 s22 f16 s17b f13 s26 f25 s24 f26 s24 f19 s23 f23 s20 f22 s23 f23 s23 f21 s24 f24 s19 f21 s17 f9 s23 f20 s23 f25 s9 f9 s23 f9 s23 f23 s21 f9 s21 f20 s9 f19 s19b f9 s25 f25 s19 f20 s24 f25 s24 f25 s24 f25 s20 f25 s25 f24 s21 f9 s24 f19 s20 f19 s18b f18b s20 f20 s20 f17 s18 f18 s20 f25 s20 f20 s19 f24 s20 f20 s23 f20 s26 f25 s26 f21 s20 f24 s9 f9 s19 f25 s13 f8 s21 f8 s16 f9 s4 f12 s3 f5 s5 f5 s5 f17 s5 f5 s5 f17 s5 f17 s17 f16 s5 f16 s5 f5 s4 f4 s4 f4 s4 f4 s3 f3 s3 f12 s3 f12 s5 f16 s4 f11 s4 f4 s3 f3 s3 f3 s3 f4 s5 f4 s5 f11 s4 f11 s5 f10 s10 f10 s3 f11 s10 f4 s11 f17 s17 f17 s17 f17 s17 f11 s17 f11 s11 f11 s17 f17 s11 f11 s11 f17 s11 f11 s11 f19 s19 f6 s4 f27 s6 f6 s6 f6 s6 f19 s19 f6 s6 f10 s10 f10 s10 f27 s10 f10 s10 f27 s10 f27 s27 f10 s10 f3 s3 f3 s27 f27 s27 f3 s27 f27 s27 f27 s27 f27 s19 f19 s19 f19 s19 f19 s19 f10 s19 f27 s28 f28 s28 f26 s26 f26 s26 f26 s28 f29 s29 f29 s29 f29 s29 f29 s29 f29 s29 f29 s29 f29 s29 f29 s0 f0 s0 f0 s28 f28 s28 f28 s28 s28 s28 f0 s28 f0 s28 f28 s28 f0 s0 f0 s0 f0 s0 f0 s1 f1 s1 f1 s0 f0 s1 f1 s1 f1 s1 f1 s1 f1 s1 f1 s1 s2 f2 s2 f2 s2 f2 s2 f2 s2 f2 s2 s2 f2 s2 f2 s18 f18 s18 f18 s18 f18 s18 f18 s22 f22 s18b f18 s18 f26 s12 f12b",
+ "fetched_at": "2026-11-06T10:09:55"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "ca419ade-9915-4848-bcc8-76b8457c098e",
+ "first": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "second": {
+  "bot": "anysize11054",
+  "bot_id": "f87316f1-67b0-4020-a46b-e843c356de0a",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 271,
+ "moves": "f3 s2 f8 s8 f7 s6 f6 s6 f9 s8 f8 s8 f6 s8 f8 s6 f5 s6 f10 s6 f6 s11 f4 s8 f6 s6 f8 s8 f6 s6 f8 s8 f6 s6 f8 s8 f11 s8 f11 s11 f10 s6 f10 s10 f11 s11 f7 s11 f7 s7 f11 s11 f5 s11 f3 s2 f9 s11 f11 s3 f1 s2 f5 s3 f3 s2 f2 s2 f1 s2 f3 s3 f3 s3 f2 s3 f9 s3 f3 s2 f2 s5 f5 s3 f11 s9 f9 s9 f5 s5 f5 s5 f5 s7 f7 s7 f7 s5 f7 s7 f7 s7 f7 s7 f5 s5 f5 s5 f7 s11 f9 s2 f14 s11 f14 s14 f14 s3 f14 s14 f15 s14 f15 s15 f17 s16 f16 s17 f16 s3 f15 s9 f9 s9 f16 s0 f16 s9 f15 s16 f15 s15 f16 s14 f14 s15 f17 s9 f17 s17 f9 s9 f20 s16 f16 s15 f15 s15 f21 s16 f22 s19 f24 s23 f16 s14 f14 s14 f19 s16 f19 s19 f19 s19 f15 s19 f16 s14 f19 s14 f17 s17 f2 s15 f2 s17 f17 s19 f16 s17 f17 s14 f17 s17 f17 s18 f15 s19 f19 s15 f16 s2 f19 s2 f22 s23 f22 s22 f23 s23 f23 s22 f22 s22 f22 s23 f23 s23 f23 s22 f27 s22 f22 s23 f23 s22 f23 s22 f22 s23 f26 s19 f19 s19 f26 s26 f28 s29 f23 s26 f27 s28 f27 s27 f26 s26 f27 s22 f23 s26 f27 s27 f26 s27 f27 s27 f26 s26 f26 s27 f26 s26 f26 s27 f27 s27 f26 s17 f27 s9 f4 s1b",
+ "fetched_at": "2026-11-06T10:10:04"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "8a81efe2-dea6-4cd2-b70e-341b76838d2c",
+ "first": {
+  "bot": "Ankara Messi",
+  "bot_id": "da1a2d25-be8c-4b5a-ad63-8fa456857aa6",
+  "team": "Shalomtehnikud"
+ },
+ "second": {
+  "bot": "anysize11054",
+  "bot_id": "f87316f1-67b0-4020-a46b-e843c356de0a",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 26,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s16 f16 s16 f16 s16 f16 s16 f16 s16 s14 s16 s14 s16 s16 s14 s14 s16 s16",
+ "fetched_at": "2026-11-06T10:10:19"
+}
