@@ -68,8 +68,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * output file, which Arena plays as "serena:&lt;file&gt;".
  *
  * <p>Usage: Tune --islands 4 [--migrate 3] [--generations 6] [--population 6] [--openings 3]
- * [--size 15x30] [--depth 0 = real time] [--penalty 0.002 per MB] [--threads cores-2] [--seed 1]
- * [--out out/serena-islands.txt]
+ * [--size 15x30] [--depth 0 = real time] [--cap-ms none: a fixed depth's time cap] [--penalty 0.002 per MB] [--table-mutation 0.25] [--threads cores-2]
+ * [--seed 1] [--out out/serena-islands.txt]. At another LINE_LENGTH the genome has 3 x (LINE_LENGTH - 1) + 1
+ * evaluation parameters instead of 16.
  */
 public final class Tune {
     static final Path OUTPUT = Path.of("out/tune-params.txt");
@@ -302,8 +303,11 @@ public final class Tune {
     // ------------------------------------------------------------------ island evolution of SerenaBot
 
     static final Path ISLAND_ROWS = Path.of("results/islands.tsv");
-    static final int GENES = 17, TABLE_GENE = 16, MIN_TABLE_BITS = 14, MAX_TABLE_BITS = 21;
-    static final double MUTATION = 0.15, TABLE_MUTATION = 0.25;
+    /** The evaluation parameters (3 x (LINE_LENGTH - 1) log line weights and the bomb bonus; 16 at six in a row), then the table gene. */
+    static final int TABLE_GENE = 3 * (SerenaBot.LINE_LENGTH - 1) + 1, GENES = TABLE_GENE + 1, MIN_TABLE_BITS = 14, MAX_TABLE_BITS = 21;
+    static final double MUTATION = 0.15;
+    /** Chance of a step in table size per mutation; {@code --table-mutation 0} keeps SerenaBot's size. */
+    static double tableMutation = 0.25;
 
     static void islands(String[] args) throws Exception {
         Map<String, String> options = new HashMap<>();
@@ -317,6 +321,8 @@ public final class Tune {
         int seed = Integer.parseInt(options.getOrDefault("seed", "1"));
         int threads = Integer.parseInt(options.getOrDefault("threads", String.valueOf(Math.max(1, Runtime.getRuntime().availableProcessors() - 2))));
         double penalty = Double.parseDouble(options.getOrDefault("penalty", "0.002"));
+        tableMutation = Double.parseDouble(options.getOrDefault("table-mutation", "0.25"));
+        if (options.containsKey("cap-ms")) depthCapNanos = Long.parseLong(options.get("cap-ms")) * 1_000_000L;
         int[] size = Tools.size(options.getOrDefault("size", "15x30"));
         Path output = Path.of(options.getOrDefault("out", "out/serena-islands.txt"));
         String recipe = String.format("%d islands, migrate every %d, %d generations x %d genomes, %d openings x 2 colours, %dx%d, %s, penalty %s/MB, seed %d",
@@ -401,7 +407,7 @@ public final class Tune {
     static double[] mutate(double[] genome, Random random) {
         double[] child = genome.clone();
         for (int i = 0; i < TABLE_GENE; i++) child[i] += MUTATION * random.nextGaussian();
-        if (random.nextDouble() < TABLE_MUTATION)
+        if (random.nextDouble() < tableMutation)
             child[TABLE_GENE] = Math.max(MIN_TABLE_BITS, Math.min(MAX_TABLE_BITS, child[TABLE_GENE] + (random.nextBoolean() ? 1 : -1)));
         return child;
     }
@@ -428,7 +434,13 @@ public final class Tune {
         for (int[] opening : openings)
             for (int tunedSeat = 0; tunedSeat < 2; tunedSeat++) {
                 Algorithm tuned = new Opening(serena(genome, depth), opening), reference = new Opening(serena(null, depth), opening);
-                int winner = Arena.play(tunedSeat == 0 ? tuned : reference, tunedSeat == 0 ? reference : tuned, null, size[0], size[1]).winner();
+                int winner;
+                try {
+                    winner = Arena.play(tunedSeat == 0 ? tuned : reference, tunedSeat == 0 ? reference : tuned, null, size[0], size[1]).winner();
+                } catch (RuntimeException | AssertionError e) { // a game the referee could not finish (a late answer): a draw, so one bad turn does not end the run
+                    System.out.println("  game not finished (" + e.getMessage() + "): counted as a draw");
+                    winner = -1;
+                }
                 total += winner == tunedSeat ? 1 : winner < 0 ? 0.5 : 0;
             }
         return total / (2 * openings.size());
@@ -440,10 +452,17 @@ public final class Tune {
         if (genome != null) applySerena(bot, genome);
         if (depth > 0) {
             bot.maxDepth = depth;
-            bot.budgetNanos = Long.MAX_VALUE / 4;
+            bot.budgetNanos = depthCapNanos;
         }
         return bot;
     }
+
+    /**
+     * Thinking time of a fixed-depth SerenaBot ({@code --cap-ms}, none by default). The engine skips a
+     * turn answered after 100 ms, and a depth that is cheap in most positions can blow up in a few
+     * (bombs on a wide board), so a cap keeps those turns from deciding games.
+     */
+    static long depthCapNanos = Long.MAX_VALUE / 4;
 
     /** SerenaBot's own genome: its 16 parameters in QuarkBot's layout, then its table size in bits. */
     static double[] serenaGenome() {

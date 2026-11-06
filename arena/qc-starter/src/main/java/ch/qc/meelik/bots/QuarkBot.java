@@ -233,7 +233,7 @@ public final class QuarkBot implements Algorithm {
         columnsCentreOut = centreOut(columns);
 
         lineWeight = new int[3][];
-        for (int d = 0; d < 3; d++) lineWeight[d] = lineLength == LINE_LENGTH ? EVOLVED_LINE_WEIGHTS[d].clone() : defaultLineWeights(lineLength);
+        for (int d = 0; d < 3; d++) lineWeight[d] = lineLength == EVOLVED_LINE_WEIGHTS[d].length - 1 ? EVOLVED_LINE_WEIGHTS[d].clone() : defaultLineWeights(lineLength);
 
         Random random = new Random(20261102L);
         zobristQuark = randomLongs(random, 2 * cellCount);

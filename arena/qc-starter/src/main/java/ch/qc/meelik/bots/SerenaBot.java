@@ -125,7 +125,7 @@ public class SerenaBot implements Algorithm {
     /**
      * The line length the line weights, the pattern table, the network and the loss book were
      * trained for. At any other, the pattern table, the network and the book stay off and the line
-     * weights are stretched to the new length ({@link #lineWeightsFor}).
+     * weights are those evolved for that length, if any, else stretched to it ({@link #lineWeightsFor}).
      */
     static final int TRAINED_LINE_LENGTH = 6;
     /** Own turns from one bomb to the next. */
@@ -149,17 +149,33 @@ public class SerenaBot implements Algorithm {
             {0, 15, 105, 261, 615, 7863, 0}};
     /** Bonus for having the bomb ready while the opponent hasn't. */
     static final int BOMB_READY_BONUS = 20;
+    /**
+     * Line weights (0..5 quarks) and bomb bonus evolved for five in a row: island evolution at depth 4
+     * on 15x30 against the stretched six-in-a-row weights (params/serena/lines-n5.txt). At the real
+     * 40 ms on 15x30 they beat the stretched weights by 69 Elo (95%: +5 to +124, 150 games).
+     */
+    static final int[][] LINE_WEIGHT_5 = {
+            {0, 83, 318, 2122, 8490, 0},
+            {0, 16, 532, 640, 24375, 0},
+            {0, 40, 266, 2485, 4151, 0}};
+    static final int BOMB_READY_BONUS_5 = 111;
     /** This bot's weights (0..LINE_LENGTH quarks) and bonus: the constants above, unless a tuning tool sets others. */
     public int[][] lineWeight = lineWeightsFor(LINE_LENGTH);
-    public int bombReadyBonus = BOMB_READY_BONUS;
+    public int bombReadyBonus = LINE_LENGTH == 5 ? BOMB_READY_BONUS_5 : BOMB_READY_BONUS;
 
     /**
-     * The trained weights for lines of another length, counted from the full end: a line one quark
-     * short of complete takes the trained weight of a line one short (five quarks of six), two short
-     * the weight of two short, and so on down. Counts with no trained match take the one-quark weight;
-     * an empty or complete line is worth nothing. For the trained length these are the trained weights.
+     * The weights for lines of a length: those evolved for it where there are some (five in a row),
+     * else the trained weights counted from the full end: a line one quark short of complete takes the
+     * trained weight of a line one short (five quarks of six), two short the weight of two short, and
+     * so on down. Counts with no trained match take the one-quark weight; an empty or complete line is
+     * worth nothing. For the trained length these are the trained weights.
      */
     static int[][] lineWeightsFor(int lineLength) {
+        if (lineLength == 5) {
+            int[][] evolved = new int[LINE_WEIGHT_5.length][];
+            for (int d = 0; d < evolved.length; d++) evolved[d] = LINE_WEIGHT_5[d].clone();
+            return evolved;
+        }
         int[][] weights = new int[LINE_WEIGHT.length][lineLength + 1];
         for (int d = 0; d < weights.length; d++)
             for (int quarks = 1; quarks <= lineLength; quarks++)
