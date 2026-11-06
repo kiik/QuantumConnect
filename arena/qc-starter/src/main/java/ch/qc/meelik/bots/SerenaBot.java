@@ -1360,11 +1360,11 @@ public class SerenaBot implements Algorithm {
      */
 
     /** Weight of a column whose lowest threat is a player's; 0 leaves the term out. */
-    public int lowestThreatWeight = 0;
+    public int lowestThreatWeight = 1500;
     /** Extra weight of a lowest threat on a row whose parity favours its owner; 0 leaves the term out. */
-    public int threatParityWeight = 0;
+    public int threatParityWeight = 1500;
     /** Percent of {@link #fiveValue} each dead threat cell takes back; 0 leaves the term out. */
-    public int deadThreatPercent = 0;
+    public int deadThreatPercent = 50;
     /** The mean value of a line one quark short with one empty cell, over its directions and gap places; set with the board. */
     public int fiveValue;
 
