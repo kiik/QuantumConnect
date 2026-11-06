@@ -1,0 +1,19 @@
+{
+ "match_id": "fbc2b829-ebe2-475b-889a-2936e636a2e7",
+ "first": {
+  "bot": "yerrrrr",
+  "bot_id": "b3d7f19b-b294-4d84-8c83-7a8720c6dec7",
+  "team": "Kollektiivne Intellekt (KI)"
+ },
+ "second": {
+  "bot": "Tank-06-0535",
+  "bot_id": "56d01b81-7a46-4059-a347-0802709a00d5",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 177,
+ "moves": "f3 s3 f3 s3 f6 s5 f5 s5 f5 s5 f6 s5 f6 s5 f5 s5 f8 s3 f3 s3 f8 s5 f8 s5 f5 s3 f11 s7b f13 s12 f7 s11 f7 s3 f3 s3 f8 s10 f6 s6 f10 s5 f8 s10 f10 s8 f8 s7b f7 s8 f6 s6 f7 s11 f7 s7 f8 s6 f6 s10 f11 s10 f11 s11 f7 s11 f6 s10 f6 s7b f10 s11 f7 s11 f11 s10 f8 s10 f8 s11 f8 s11 f7 s8 f8 s7 f7 s10 f7 s9b f8 s8 f7 s7 f15 s11 f18 s16 f7 s15 f7 s16 f13 s10 f10 s8 f8 s16 f11 s16 f16 s6 f6 s15 f13 s15 f13 s13 f13 s15 f15 s6b f5 s6 f6 s6 f13 s13 f13 s13 f16 s13 f16 s16 f8 s16 f6 s16 f6 s15 f15 s15 f11 s15 f16 s15 f15 s15 f10 s13 f13 s13 f17 s13 f5 s12 f6 s7b f7 s5 f7 s6 f6 s3 f6 s5 f20 s17 f18 s18 f17 s17 f22 s18 f18 s18 f17 s17b",
+ "fetched_at": "2026-11-06T06:33:09"
+}

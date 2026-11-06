@@ -1,0 +1,19 @@
+{
+ "match_id": "2aa88205-c53a-46a9-a609-38fb72b2eae5",
+ "first": {
+  "bot": "Tank-06-0535",
+  "bot_id": "56d01b81-7a46-4059-a347-0802709a00d5",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "Just Chill",
+  "bot_id": "9002cfdd-633b-4d94-9e60-5f2415f0cb5b",
+  "team": "I need to test your server"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 20,
+ "moves": "f14 s0 f14 s0 f14 s0 f14 s0 f15 s0 f0 s0 f15 s0 f15 s0 f15 s0 f14 s0 f14",
+ "fetched_at": "2026-11-06T06:33:08"
+}

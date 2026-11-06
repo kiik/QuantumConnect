@@ -1,0 +1,19 @@
+{
+ "match_id": "b8381b71-e58a-47e6-a44b-8cdba77a3b1a",
+ "first": {
+  "bot": "ALwaysblastin",
+  "bot_id": "8fc3c423-08a9-4168-9215-3ca1ef513f59",
+  "team": "\\u006c\\u0061\\u006c\\u0061\\u006c\\u0061\\u0062\\u006f\\u0074"
+ },
+ "second": {
+  "bot": "Tank-06-0535",
+  "bot_id": "56d01b81-7a46-4059-a347-0802709a00d5",
+  "team": "SuperPosition"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 69,
+ "moves": "f5 s5 f6 s5 f7 s9 f3 s4 f5 s5 f7 s5 f7 s7 f6 s6 f9 s9 f9 s5 f9 s9 f5 s6 f6 s6 f7 s7 f7 s4 f5 s6 f6 s6b f6 s7 f5 s6 f5b s7 f6 s6 f5 s5 f5 s6 f6 s5 f9 s7 f7 s7 f6 s4 f4 s3 f4 s4 f3b s9 f9 s4 f4 s4 f9 s8 f8 s8b f8 s8",
+ "fetched_at": "2026-11-06T06:33:13"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "2aa782ff-a9c6-499a-8c10-4a55a3650a78",
+ "first": {
+  "bot": "Tank-06-0535",
+  "bot_id": "56d01b81-7a46-4059-a347-0802709a00d5",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "coffeeAt23",
+  "bot_id": "6bb8042e-eb3f-455c-91ea-e5c0138be0db",
+  "team": "coffee_break"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 232,
+ "moves": "f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f13 s13 f13 s13 f13 s13 f13b s13b f13 s13 f13 s13 f13 s13 f14 s14 f13 s14 f13 s12 f14 s12 f12 s14 f13 s13 f14 s12 f12b s12b f13 s13 f13 s12 f13 s13 f13 s19 f16 s19 f19 s19 f17 s19 f16 s19 f19 s19 f11b s16 f16 s19 f19 s16 f19 s12 f15 s18 f19 s15 f16 s16 f16 s16 f16 s16 f16 s16 f16 s19 f11 s15 f11 s15 f15 s15 f11 s15 f11 s15 f11 s11 f11 s11 f15 s11 f11 s15 f14 s12 f15b s12 f15 s15 f11 s16 f11 s11 f10 s14 f19 s16 f8 s7 f7 s8 f7 s7 f7 s7 f18b s7 f7 s19 f7 s18 f7 s20 f22 s7 f22 s22 f22 s12 f12 s22 f22 s22 f12 s22 f12 s12 f13 s22 f18b s22 f22 s19 f19 s19 f14 s14b f22 s12 f12 s19 f19 s7 f13 s22 f13 s11 f19 s18 f22 s14 f15 s12 f15 s12 f12b s16 f15 s12 f7 s8 f8 s8 f7 s11 f7 s13 f22 s15 f8 s8 f24 s8 f23 s8 f8 s13 f24 s8 f23 s23 f23 s24 f23 s23 f23 s24 f24 s24 f23b s24 f23 s24 f24 s24 f23 s23 f23 s24 f25 s27 f25 s23 f21 s26b f21 s20 f25 s26 f25 s26 f27b s14 f26",
+ "fetched_at": "2026-11-06T06:33:33"
+}
