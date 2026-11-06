@@ -11,6 +11,7 @@ cd "$(dirname "$0")"
 N=${1:?N}; LIMIT_MS=${2:?limit in ms}; SIZE=${3:-15x30}
 BOTS=qc-starter/src/main/java/ch/qc/meelik/bots
 BUDGET_MS=$((LIMIT_MS * 8 / 10))
+export QC_JAVA_OPTS="-Dqc.limitMs=$LIMIT_MS" # late moves counted against the announced limit
 
 sed -i -E "s/public static final int LINE_LENGTH = [0-9]+;/public static final int LINE_LENGTH = $N;/" $BOTS/SerenaBot.java $BOTS/QuarkBot.java
 sed -i -E "s/public long budgetNanos = [0-9_]+L;/public long budgetNanos = ${BUDGET_MS}_000_000L;/" $BOTS/SerenaBot.java

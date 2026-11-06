@@ -164,7 +164,7 @@ tank() {
     echo "  cd tools/qc-site && uv run qcsite archive && uv run qcsite upload $name ../../arena/jars/$name.jar --yes"
 }
 
-run() { deps; "$JAVA" -cp "out/bot${SEP}out/tools${SEP}$ENGINE_CP" "ch.qc.meelik.tools.$@"; }
+run() { deps; "$JAVA" ${QC_JAVA_OPTS:-} -cp "out/bot${SEP}out/tools${SEP}$ENGINE_CP" "ch.qc.meelik.tools.$@"; }
 
 cmd=${1:-build}; shift || true
 case "$cmd" in
