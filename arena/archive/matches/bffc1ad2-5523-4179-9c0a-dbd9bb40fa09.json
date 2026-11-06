@@ -1,0 +1,19 @@
+{
+ "match_id": "bffc1ad2-5523-4179-9c0a-dbd9bb40fa09",
+ "first": {
+  "bot": "Tank-06-0632",
+  "bot_id": "d9b50319-d47e-4c2a-b6b1-73ca6cb17d0b",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "MimimiTest",
+  "bot_id": "f018c523-40cc-4494-8e8b-2491d4937706",
+  "team": "Mimimi"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "first",
+ "deciding_move": 58,
+ "moves": "f4 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f14 s14 f5 s14 f4 s14 f5 s13 f16 s13 f13 s13 f13 s13 f13 s13 f13 s13 f13 s13 f13 s13 f13b s14 f16 s14 f17 s13 f17 s13 f17 s15 f5 s15 f4 s15 f17 s15 f15 s15 f5 s15 f4 s15 f16 s15 f16b",
+ "fetched_at": "2026-11-06T07:06:29"
+}

@@ -1,0 +1,19 @@
+{
+ "match_id": "5d03dbfc-8a9d-4bdd-8657-f407bd4daa3a",
+ "first": {
+  "bot": "Tank-06-0632",
+  "bot_id": "d9b50319-d47e-4c2a-b6b1-73ca6cb17d0b",
+  "team": "SuperPosition"
+ },
+ "second": {
+  "bot": "anysize",
+  "bot_id": "49d95bfa-dd9e-4180-bd42-8a948aa3b454",
+  "team": "Tiim566779"
+ },
+ "rows": 15,
+ "columns": 30,
+ "winner": "second",
+ "deciding_move": 439,
+ "moves": "f4 s4 f4 s4 f4 s4 f4 s6 f4 s6 f6 s6 f4 s6 f6 s6 f6 s6 f6 s6 f6 s6 f6 s6 f4 s4 f4 s4 f8 s4 f8 s4 f10 s8 f8 s8 f8 s8 f8 s8 f8 s8 f8 s8 f8 s8 f12 s9 f13 s10 f13 s13 f13 s13 f13 s13 f13 s13 f13 s13 f12 s13 f12 s13 f13 s13 f12 s12 f12 s12 f12 s12 f12 s10 f10 s10 f12 s10 f12 s10 f9 s12 f9 s12 f10 s9 f14 s10 f9 s12 f14 s7 f7 s9 f15 s11 f9 s9 f9 s9 f9 s10 f16 s17 f10b s9 f14 s7b f15 s16 f15 s9 f7 s7 f7 s7 f7 s7 f15 s14 f14 s18 f16 s17 f11 s7 f7 s7 f18b s17 f10 s3 f3 s14 f14 s10 f14 s10 f10 s16 f3 s16 f3 s10 f2 s10 f18 s17 f16 s18 f3 s17 f18b s17 f3 s3 f16 s18 f17 s18 f2 s16 f16 s17 f16 s17 f2 s17 f2 s2 f17 s11 f1 s18 f17 s18 f1 s1 f18 s16 f5b s1 f0 s4 f17 s2 f17 s17 f6 s17 f6 s1 f18 s18 f18 s4 f18 s18 f0 s1 f18b s20 f18 s18 f16 s1 f1 s17 f16 s17 f20 s17 f6 s17 f20 s17 f20 s20 f0 s9 f0 s2 f0 s0 f1 s2 f1 s2 f2 s9 f7 s0 f6 s9 f9 s2 f1 s20 f6 s1 f20 s20 f1b s11 f11 s1 f1 s11 f11 s3 f3 s3 f11 s11 f11 s11 f19 s19 f2 s19 f19 s19 f21b s2 f3 s11 f11 s21b f20 s14 f19 s19 f14 s20 f14 s20 f22 s3 f22 s3 f22 s22 f23 s22 f23 s22 f24 s22 f22 s22 f23 s23 f14 s22 f20 s22 f24 s19 f23b s23 f23 s23 f26 s25 f18 s22 f14 s14 f23 s14 f24 s23 f24 s22 f22 s23 f24 s24 f24b s24 f23 s23 f23 s16 f25 s20 f22 s16 f23 s24 f25 s19 f26 s26b f19 s20 f20 s19 f19 s19 f20 s2 f20 s2 f25 s26 f25 s26 f26 s27 f22 s28 f25 s25 f25 s25 f22 s25 f22 s25 f23 s25 f25 s25 f23 s25 f23 s23 f24 s25 f23 s11 f11 s25 f20 s26 f0 s26 f19 s5 f26 s26 f19 s28 f0 s3 f0 s28 f20 s28 f28 s18 f18 s28 f1 s24b f25 s29 f23 s28 f23 s23 f0 s29 f0 s0 f0 s1 f27b s25 f27 s25 f24 s26 f24 s26b f26 s26 f24 s26 f24 s26 f24 s24 f24 s26 f26 s29 f24 s29 f29 s25 f25b s24 f29 s27 f29 s27 f28 s27",
+ "fetched_at": "2026-11-06T07:06:03"
+}
